@@ -9,7 +9,8 @@ import Footer from "../components/Footer";
 
 export const metadata: Metadata = {
   title: "KartAI AI-modeller",
-  description: "Dette er en tjeneste som viser hvordan de ulike KI-assistentene til Norkart kan brukes til å effektivisere og hjelpe innbyggere og saksbehandlere med byggesøknader.",
+  description:
+    "Dette er en tjeneste som viser hvordan de ulike KI-assistentene til Norkart kan brukes til å effektivisere og hjelpe innbyggere og saksbehandlere med byggesøknader.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
@@ -19,9 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body>
-        <Navbar/>
+        <Navbar />
         <TRPCReactProvider>{children}</TRPCReactProvider>
-        <Footer/>
+        <Footer />
       </body>
     </html>
   );
