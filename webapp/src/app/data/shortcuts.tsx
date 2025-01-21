@@ -16,22 +16,6 @@ export interface ShortcutLink {
 }
 
 const shortcuts: ShortcutLink[] = [
-  // {
-  //   header: "Atlas-løsning for byggesak",
-  //   subgroups: [
-  //     {
-  //       title: "test",
-  //       arrow: true,
-  //       links: [
-  //         {
-  //           label: "test",
-  //           url: "../../atlas-app",
-  //           text: "Verifiser plantegningene dine",
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // },
   {
     header: "Før du skal søke",
     subgroups: [

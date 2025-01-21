@@ -4,6 +4,7 @@ import Link from "next/link";
 export default function AtlasPage() {
   return (
     <div className="relative min-h-screen">
+      <br></br>
       <h1>Atlas Application</h1>
 
       <Link
