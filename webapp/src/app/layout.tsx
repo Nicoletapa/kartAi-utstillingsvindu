@@ -27,3 +27,12 @@ export default function RootLayout({
     </html>
   );
 }
+export function AtlasLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${GeistSans.variable}`}>
+      <body>
+        <main>{children}</main>
+      </body>
+    </html>
+  );
+}
