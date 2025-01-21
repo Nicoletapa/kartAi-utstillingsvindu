@@ -1,8 +1,8 @@
-'use client';
-import { useEffect, useRef, useState } from 'react';
-import ReactDOM from 'react-dom';
-import Icons from './Icons';
-import shortcuts from '../app/data/shortcuts';
+"use client";
+import { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
+import Icons from "./Icons";
+import shortcuts from "../app/data/shortcuts";
 
 // Updated OpenDropdown to accept props correctly
 const OpenDropdown = ({
@@ -12,44 +12,44 @@ const OpenDropdown = ({
   openedNavbarSection: number | null;
   handleClick: (index: number) => void;
 }) => (
-<div className="absolute right-0 mt-11 w-screen max-h-[calc(100vh-170px)] overflow-y-auto bg-white z-30">
-{shortcuts.map((shortcut, index) => {
+  <div className="absolute right-0 z-30 mt-11 max-h-[calc(100vh-170px)] w-screen overflow-y-auto bg-white">
+    {shortcuts.map((shortcut, index) => {
       const isActive = index === openedNavbarSection;
       return (
         <div key={index} className="border-b border-gray-200">
           <button
             onClick={() => handleClick(index)}
             className={`${
-              isActive ? 'font-bold' : ''
-            } tracking-[0.08em] px-4 py-3 gap-2 text-sm text-black flex flex-row justify-between items-center`}
+              isActive ? "font-bold" : ""
+            } flex flex-row items-center justify-between gap-2 px-4 py-3 text-sm tracking-[0.08em] text-black`}
           >
-            <h3 className="flex whitespace-pre-wrap items-center">
+            <h3 className="flex items-center whitespace-pre-wrap">
               {shortcut.header.toUpperCase()}
             </h3>
-            <Icons name={isActive ? 'ArrowUp_sm' : 'ArrowDown_sm'} />
+            <Icons name={isActive ? "ArrowUp_sm" : "ArrowDown_sm"} />
           </button>
           {/* Subgroups: reveal when active */}
           <div
             className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${
-              isActive ? 'max-h-screen' : 'max-h-0'
+              isActive ? "max-h-screen" : "max-h-0"
             }`}
           >
             {isActive &&
               shortcut.subgroups.map((subgroup, subgroupIndex) => (
                 <div key={subgroupIndex} className="px-6 py-4">
-                  <h3 className="text-lg font-bold mb-2">{subgroup.title}</h3>
-                  <div className={`flex flex-wrap flex-col`}>
+                  <h3 className="mb-2 text-lg font-bold">{subgroup.title}</h3>
+                  <div className={`flex flex-col flex-wrap`}>
                     {subgroup.links.map((link, linkIndex) => (
                       <a
                         key={linkIndex}
                         href={link.url}
-                        className="block text-sm text-black hover:text-gray-600 py-1"
+                        className="block py-1 text-sm text-black hover:text-gray-600"
                       >
                         {link.label}
                         {link.text && (
-                        <span className='text-xs font-light py-1 flex flex-row gap-4'>
-                          {link.text}
-                        </span>
+                          <span className="flex flex-row gap-4 py-1 text-xs font-light">
+                            {link.text}
+                          </span>
                         )}
                       </a>
                     ))}
@@ -65,7 +65,9 @@ const OpenDropdown = ({
 
 const Dropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [openedNavbarSection, setOpenedNavbarSection] = useState<number | null>(null); // Track which section is opened
+  const [openedNavbarSection, setOpenedNavbarSection] = useState<number | null>(
+    null,
+  ); // Track which section is opened
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = () => {
@@ -82,16 +84,19 @@ const Dropdown = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         closeDropdown();
       }
     };
     // Attach the event listener when the component mounts
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
 
     // Detach the event listener when the component unmounts
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, []);
 
@@ -99,11 +104,11 @@ const Dropdown = () => {
     <>
       {isOpen &&
         ReactDOM.createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-75 z-10"></div>,
-          document.body
+          <div className="fixed inset-0 z-10 bg-black bg-opacity-75"></div>,
+          document.body,
         )}
       <div
-        className="px-4 py-2 top-0 relative group text-kartAI-blue flex z-20"
+        className="group relative top-0 z-20 flex px-4 py-2 text-kartAI-blue"
         ref={dropdownRef}
       >
         <button onClick={toggleDropdown}>
