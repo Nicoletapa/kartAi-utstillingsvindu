@@ -179,7 +179,35 @@ const Navbar = () => {
           />
         </>
       )}
-      {isAtlasApp && <>test</>}
+      {isAtlasApp && (
+        <>
+          <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-gray-800">
+            <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4">
+              <div className="flex items-center">
+                <span className="ml-2 text-xl font-semibold text-gray-800 dark:text-white">
+                  Atlas
+                </span>
+              </div>
+
+              {/* Set a condition that if you are logged in, display name instead of logg inn */}
+              <div className="mt-1 flex cursor-pointer items-center justify-end space-x-4 whitespace-pre-wrap pr-2 text-xs tracking-[0.15em] underline decoration-2 underline-offset-4 sm:flex lg:pr-5 xl:text-sm">
+                <a
+                  type="button"
+                  className="text-md cursor-hover group relative flex flex-row items-center gap-2 px-2 py-2 text-secondary-black hover:text-kartAI-blue md:px-8 lg:px-5"
+                >
+                  Logg inn
+                </a>
+              </div>
+            </div>
+          </nav>
+          <NextBreadcrumb
+            homeElement={"Hjem"}
+            separator={">"}
+            activeClasses=""
+            listClasses="hover:underline mx-2 font-light"
+          />
+        </>
+      )}
     </>
   );
 };
