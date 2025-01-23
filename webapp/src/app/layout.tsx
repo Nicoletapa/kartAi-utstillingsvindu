@@ -6,6 +6,7 @@ import { type Metadata } from "next";
 import { TRPCReactProvider } from "~/trpc/react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { AuthProvider } from "~/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "KartAI AI-modeller",
@@ -20,9 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body>
-        <Navbar />
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-        <Footer />
+        <TRPCReactProvider>
+          <AuthProvider>
+            <Navbar />
+            {children}
+            <Footer />
+          </AuthProvider>
+        </TRPCReactProvider>
       </body>
     </html>
   );

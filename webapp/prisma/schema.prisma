@@ -64,3 +64,15 @@ model Model {
   modelErrors ModelError[]
   responses Response[]
 }
+
+
+model User {
+  id    String @id @default(uuid())
+  email String @unique
+  role  UserRole @default(USER)
+}
+
+enum UserRole {
+  USER
+  CASE_WORKER
+}
