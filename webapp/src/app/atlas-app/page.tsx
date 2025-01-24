@@ -2,10 +2,16 @@ import React from "react";
 import Link from "next/link";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { AppSidebar } from "../../components/app-sidebar";
+import { GeistSans } from "geist/font/sans";
 
 export default function AtlasPage() {
   return (
-    <div className="relative min-h-screen">
+    <div className={`relative min-h-screen ${GeistSans.variable}`}>
+      <h1 className="flex justify-center pt-10 text-4xl">Før du søker</h1>
+      <div className="mx-auto mt-36 flex h-40 w-1/3 items-center justify-center rounded-lg border-4 border-solid p-10 align-middle">
+        {" "}
+        placeholder
+      </div>
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset />
