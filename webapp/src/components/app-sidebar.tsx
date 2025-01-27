@@ -11,23 +11,33 @@ import { Sidebar, SidebarContent, SidebarRail } from "~/components/ui/sidebar";
 const data = {
   navMain: [
     {
-      title: "Playground",
+      title: "Før du søker",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
     },
     {
-      title: "Models",
+      title: "Sjekkliste",
       url: "#",
       icon: Bot,
     },
     {
-      title: "Documentation",
+      title: "CadAId",
       url: "#",
       icon: BookOpen,
     },
     {
-      title: "Settings",
+      title: "3d-Modellering",
+      url: "#",
+      icon: Settings2,
+    },
+    {
+      title: "Min Eiendom",
+      url: "",
+      icon: Settings2,
+    },
+    {
+      title: "Mine byggesaker",
       url: "#",
       icon: Settings2,
     },
