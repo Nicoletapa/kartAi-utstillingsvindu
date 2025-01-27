@@ -9,7 +9,6 @@ import BreakLine from "./Breakline";
 import Icons from "./Icons";
 import Link from "next/link";
 import Image from "next/image";
-import NextBreadcrumb from "./BreadCrumbs";
 import { usePathname } from "next/navigation";
 
 import NavbarAtlas from "~/components/NavbarAtlas";
@@ -174,24 +173,24 @@ const Navbar = () => {
               </div>
             </div>
           </nav>
-          <NextBreadcrumb
+          {/* <NextBreadcrumb
             homeElement={"Hjem"}
             separator={">"}
             activeClasses=""
             listClasses="hover:underline mx-2 font-light"
-          />
+          /> */}
         </>
       )}
 
       {isAtlasApp && (
         <>
           <NavbarAtlas />
-          <NextBreadcrumb
+          {/* <NextBreadcrumb
             homeElement={"Hjem"}
             separator={">"}
             activeClasses=""
             listClasses="hover:underline mx-2 font-light"
-          />
+          /> */}
         </>
       )}
     </>
