@@ -36,6 +36,11 @@ export default function AtlasPage() {
           Tilbake til hovedsiden
         </Link>
       </SidebarProvider>
+      <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group" 
+        >
+          Send inn en søknad
+        <span className="absolute bottom-0 left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
+        </Link>
     </div>
   );
 }
