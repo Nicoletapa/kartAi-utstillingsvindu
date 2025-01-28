@@ -41,6 +41,11 @@ const data = {
       url: "#",
       icon: Settings2,
     },
+    {
+      title: "Saksbehandler",
+      url: "/atlas-app/saksbehandler/mottak/mine-saker/",
+      icon: Settings2,
+    },
   ],
 };
 
