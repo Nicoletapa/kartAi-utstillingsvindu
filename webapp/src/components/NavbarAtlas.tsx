@@ -10,9 +10,12 @@ const NavbarAtlas = () => {
     <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-gray-800">
       <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4">
         <div className="flex items-center">
-          <span className="ml-2 text-xl font-semibold text-gray-800 dark:text-white">
+          <Link
+            href={"/atlas-app"}
+            className="ml-2 text-xl font-semibold text-gray-800 dark:text-white"
+          >
             Atlas
-          </span>
+          </Link>
         </div>
 
         {/* Set a condition that if you are logged in, display name instead of logg inn */}
