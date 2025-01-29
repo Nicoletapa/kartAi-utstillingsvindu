@@ -4,6 +4,7 @@ import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { AppSidebar } from "../../components/app-sidebar";
 import { GeistSans } from "geist/font/sans";
 import { ArrowRight } from "lucide-react";
+import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 
 export default function AtlasPage() {
   return (
@@ -46,6 +47,8 @@ export default function AtlasPage() {
           <span className="absolute bottom-0 left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
         </span>
         </Link>
+
+        <SjekklisteOversikt />
     </div>
   );
 }

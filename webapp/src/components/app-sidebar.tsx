@@ -18,16 +18,16 @@ const data = {
     },
     {
       title: "Sjekkliste",
-      url: "#",
+      url: "#sjekkliste-oversikt",
       icon: Bot,
     },
     {
-      title: "CadAId",
+      title: "CADAiD",
       url: "#",
       icon: BookOpen,
     },
     {
-      title: "3d-Modellering",
+      title: "3D-Modellering",
       url: "#",
       icon: Settings2,
     },
@@ -37,7 +37,7 @@ const data = {
       icon: Settings2,
     },
     {
-      title: "Mine byggesaker",
+      title: "Mine Byggesaker",
       url: "#",
       icon: Settings2,
     },
