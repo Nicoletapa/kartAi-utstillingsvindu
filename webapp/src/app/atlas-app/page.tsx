@@ -38,7 +38,7 @@ export default function AtlasPage() {
         </Link>
       </SidebarProvider>
       
-      <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2" 
+      <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2 border-2 rounded-full border-kartAI-blue bg-white" 
         >
         <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
         <span className="relative inline-block">
