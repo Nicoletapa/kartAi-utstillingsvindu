@@ -7,6 +7,8 @@ import { TRPCReactProvider } from "~/trpc/react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AuthProvider } from "~/context/AuthContext";
+import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import { AppSidebar } from "~/components/app-sidebar";
 
 export const metadata: Metadata = {
   title: "KartAI AI-modeller",
@@ -24,6 +26,12 @@ export default function RootLayout({
         <TRPCReactProvider>
           <AuthProvider>
             <Navbar />
+            <SidebarProvider>
+              <AppSidebar>
+                <SidebarInset />
+              </AppSidebar>
+            </SidebarProvider>
+
             {children}
             <Footer />
           </AuthProvider>

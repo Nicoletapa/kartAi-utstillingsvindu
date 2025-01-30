@@ -11,6 +11,7 @@ import React from "react";
 import type { Detection } from "~/types/detection";
 import { transformDetectionToChecklist } from "~/utils/helpers";
 import FeedbackSender from "~/components/FeedbackSender";
+import { GeistSans } from "geist/font/sans";
 
 // Define MarkedCheckpoint interface
 interface MarkedCheckpoint {
@@ -153,7 +154,9 @@ export default function CaseDashboard() {
   ];
 
   return (
-    <div>
+    <div
+      className={`flex min-h-screen pb-40 ${GeistSans.variable} absolute top-14 ml-36 mr-20 flex min-w-full flex-col items-center px-52`}
+    >
       <h1 data-cy="title" className="mx-10 my-5 text-3xl">
         <strong>Oversikt over søknadsanalyse:</strong>
       </h1>
