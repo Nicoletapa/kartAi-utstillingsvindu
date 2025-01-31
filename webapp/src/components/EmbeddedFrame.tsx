@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface IframeProps {
   src: string;
@@ -12,11 +12,11 @@ interface IframeProps {
 
 const EmbeddedFrame: React.FC<IframeProps> = ({
   src,
-  title = 'Embedded Frame',
-  width = '90%',
-  height = '600vh',
+  title = "Embedded Frame",
+  width = "80%",
+  height = "600vh",
   allowFullScreen = false,
-  className = '',
+  className = "",
   ...props
 }) => {
   return (
@@ -26,7 +26,7 @@ const EmbeddedFrame: React.FC<IframeProps> = ({
       width={width}
       height={height}
       allowFullScreen={allowFullScreen}
-      className={`${className} h-screen`} 
+      className={`${className} h-screen`}
       {...props}
     ></iframe>
   );

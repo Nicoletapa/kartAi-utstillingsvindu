@@ -24,6 +24,7 @@ export default function RootLayout({
         <TRPCReactProvider>
           <AuthProvider>
             <Navbar />
+
             {children}
             <Footer />
           </AuthProvider>
