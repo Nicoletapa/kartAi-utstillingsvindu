@@ -31,7 +31,7 @@ const NavbarAtlas = () => {
               </button>
             </div>
           ) : (
-            <Link href="/atlas-app/LoggInn">Logg inn</Link>
+            <Link href="/atlas-app/logg-inn">Logg inn</Link>
           )}
         </div>
       </div>

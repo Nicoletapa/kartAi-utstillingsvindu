@@ -36,8 +36,8 @@ const data = {
       icon: Settings2,
     },
     {
-      title: "Mine Byggesaker",
-      url: "#",
+      title: "TiltaksAid",
+      url: "/atlas-app/sidebar/tiltaksaid",
       icon: Settings2,
     },
     {
