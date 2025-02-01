@@ -1,6 +1,6 @@
 import { GeistSans } from "geist/font/sans";
 import CadaidPage from "~/components/CADAiD";
-import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import { SidebarProvider } from "~/components/ui/sidebar";
 import { AppSidebar } from "~/components/app-sidebar";
 
 export default async function PlantegningsAnalyse() {
@@ -9,14 +9,12 @@ export default async function PlantegningsAnalyse() {
       <SidebarProvider>
         <AppSidebar />
 
-        <SidebarInset />
+        <div
+          className={`flex min-h-screen pb-40 ${GeistSans.variable} mx-1/3 flex w-full flex-col items-center`}
+        >
+          <CadaidPage></CadaidPage>
+        </div>
       </SidebarProvider>
-
-      <div
-        className={`flex min-h-screen pb-40 ${GeistSans.variable} absolute top-14 ml-36 mr-20 flex min-w-full flex-col items-center px-52`}
-      >
-        <CadaidPage></CadaidPage>
-      </div>
     </div>
   );
 }
