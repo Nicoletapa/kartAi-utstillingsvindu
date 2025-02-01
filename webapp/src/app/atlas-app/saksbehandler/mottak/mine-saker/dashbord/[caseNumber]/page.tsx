@@ -11,9 +11,8 @@ import React from "react";
 import type { Detection } from "~/types/detection";
 import { transformDetectionToChecklist } from "~/utils/helpers";
 import FeedbackSender from "~/components/FeedbackSender";
-import { GeistSans } from "geist/font/sans";
-import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
-import { AppSidebar } from "~/components/app-sidebar";
+
+import AtlasSidebar from "~/components/AtlasSidebar";
 
 // Define MarkedCheckpoint interface
 interface MarkedCheckpoint {
@@ -156,109 +155,99 @@ export default function CaseDashboard() {
   ];
 
   return (
-    <div>
-      <SidebarProvider>
-        <AppSidebar />
+    <AtlasSidebar>
+      <h1 data-cy="title" className="mx-10 my-5 text-3xl">
+        <strong>Oversikt over søknadsanalyse:</strong>
+      </h1>
 
-        <SidebarInset />
-      </SidebarProvider>
+      {caseNumber ? (
+        <div>
+          <div className="mx-10 grid grid-cols-2 gap-2">
+            <p>
+              <strong>Saksnummer:</strong> {ApplicationData?.caseNumber}
+            </p>
+            <p>
+              <strong>Adresse:</strong> {ApplicationData?.address}
+            </p>
+            <p>
+              <strong>Eiendom:</strong> GNR: {ApplicationData?.farmUnit}, BNR:{" "}
+              {ApplicationData?.propertyUnit}
+            </p>
+            <p>
+              <strong>Innsendingsdato:</strong>{" "}
+              {formatDate(ApplicationData?.receiveDate)}
+            </p>
+            <p>
+              <strong>Frist:</strong> {ApplicationData?.deadline}
+            </p>
+          </div>
 
-      <div
-        className={`flex min-h-screen pb-40 ${GeistSans.variable} absolute top-14 ml-36 mr-20 min-w-full flex-col items-center px-52`}
-      >
-        <h1 data-cy="title" className="mx-10 my-5 text-3xl">
-          <strong>Oversikt over søknadsanalyse:</strong>
-        </h1>
-
-        {caseNumber ? (
-          <div>
-            <div className="mx-10 grid grid-cols-2 gap-2">
-              <p>
-                <strong>Saksnummer:</strong> {ApplicationData?.caseNumber}
-              </p>
-              <p>
-                <strong>Adresse:</strong> {ApplicationData?.address}
-              </p>
-              <p>
-                <strong>Eiendom:</strong> GNR: {ApplicationData?.farmUnit}, BNR:{" "}
-                {ApplicationData?.propertyUnit}
-              </p>
-              <p>
-                <strong>Innsendingsdato:</strong>{" "}
-                {formatDate(ApplicationData?.receiveDate)}
-              </p>
-              <p>
-                <strong>Frist:</strong> {ApplicationData?.deadline}
-              </p>
+          <div className="mt-10 flex w-full flex-row">
+            <div className="flex w-2/3 flex-col gap-10 p-10 pl-10 md:w-1/3 lg:pl-20">
+              <div data-cy="sjekkliste">
+                {/* Pass combinedChecklist to Checklist component */}
+                <Checklist checklist={combinedChecklist} />
+              </div>
+              <div data-cy="summary">
+                {/* Pass summaryResponse.summary to Summary component */}
+                <Summary summaryData={summaryResponse.summary} />
+              </div>
             </div>
 
-            <div className="mt-10 flex w-full flex-row">
-              <div className="flex w-2/3 flex-col gap-10 p-10 pl-10 md:w-1/3 lg:pl-20">
-                <div data-cy="sjekkliste">
-                  {/* Pass combinedChecklist to Checklist component */}
-                  <Checklist checklist={combinedChecklist} />
-                </div>
-                <div data-cy="summary">
-                  {/* Pass summaryResponse.summary to Summary component */}
-                  <Summary summaryData={summaryResponse.summary} />
-                </div>
-              </div>
+            <div className="h-auto w-1/3 py-10 pr-10 md:w-2/3 lg:pr-20">
+              <EmbeddedFrame
+                data-cy="plansituasjon"
+                src="https://www.arealplaner.no/vennesla4223/arealplaner/53?knr=4223&gnr=5&bnr=547&teigid=214401611"
+                title="plansituasjon"
+                width="100%"
+                height="100%"
+                className="w-full rounded-md border border-gray-300"
+              />
+            </div>
+          </div>
 
-              <div className="h-auto w-1/3 py-10 pr-10 md:w-2/3 lg:pr-20">
-                <EmbeddedFrame
-                  data-cy="plansituasjon"
-                  src="https://www.arealplaner.no/vennesla4223/arealplaner/53?knr=4223&gnr=5&bnr=547&teigid=214401611"
-                  title="plansituasjon"
-                  width="100%"
-                  height="100%"
-                  className="w-full rounded-md border border-gray-300"
+          <div className="flex w-full flex-row gap-10 px-10 lg:px-20">
+            <div className="w-1/2">
+              <CaseDocumentsComponent documents={documents} />
+            </div>
+
+            <div className="w-1/2">
+              <FeedbackSender checklist={combinedChecklist} />
+            </div>
+          </div>
+
+          <div className="px-10 py-10 lg:px-20">
+            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+              <div data-cy="archiveGPT-component">
+                <ResultAI
+                  title={"ArkivGPT"}
+                  status={"success"}
+                  feedback={"Arkivdata funnet"}
+                  redirect={BASE_URL + "arkivgpt"}
+                />
+              </div>
+              <div>
+                <ResultAI
+                  title={"CAD-AiD"}
+                  status={"failure"}
+                  feedback={"KRITISKE MANGLER"}
+                  redirect={BASE_URL + "cadaid"}
+                />
+              </div>
+              <div>
+                <ResultAI
+                  title={"3D-tiltaksvisning"}
+                  status={"success"}
+                  feedback={"Se visualisering"}
+                  redirect={"http://localhost:3001/"}
                 />
               </div>
             </div>
-
-            <div className="flex w-full flex-row gap-10 px-10 lg:px-20">
-              <div className="w-1/2">
-                <CaseDocumentsComponent documents={documents} />
-              </div>
-
-              <div className="w-1/2">
-                <FeedbackSender checklist={combinedChecklist} />
-              </div>
-            </div>
-
-            <div className="px-10 py-10 lg:px-20">
-              <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
-                <div data-cy="archiveGPT-component">
-                  <ResultAI
-                    title={"ArkivGPT"}
-                    status={"success"}
-                    feedback={"Arkivdata funnet"}
-                    redirect={BASE_URL + "arkivgpt"}
-                  />
-                </div>
-                <div>
-                  <ResultAI
-                    title={"CAD-AiD"}
-                    status={"failure"}
-                    feedback={"KRITISKE MANGLER"}
-                    redirect={BASE_URL + "cadaid"}
-                  />
-                </div>
-                <div>
-                  <ResultAI
-                    title={"3D-tiltaksvisning"}
-                    status={"success"}
-                    feedback={"Se visualisering"}
-                    redirect={"http://localhost:3001/"}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
-        ) : (
-          <p>No case number provided</p>
-        )}
-      </div>
-    </div>
+        </div>
+      ) : (
+        <p>No case number provided</p>
+      )}
+    </AtlasSidebar>
   );
 }

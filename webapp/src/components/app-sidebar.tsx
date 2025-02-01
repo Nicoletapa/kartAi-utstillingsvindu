@@ -17,7 +17,9 @@ const data = {
     },
     {
       title: "Sjekkliste",
-      url: "/atlas-app/#sjekkliste-oversikt",
+
+      url: "/atlas-app#sjekkliste-oversikt",
+
       icon: Bot,
     },
     {
