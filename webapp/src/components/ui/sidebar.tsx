@@ -16,7 +16,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { usePathname } from "next/navigation";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -67,13 +66,7 @@ const SidebarProvider = React.forwardRef<
     ref,
   ) => {
     const isMobile = useIsMobile();
-    const pathname = usePathname();
-    const isAtlasApp = pathname?.includes("atlas-app");
     const [openMobile, setOpenMobile] = React.useState(false);
-
-    if (!isAtlasApp) {
-      return <>{children}</>;
-    }
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
