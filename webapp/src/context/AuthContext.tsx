@@ -11,6 +11,7 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   isLoggedIn: boolean;
   logout: () => void;
+  signIn: (email: string) => Promise<void>; // Add this
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem("user");
   };
 
+  const signIn = async (email: string) => {
+    const newUser = { email, role: "user" }; // Adjust role as needed
+    updateUser(newUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -47,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser: updateUser,
         isLoggedIn: !!user,
         logout,
+        signIn, // Add this
       }}
     >
       {children}
