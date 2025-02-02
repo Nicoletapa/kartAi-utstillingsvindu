@@ -105,11 +105,11 @@ export function SjekklisteOversikt() {
           </li>
           <li className="[ol_&]:marker:font-bold">
             Send ut nabovarsel basert på mottatt naboliste. Se mer informasjon
-            om "
+            om &ldquo;
             <SjekklisteOversiktLink href="https://www.kristiansand.kommune.no/navigasjon/bolig-kart-og-eiendom/plan-og-bygg/byggesak/nabovarsel/">
               Nabovarsel
             </SjekklisteOversiktLink>
-            ".
+            &rdquo;.
           </li>
           <li className="[ol_&]:marker:font-bold">
             Skjema for nabovarsel finner du ved å bruke&nbsp;

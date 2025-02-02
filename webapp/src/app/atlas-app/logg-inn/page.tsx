@@ -14,7 +14,7 @@ export default function LoginPage() {
     try {
       await signIn(email);
       router.push("/atlas-app");
-    } catch (error) {
+    } catch {
       setError("User not found");
     }
   };
