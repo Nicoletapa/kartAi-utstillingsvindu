@@ -36,15 +36,28 @@ const DataTable = <TData extends Application, TValue>({
   data,
   pageSize,
 }: DataTableProps<TData, TValue>) => {
+  const [isClient, setIsClient] = useState(false);
   const PAGE_OFFSET = 2;
-
   const router = useRouter();
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [filteredData, setFilteredData] = useState<TData[]>(data);
+  const [filteredData, setFilteredData] = useState<TData[]>([]);
   const [selectedMunicipalities, setSelectedMunicipalities] = useState<
     string[]
-  >(Array.from(new Set(data.map((d) => d.municipality))));
+  >([]);
+
+  useEffect(() => {
+    if (isClient) {
+      setSelectedMunicipalities(
+        Array.from(new Set(data.map((d) => d.municipality))),
+      );
+      setFilteredData(data);
+    }
+  }, [data, isClient]);
 
   useEffect(() => {
     setFilteredData(
@@ -127,6 +140,10 @@ const DataTable = <TData extends Application, TValue>({
 
     return pageNumbers;
   };
+
+  if (!isClient) {
+    return <div>Loading...</div>; // Or any loading state you prefer
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl">
