@@ -39,7 +39,7 @@ const data = {
     },
     {
       title: "TiltaksAid",
-      url: "/atlas-app/sidebar/tiltaksaid",
+      url: "/atlas-app/sidebar/Tiltaksaid",
       icon: Settings2,
     },
     {
