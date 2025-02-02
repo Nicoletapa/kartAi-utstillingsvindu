@@ -1,5 +1,5 @@
-import { ChevronFirst, ChevronLast, Boxes, ArrowRight } from "lucide-react";
-import { createContext, useContext, useState } from "react";
+import { ChevronFirst, ChevronLast, Info, Boxes, ListChecks, FileCheck, House, MousePointerClick, FileStack, ArrowRight } from "lucide-react";
+import { createContext, useContext, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,16 +9,32 @@ export default function Sidebar() {
     const [expanded, setExpanded] = useState(true);
     const pathname = usePathname();
 
-    // Define Sidebar Items
     const sidebarItems = [
-        { text: "Før du søker", href: "/atlas-app", icon: <Boxes size={20} /> },
-        { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <Boxes size={20} /> },
-        { text: "CADAiD", href: "/atlas-app/sidebar/cadaid", icon: <Boxes size={20} /> },
+        { text: "Før du søker", href: "/atlas-app", icon: <Info size={20} /> },
+        { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <ListChecks size={20} /> },
+        { text: "CADAiD", href: "/atlas-app/sidebar/cadaid", icon: <FileCheck size={20} /> },
         { text: "3D-Modellering", href: "/atlas-app/sidebar/3d-situasjon", icon: <Boxes size={20} /> },
-        { text: "TiltaksAID", href: "/atlas-app/sidebar/tiltaksaid", icon: <Boxes size={20} /> },
-        { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <Boxes size={20} /> },
-        { text: "Saksbehandler", href: "/atlas-app/saksbehandler/mottak/mine-saker", icon: <Boxes size={20} /> },
+        { text: "TiltaksAID", href: "/atlas-app/sidebar/tiltaksaid", icon: <MousePointerClick size={20} /> },
+        { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
+        { text: "Saksbehandler", href: "/atlas-app/saksbehandler/mottak/mine-saker", icon: <FileStack size={20} /> },
     ];
+
+    useEffect(() => {
+        const handleResize = () => {
+            const breakpoint = 1150; // breakpoint for collapse
+            if (window.innerWidth < breakpoint) {
+                setExpanded(false);
+            } else {
+                setExpanded(true);
+            }
+        };
+
+        handleResize();
+
+        window.addEventListener("resize", handleResize);
+
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     return (
 
@@ -44,7 +60,6 @@ export default function Sidebar() {
     );
 }
 
-// SidebarItem Component with Link
 export function SidebarItem({ icon, text, href, active }) {
     const { expanded } = useContext( SidebarContext );
 

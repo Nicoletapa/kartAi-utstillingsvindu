@@ -17,8 +17,8 @@ export default function AtlasPage() {
         {" "}
         placeholder
       </div>
-      <Sidebar>
-        <SidebarItem />
+      <Sidebar />
+        
         <Link
           href="/"
           className="fixed bottom-8 left-8 z-50 flex items-center gap-2 text-kartAI-blue transition-colors hover:text-kartAI-blue/80"
@@ -38,7 +38,6 @@ export default function AtlasPage() {
           </svg>
           Tilbake til hovedsiden
         </Link>
-        </Sidebar>
       
       <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2 border-2 rounded-full border-kartAI-blue bg-white" 
         >
