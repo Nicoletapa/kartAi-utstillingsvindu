@@ -1,5 +1,6 @@
 "use client";
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react";
 
 interface User {
   email: string;
@@ -11,16 +12,20 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   isLoggedIn: boolean;
   logout: () => void;
+  signIn: (email: string) => Promise<void>; // Add this
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // Check storage on mount
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("user");
-      return stored ? JSON.parse(stored) : null;
+      try {
+        return stored ? (JSON.parse(stored) as User) : null;
+      } catch {
+        return null;
+      }
     }
     return null;
   });
@@ -40,6 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem("user");
   };
 
+  const signIn = async (email: string) => {
+    const newUser = { email, role: "user" }; // Adjust role as needed
+    updateUser(newUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -47,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser: updateUser,
         isLoggedIn: !!user,
         logout,
+        signIn, // Add this
       }}
     >
       {children}

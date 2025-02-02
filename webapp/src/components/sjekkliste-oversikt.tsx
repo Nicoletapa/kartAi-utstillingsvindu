@@ -35,7 +35,7 @@ export function SjekklisteOversikt() {
             Sjekk om det er midlertidig forbud mot bygging og deling i området.
           </li>
           <li className="[ol_&]:marker:font-bold">
-            Du må vurdere om byggetiltaket kan være på&nbsp;
+            Du må vurdere om byggetiltaket kan være på{" "}
             <SjekklisteOversiktLink href="https://www.kristiansand.kommune.no/navigasjon/bolig-kart-og-eiendom/plan-og-bygg/byggesak/slik-soker-du/forurenset-grunn/">
               forurenset grunn.
             </SjekklisteOversiktLink>
@@ -105,11 +105,11 @@ export function SjekklisteOversikt() {
           </li>
           <li className="[ol_&]:marker:font-bold">
             Send ut nabovarsel basert på mottatt naboliste. Se mer informasjon
-            om "
+            om &ldquo;
             <SjekklisteOversiktLink href="https://www.kristiansand.kommune.no/navigasjon/bolig-kart-og-eiendom/plan-og-bygg/byggesak/nabovarsel/">
               Nabovarsel
             </SjekklisteOversiktLink>
-            ".
+            &rdquo;.
           </li>
           <li className="[ol_&]:marker:font-bold">
             Skjema for nabovarsel finner du ved å bruke&nbsp;

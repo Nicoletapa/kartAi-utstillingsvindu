@@ -1,30 +1,22 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "~/trpc/react";
 import { useAuth } from "~/context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
-  const { setUser, user } = useAuth();
-
-  const login = api.user.login.useMutation({
-    onSuccess: (data) => {
-      if (data) {
-        setUser(data);
-        router.push("/atlas-app");
-      }
-    },
-    onError: () => {
-      setError("User not found");
-    },
-  });
+  const { signIn, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login.mutate({ email });
+    try {
+      await signIn(email);
+      router.push("/atlas-app");
+    } catch {
+      setError("User not found");
+    }
   };
 
   if (user) {
