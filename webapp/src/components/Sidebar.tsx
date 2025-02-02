@@ -62,6 +62,16 @@ export default function Sidebar() {
 
 export function SidebarItem({ icon, text, href, active }) {
     const { expanded } = useContext( SidebarContext );
+    // const pathname = usePathname();
+
+    // const isActive = () => {
+    //     if (href.includes("#")) {
+    //         const [baseHref] = href.split("#");
+    //         return pathname === baseHref;
+    //     } else {
+    //         return pathname.startsWith(href);
+    //     }
+    // };
 
     return (
         <li className={`relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"}`}>
