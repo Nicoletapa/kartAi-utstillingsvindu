@@ -36,11 +36,11 @@ jobs:
         run: echo "GIT_SHA=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
 
       - name: Build and Push Docker Backend Image
-        run: |
-          docker build -t ghcr.io/kartai/ntnu-kpro-ai-assistant-backend:${{ env.GIT_SHA }} ./backend
-          docker push ghcr.io/kartai/ntnu-kpro-ai-assistant-backend:${{ env.GIT_SHA }}
+  run: |
+    docker build -t ghcr.io/Nicoletapa/kartai-utstillingsvindu-api:${{ env.GIT_SHA }} ./backend
+    docker push ghcr.io/Nicoletapa/kartai-utstillingsvindu-api:${{ env.GIT_SHA }}
 
-      - name: Build and Push Docker Webapp Image
-        run: |
-          docker build -t ghcr.io/kartai/ntnu-kpro-ai-assistant-webapp:${{ env.GIT_SHA }} ./webapp
-          docker push ghcr.io/kartai/ntnu-kpro-ai-assistant-webapp:${{ env.GIT_SHA }}
+- name: Build and Push Docker Webapp Image
+  run: |
+    docker build -t ghcr.io/Nicoletapa/kartai-utstillingsvindu-webapp:${{ env.GIT_SHA }} ./webapp
+    docker push ghcr.io/Nicoletapa/kartai-utstillingsvindu-webapp:${{ env.GIT_SHA }}
