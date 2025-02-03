@@ -1,6 +1,5 @@
 import { GeistSans } from "geist/font/sans";
 import { SidebarProvider } from "./ui/sidebar";
-import dynamic from "next/dynamic";
 import ClientSidebar from "./ClientSidebar";
 
 interface AtlasSidebarInterface {

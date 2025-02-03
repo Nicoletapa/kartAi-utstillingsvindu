@@ -42,7 +42,7 @@ export default function Sidebar() {
                 ${expanded ? "w-48" : "w-16"}`}>
             <nav className="h-full flex flex-col bg-white ml-4">
                 <div className="p-4 pb-2 flex justify-end">
-                    <span className={`overflow-hidden transition-all font-bold text-gray-600 ${expanded ? "w-32" : "w-0"}`}>Innhold</span>
+                    <span className={`overflow-hidden transition-all font-bold text-gray-600 ${expanded ? "w-32" : "w-0"}`}>Meny</span>
                     <button onClick={() => setExpanded(!expanded)} className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100">
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
                     </button>

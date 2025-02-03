@@ -2,12 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
-import { AppSidebar } from "../../components/app-sidebar";
 import { GeistSans } from "geist/font/sans";
 import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
-import Sidebar, { SidebarItem } from "~/components/Sidebar";
+import Sidebar from "~/components/Sidebar";
 
 export default function AtlasPage() {
   return (
