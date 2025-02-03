@@ -1,11 +1,21 @@
 "use client";
 
 import Link from "next/link";
-
 import { useAuth } from "~/context/AuthContext";
+import { useEffect, useState } from "react";
 
 const NavbarAtlas = () => {
   const { user, isLoggedIn, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <nav className="h-16 w-full bg-white shadow-sm" />;
+  }
+
   return (
     <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-gray-800">
       <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4">
@@ -38,4 +48,5 @@ const NavbarAtlas = () => {
     </nav>
   );
 };
+
 export default NavbarAtlas;

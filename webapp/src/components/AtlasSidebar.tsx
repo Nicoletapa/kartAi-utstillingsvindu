@@ -1,3 +1,4 @@
+"use client";
 import { GeistSans } from "geist/font/sans";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarProvider } from "./ui/sidebar";
