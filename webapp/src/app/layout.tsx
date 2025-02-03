@@ -20,13 +20,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
-      <body>
+      <body className="min-h-screen">
         <TRPCReactProvider>
           <AuthProvider>
-            <Navbar />
-
-            {children}
-            <Footer />
+            <div className="flex min-h-screen flex-col">
+              <Navbar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
           </AuthProvider>
         </TRPCReactProvider>
       </body>
