@@ -11,7 +11,7 @@ import React from "react";
 import type { Detection } from "~/types/detection";
 import { transformDetectionToChecklist } from "~/utils/helpers";
 import FeedbackSender from "~/components/FeedbackSender";
-import { GeistSans } from "geist/font/sans";
+import AtlasSidebar from "~/components/AtlasSidebar";
 
 // Define MarkedCheckpoint interface
 interface MarkedCheckpoint {
@@ -154,16 +154,14 @@ export default function CaseDashboard() {
   ];
 
   return (
-    <div
-      className={`flex min-h-screen pb-40 ${GeistSans.variable} absolute top-14 ml-36 mr-20 flex min-w-full flex-col items-center px-52`}
-    >
-      <h1 data-cy="title" className="mx-10 my-5 text-3xl">
+    <AtlasSidebar>
+      <h1 data-cy="title" className="mx-4 my-5 text-2xl md:mx-10 md:text-3xl">
         <strong>Oversikt over søknadsanalyse:</strong>
       </h1>
 
       {caseNumber ? (
-        <div>
-          <div className="mx-10 grid grid-cols-2 gap-2">
+        <div className="flex flex-col space-y-6 px-6">
+          <div className="mx-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mx-10">
             <p>
               <strong>Saksnummer:</strong> {ApplicationData?.caseNumber}
             </p>
@@ -183,19 +181,17 @@ export default function CaseDashboard() {
             </p>
           </div>
 
-          <div className="mt-10 flex w-full flex-row">
-            <div className="flex w-2/3 flex-col gap-10 p-10 pl-10 md:w-1/3 lg:pl-20">
+          <div className="mt-6 flex w-full flex-col lg:flex-row">
+            <div className="flex w-full flex-col gap-6 p-4 md:p-10 lg:w-1/3">
               <div data-cy="sjekkliste">
-                {/* Pass combinedChecklist to Checklist component */}
                 <Checklist checklist={combinedChecklist} />
               </div>
               <div data-cy="summary">
-                {/* Pass summaryResponse.summary to Summary component */}
                 <Summary summaryData={summaryResponse.summary} />
               </div>
             </div>
 
-            <div className="h-auto w-1/3 py-10 pr-10 md:w-2/3 lg:pr-20">
+            <div className="h-[400px] w-full p-4 lg:h-auto lg:w-2/3 lg:p-10">
               <EmbeddedFrame
                 data-cy="plansituasjon"
                 src="https://www.arealplaner.no/vennesla4223/arealplaner/53?knr=4223&gnr=5&bnr=547&teigid=214401611"
@@ -207,18 +203,18 @@ export default function CaseDashboard() {
             </div>
           </div>
 
-          <div className="flex w-full flex-row gap-10 px-10 lg:px-20">
-            <div className="w-1/2">
+          <div className="flex w-full flex-col gap-6 p-4 lg:flex-row lg:p-10">
+            <div className="w-full lg:w-1/2">
               <CaseDocumentsComponent documents={documents} />
             </div>
 
-            <div className="w-1/2">
+            <div className="w-full lg:w-1/2">
               <FeedbackSender checklist={combinedChecklist} />
             </div>
           </div>
 
-          <div className="px-10 py-10 lg:px-20">
-            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="p-4 lg:p-10">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <div data-cy="archiveGPT-component">
                 <ResultAI
                   title={"ArkivGPT"}
@@ -247,8 +243,8 @@ export default function CaseDashboard() {
           </div>
         </div>
       ) : (
-        <p>No case number provided</p>
+        <p className="p-4">No case number provided</p>
       )}
-    </div>
+    </AtlasSidebar>
   );
 }
