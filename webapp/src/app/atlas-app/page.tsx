@@ -5,7 +5,7 @@ import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
 import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
-import Sidebar from "~/components/Sidebar";
+import AtlasSidebar from "~/components/AtlasSidebar";
 
 export default function AtlasPage() {
   return (
@@ -15,7 +15,7 @@ export default function AtlasPage() {
         {" "}
         placeholder
       </div>
-      <Sidebar />
+      <AtlasSidebar>
         
         <Link
           href="/"
@@ -36,13 +36,13 @@ export default function AtlasPage() {
           </svg>
           Tilbake til hovedsiden
         </Link>
-      
+        </AtlasSidebar>
       <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2 border-2 rounded-full border-kartAI-blue bg-white" 
         >
         <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
         <span className="relative inline-block">
           Send inn en søknad
-          <span className="absolute bottom-0 left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
+          <span className="absolute bottom-[-2px] left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
         </span>
         </Link>
 

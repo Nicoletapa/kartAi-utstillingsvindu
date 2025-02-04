@@ -1,4 +1,5 @@
 import React from "react";
+import { ExternalLink } from "lucide-react";
 
 interface SjekklisteOversiktLinkProps {
   href: string;
@@ -16,6 +17,7 @@ const SjekklisteOversiktLink: React.FC<SjekklisteOversiktLinkProps> = ({
     className="text-kartAI-blue underline transition-colors duration-200 hover:text-blue-800"
   >
     {children}
+    <ExternalLink className="inline w-4 ml-1" />
   </a>
 );
 
@@ -123,7 +125,7 @@ export function SjekklisteOversikt() {
             Vent minst to uker for eventuelle nabomerker, og send følgende til
             kommunen:
           </li>
-          <ol className="mt-2 list-[lower-roman] space-y-1 pl-6">
+          <ol className="mt-2 list-[lower-roman] space-y-1 pl-12">
             <li className="[ol_&]:marker:font-bold">
               Søknadsskjema på&nbsp;
               <SjekklisteOversiktLink href="https://dibk.no/soknad-og-skjema/">

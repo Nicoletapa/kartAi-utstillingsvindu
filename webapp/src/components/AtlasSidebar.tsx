@@ -1,6 +1,4 @@
-import { GeistSans } from "geist/font/sans";
-import { SidebarProvider } from "./ui/sidebar";
-import ClientSidebar from "./ClientSidebar";
+import Sidebar from "./Sidebar";
 
 interface AtlasSidebarInterface {
   children: React.ReactNode;
@@ -8,14 +6,13 @@ interface AtlasSidebarInterface {
 
 const AtlasSidebar: React.FC<AtlasSidebarInterface> = ({ children }) => {
   return (
-    <SidebarProvider>
-      <ClientSidebar />
+      <Sidebar>
       <div
-        className={`flex min-h-screen pb-40 ${GeistSans.variable} flex w-full flex-col items-center`}
+        className={`min-h-screen flex w-full flex-col items-center`}
       >
         {children}
       </div>
-    </SidebarProvider>
+      </Sidebar>
   );
 };
 
