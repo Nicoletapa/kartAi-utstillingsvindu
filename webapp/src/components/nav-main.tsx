@@ -1,6 +1,8 @@
 "use client";
 
 import { type LucideIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import {
   SidebarGroup,
@@ -13,13 +15,25 @@ import {
 export function NavMain({
   items,
 }: {
-  items: {
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-  }[];
+  items: { title: string; url: string; icon?: LucideIcon }[];
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel>Menu</SidebarGroupLabel>
+        <SidebarMenu>
+          <div className="h-[400px] space-y-1 px-2" />
+        </SidebarMenu>
+      </SidebarGroup>
+    );
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Menu</SidebarGroupLabel>
@@ -27,7 +41,7 @@ export function NavMain({
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton asChild tooltip={item.title}>
-              <a href={item.url}>
+              <Link href={item.url} className="flex w-full items-center">
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
                 <svg
@@ -44,7 +58,7 @@ export function NavMain({
                 >
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
