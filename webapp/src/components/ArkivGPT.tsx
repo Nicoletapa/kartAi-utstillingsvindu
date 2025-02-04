@@ -77,17 +77,17 @@ export default function ArkivGPTPage() {
   };
 
   return (
-    <div className={`relative flex min-h-screen flex-col`}>
+    <div className={`px-20 flex min-h-screen flex-col`}>
       <div className="flex w-full flex-col">
-        <h1 className="px-20 pt-10 text-left text-3xl font-bold">ArkivGPT</h1>
-        <span className="px-20 pb-10 pt-5 text-left text-xl">
+        <h1 className=" pt-10 text-left text-3xl font-bold">ArkivGPT</h1>
+        <span className=" pb-10 pt-5 text-left text-xl">
           Her kan du søke opp gårdsnummer og bruksnummer for din eiendom, og se hva som har blitt gjort på den eiendommen.
         </span>
-        <div className="my-2 flex w-auto items-center space-x-2 pl-20 text-gray-500">
+        <div className="my-2 flex w-auto items-center space-x-2 text-gray-500">
           <Info className="h-5 w-5" />
           <span>Du må skrive gnr: 306, bnr: 146, snr: 0 for å få respons</span>
         </div>
-        <div className="justify-left mb-4 flex w-full flex-row items-start gap-4 pl-20">
+        <div className="justify-left mb-4 flex w-full flex-row flex-wrap items-start gap-4">
           <input
             type="text"
             placeholder="Gårdsnummer (gnr)"
@@ -110,7 +110,7 @@ export default function ArkivGPTPage() {
             className="rounded-md border border-gray-300 px-2 py-1"
           />
         </div>
-        <span className="w-auto gap-2 pl-20">
+        <span className="w-auto gap-2 flex-wrap flex-row">
           {error && <p className="text-sm text-red-500">{error}</p>}
           <Button onClick={handleFetch} disabled={isLoading} className="mb-8">
             {isLoading ? "Tenker..." : "Søk i arkivet"}
