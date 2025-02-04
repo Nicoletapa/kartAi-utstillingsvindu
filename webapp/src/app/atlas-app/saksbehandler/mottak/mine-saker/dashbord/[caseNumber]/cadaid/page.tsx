@@ -7,7 +7,7 @@ export default async function PlantegningsAnalyse() {
         <AtlasSidebar>
 
         <div
-          className={`flex min-h-screen pb-40 ${GeistSans.variable} mx-1/3 flex w-full flex-col items-center`}
+          className={`flex min-h-screen pb-40 w-full flex-col items-center`}
         >
           <CadaidPage></CadaidPage>
         </div>
