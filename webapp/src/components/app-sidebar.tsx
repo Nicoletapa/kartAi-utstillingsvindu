@@ -1,79 +1,69 @@
-"use client";
+// "use client";
 
-import type * as React from "react";
-import { BookOpen, Bot, Settings2, SquareTerminal } from "lucide-react";
+// import type * as React from "react";
+// import { BookOpen, Bot, Settings2, SquareTerminal } from "lucide-react";
+// import { usePathname } from "next/navigation";
+// import { NavMain } from "./nav-main";
+// import { Sidebar, SidebarContent, SidebarRail } from "~/components/ui/sidebar";
 
-import { NavMain } from "./nav-main";
+// // This is sample data.
+// const data = {
+//   navMain: [
+//     {
+//       title: "Før du søker",
+//       url: "/atlas-app",
+//       icon: SquareTerminal,
+//       isActive: true,
+//     },
+//     {
+//       title: "Sjekkliste",
 
-import { Sidebar, SidebarContent, SidebarRail } from "~/components/ui/sidebar";
-import { useEffect, useState } from "react";
+//       url: "/atlas-app#sjekkliste-oversikt",
 
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      title: "Før du søker",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-    },
-    {
-      title: "Sjekkliste",
-      url: "#",
-      icon: Bot,
-    },
-    {
-      title: "CadAId",
-      url: "#",
-      icon: BookOpen,
-    },
-    {
-      title: "3d-Modellering",
-      url: "#",
-      icon: Settings2,
-    },
-    {
-      title: "Min Eiendom",
-      url: "",
-      icon: Settings2,
-    },
-    {
-      title: "Mine byggesaker",
-      url: "#",
-      icon: Settings2,
-    },
-  ],
-};
+//       icon: Bot,
+//     },
+//     {
+//       title: "CADAiD",
+//       url: "/atlas-app/sidebar/cadaid",
+//       icon: BookOpen,
+//     },
+//     {
+//       title: "3D-Modellering",
+//       url: "/atlas-app/sidebar/3d-situasjon",
+//       icon: Settings2,
+//     },
+//     {
+//       title: "Min Eiendom",
+//       url: "/atlas-app/sidebar/arkivgpt",
+//       icon: Settings2,
+//     },
+//     {
+//       title: "TiltaksAid",
+//       url: "/atlas-app/sidebar/tiltaksaid",
+//       icon: Settings2,
+//     },
+//     {
+//       title: "Saksbehandler",
+//       url: "/atlas-app/saksbehandler/mottak/mine-saker/",
+//       icon: Settings2,
+//     },
+//   ],
+// };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+// export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+//   const pathname = usePathname();
+//   const isAtlasApp = pathname?.includes("atlas-app");
 
-  const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  const [isAtlasApp, setIsAtlasApp] = useState(false);
+//   if (!isAtlasApp) {
+//     return null;
+//   }
 
-  useEffect(() => {
-    setMounted(true);
-    setIsAtlasApp(pathname?.includes("atlas-app") ?? false);
-  }, [pathname]);
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen w-[280px]">
-        {/* Placeholder with same dimensions */}
-      </div>
-    );
-  }
-
-  if (!isAtlasApp) {
-    return null;
-  }
-
-  return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
-  );
-}
+//   return (
+//     <Sidebar collapsible="icon" {...props}>
+//       <SidebarContent>
+//         <NavMain items={data.navMain} />
+//       </SidebarContent>
+//       <SidebarRail />
+//     </Sidebar>
+//   );
+// }
