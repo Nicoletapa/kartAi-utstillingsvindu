@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronFirst, ChevronLast, Info, Boxes, ListChecks, FileCheck, House, MousePointerClick, FileStack, ArrowRight } from "lucide-react";
+import { ChevronFirst, ChevronLast, Info, Boxes, ListChecks, FileCheck, House, MousePointerClick, FileStack, ArrowRight, ChevronDown, Bot } from "lucide-react";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,6 +15,7 @@ import { ReactNode } from "react";
 
 export default function Sidebar({ children }: { children: ReactNode }) {
     const [expanded, setExpanded] = useState(true);
+    const [subExpanded, setSubExpanded] = useState(false);
     const pathname = usePathname();
     const sidebarRef = useRef(null);
     const contentRef = useRef(null);
@@ -22,12 +23,21 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     const sidebarItems = [
         { text: "Før du søker", href: "/atlas-app", icon: <Info size={20} /> },
         { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <ListChecks size={20} /> },
-        { text: "CADAiD", href: "/atlas-app/sidebar/cadaid", icon: <FileCheck size={20} /> },
-        { text: "3D-Modellering", href: "/atlas-app/sidebar/3d-situasjon", icon: <Boxes size={20} /> },
-        { text: "TiltaksAID", href: "/atlas-app/sidebar/tiltaksaid", icon: <MousePointerClick size={20} /> },
         { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
         { text: "Saksbehandler", href: "/atlas-app/saksbehandler/mottak/mine-saker", icon: <FileStack size={20} /> },
     ];
+
+    const subMenuItems = [
+        { text: "CADAiD", href: "/atlas-app/sidebar/cadaid", icon: <FileCheck size={20} /> },
+        { text: "3D-Modellering", href: "/atlas-app/sidebar/3d-situasjon", icon: <Boxes size={20} /> },
+        { text: "TiltaksAID", href: "/atlas-app/sidebar/tiltaksaid", icon: <MousePointerClick size={20} /> },
+
+    ];
+
+    useEffect(() => {
+        const isSubMenuItemActive = subMenuItems.some((item) => pathname.startsWith(item.href));
+        setSubExpanded(isSubMenuItemActive);
+    }, [pathname]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -47,42 +57,49 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if(!entry.isIntersecting) {
-                        setExpanded(false);
-                    }
-                });
-            },
-            {
-                root: null,
-                rootMargin: "0px",
-                threshold: 1.0, 
-            }
-        );
+    // useEffect(() => {
+    //     const observer = new IntersectionObserver(
+    //         (entries) => {
+    //             entries.forEach((entry) => {
+    //                 if(!entry.isIntersecting) {
+    //                     setExpanded(false);
+    //                 }
+    //             });
+    //         },
+    //         {
+    //             root: null,
+    //             rootMargin: "0px",
+    //             threshold: 1.0, 
+    //         }
+    //     );
 
-        if (contentRef.current) {
-            observer.observe(contentRef.current);
-        }
+    //     if (contentRef.current) {
+    //         observer.observe(contentRef.current);
+    //     }
 
-        return () => {
-            if (contentRef.current) {
-                observer.unobserve(contentRef.current);
-            }
-        };
-    }, [pathname]);
+    //     return () => {
+    //         if (contentRef.current) {
+    //             observer.unobserve(contentRef.current);
+    //         }
+    //     };
+    // }, [pathname]);
 
     return (
         <div className="flex">
         <aside ref={sidebarRef} className={`fixed left-0 top-1/4 z-50 flex items-center
                 ${expanded ? "w-48" : "w-16"}`}>
-            <nav className="h-screen flex flex-col bg-white">
-                <div className="p-4 pb-2 flex justify-end">
+            <nav className="max-h-100 flex flex-col bg-white">
+                <div className="p-4 pb-2 flex justify-end group">
                     <span className={`overflow-hidden transition-all font-bold text-gray-600 ${expanded ? "w-32" : "w-0"}`}>Meny</span>
-                    <button onClick={() => setExpanded(!expanded)} className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100">
+                    <button onClick={() => setExpanded(!expanded)} className="flex items-center py-2 px-3 font-medium
+                             rounded-md cursor-pointer transition-colors group bg-gray-100 hover:bg-gray-200">
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
+
+                        {!expanded && (
+                            <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-6 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                                Meny
+                            </div>
+                        )}
                     </button>
                 </div>
 
@@ -91,6 +108,30 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                         {sidebarItems.map((item, index) => (
                             <SidebarItem key={index} icon={item.icon} text={item.text} href={item.href} active={pathname === item.href} />
                         ))}
+
+                        <li className="relative">
+                            <button onClick={() => setSubExpanded(!subExpanded)} className={`flex items-center py-2 px-3 my-1 font-medium
+                             rounded-md w-full cursor-pointer transition-colors group ${subExpanded || subMenuItems.some((item) => pathname.startsWith(item.href)) ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"}`}
+                             >
+                                <Bot className={`w-5 h-5 transition-transform duration-300 ${subExpanded ? "" : ""}`} />
+                                <span className={`ml-3 transition-all ${expanded ? "block" : "hidden"}`}>Bruk KI</span>
+                                <ChevronDown className={`ml-auto w-5 h-5 transition-transform duration-300 ${subExpanded ? "rotate-180" : ""}`} />
+                             
+                                {!expanded && (
+                                    <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-3 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                                        Bruk KI
+                                    </div>
+                                )}
+                            </button>
+
+                             {subExpanded && (
+                                <ul className="border-l border-gray-300">
+                                    {subMenuItems.map((subItem, subIndex) => (
+                                        <SidebarItem key={subIndex} icon={subItem.icon} text={subItem.text} href={subItem.href} active={pathname.startsWith(subItem.href)} isSubItem />
+                                    ))}
+                                </ul>
+                             )}
+                        </li>
                     </ul>
                 </SidebarContext.Provider>
             </nav>
@@ -110,9 +151,10 @@ interface SidebarItemProps {
     text: string;
     href: string;
     active: boolean;
+    isSubItem?: boolean;
 }
 
-export function SidebarItem({ icon, text, href, active }: SidebarItemProps) {
+export function SidebarItem({ icon, text, href, active, isSubItem = false }: SidebarItemProps) {
     // const pathname = usePathname():
 
     const context = useContext(SidebarContext);
@@ -128,19 +170,19 @@ export function SidebarItem({ icon, text, href, active }: SidebarItemProps) {
     // };
 
     return (
-        <li className={`relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"}`}>
+        <li className={`relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"} ${isSubItem ? "ml-4" : ""}`}>
             <Link href={href} className="flex items-center w-full">
                 <div className="flex-shrink-0">{icon}</div>
                 <span className={`transition-all overflow-hidden whitespace-nowrap text-ellipsis font-normal ${expanded ? "w-40 ml-3" : "w-0"}`}>{text}</span>
                 
 
-                {expanded && (
+                {expanded && !isSubItem && (
                     <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
                 )}
             </Link>
 
             {!expanded && (
-                <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-6 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-3 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
                     {text}
                 </div>
             )}

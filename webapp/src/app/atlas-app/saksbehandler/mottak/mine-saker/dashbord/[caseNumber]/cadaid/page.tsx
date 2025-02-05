@@ -1,4 +1,3 @@
-import { GeistSans } from "geist/font/sans";
 import CadaidPage from "~/components/CADAiD";
 import AtlasSidebar from "~/components/AtlasSidebar";
 
