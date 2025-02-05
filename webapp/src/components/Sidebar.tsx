@@ -57,42 +57,49 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if(!entry.isIntersecting) {
-                        setExpanded(false);
-                    }
-                });
-            },
-            {
-                root: null,
-                rootMargin: "0px",
-                threshold: 1.0, 
-            }
-        );
+    // useEffect(() => {
+    //     const observer = new IntersectionObserver(
+    //         (entries) => {
+    //             entries.forEach((entry) => {
+    //                 if(!entry.isIntersecting) {
+    //                     setExpanded(false);
+    //                 }
+    //             });
+    //         },
+    //         {
+    //             root: null,
+    //             rootMargin: "0px",
+    //             threshold: 1.0, 
+    //         }
+    //     );
 
-        if (contentRef.current) {
-            observer.observe(contentRef.current);
-        }
+    //     if (contentRef.current) {
+    //         observer.observe(contentRef.current);
+    //     }
 
-        return () => {
-            if (contentRef.current) {
-                observer.unobserve(contentRef.current);
-            }
-        };
-    }, [pathname]);
+    //     return () => {
+    //         if (contentRef.current) {
+    //             observer.unobserve(contentRef.current);
+    //         }
+    //     };
+    // }, [pathname]);
 
     return (
         <div className="flex">
         <aside ref={sidebarRef} className={`fixed left-0 top-1/4 z-50 flex items-center
                 ${expanded ? "w-48" : "w-16"}`}>
-            <nav className="h-screen flex flex-col bg-white">
-                <div className="p-4 pb-2 flex justify-end">
+            <nav className="max-h-100 flex flex-col bg-white">
+                <div className="p-4 pb-2 flex justify-end group">
                     <span className={`overflow-hidden transition-all font-bold text-gray-600 ${expanded ? "w-32" : "w-0"}`}>Meny</span>
-                    <button onClick={() => setExpanded(!expanded)} className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200">
+                    <button onClick={() => setExpanded(!expanded)} className="flex items-center py-2 px-3 font-medium
+                             rounded-md cursor-pointer transition-colors group bg-gray-100 hover:bg-gray-200">
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
+
+                        {!expanded && (
+                            <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-6 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                                Meny
+                            </div>
+                        )}
                     </button>
                 </div>
 
@@ -110,13 +117,13 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                                 <span className={`ml-3 transition-all ${expanded ? "block" : "hidden"}`}>Bruk KI</span>
                                 <ChevronDown className={`ml-auto w-5 h-5 transition-transform duration-300 ${subExpanded ? "rotate-180" : ""}`} />
                              
-
                                 {!expanded && (
-                                    <div className="font-medium absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-6 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                                    <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-3 bg-indigo-100 text-indigo-800 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
                                         Bruk KI
                                     </div>
                                 )}
                             </button>
+
                              {subExpanded && (
                                 <ul className="border-l border-gray-300">
                                     {subMenuItems.map((subItem, subIndex) => (
