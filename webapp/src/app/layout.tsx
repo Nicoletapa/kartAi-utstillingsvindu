@@ -19,13 +19,14 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
+ 
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await getServerAuthSession();
+const session = await getServerAuthSession();
   
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body className="min-h-screen">
-        <Providers session={session}>
+        <Providers session={session!}>
             <Navbar />
           <div className="flex min-h-screen flex-col">
             <main className="flex-1">{children}

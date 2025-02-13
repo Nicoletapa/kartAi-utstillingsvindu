@@ -4,4 +4,5 @@ export interface Detection {
   scale?: string;
   room_names?: string;
   cardinal_direction?: string;
+  documentId?: number;
 }
