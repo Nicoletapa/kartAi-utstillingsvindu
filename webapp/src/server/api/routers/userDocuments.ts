@@ -3,6 +3,31 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const userDocumentsRouter = createTRPCRouter({
+  checkFileExists: protectedProcedure
+    .input(z.object({
+      fileName: z.string(),
+      userID: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const existingDoc = await ctx.db.document.findFirst({
+        where: {
+          fileName: input.fileName,
+          userID: ctx.session.user.id,
+        },
+      });
+
+      if (existingDoc) {
+        // If file exists, delete the old one
+        await ctx.db.document.delete({
+          where: {
+            documentID: existingDoc.documentID,
+          },
+        });
+      }
+
+      return { exists: !!existingDoc };
+    }),
+
   saveDetectionResults: protectedProcedure
     .input(z.object({
       fileName: z.string(),

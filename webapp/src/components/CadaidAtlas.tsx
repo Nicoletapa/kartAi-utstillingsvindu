@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import FileList from "./FileList";
 import Results from "./Results";
 import FilePreview from "./FilePreview";
-
 import type { Detection } from "~/types/detection";
 import { api } from "~/trpc/react";
+import { useSession } from "next-auth/react";
 
 async function fetchDetection(formData: FormData): Promise<Detection[]> {
   const response = await fetch("http://127.0.0.1:5001/detect", {
@@ -27,12 +27,21 @@ const CadaidAtlas: React.FC = () => {
   const [results, setResults] = useState<Detection[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // tRPC mutation for saving results
+  // Get session data
+  const { data: session } = useSession();
+
+  // tRPC mutations
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation();
+  const checkExistingFile = api.userDocuments.checkFileExists.useMutation();
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
+    if (!session?.user?.id) {
+      setErrorMessage("You must be logged in to upload files");
+      return;
+    }
+
     if (event.target.files) {
       const uploadedFiles = Array.from(event.target.files);
       if (uploadedFiles.length === 0) {
@@ -42,6 +51,25 @@ const CadaidAtlas: React.FC = () => {
   
       setIsLoading(true);
       try {
+        // Check for existing files before processing
+        for (const file of uploadedFiles) {
+          const existingFile = await checkExistingFile.mutateAsync({
+            fileName: file.name,
+            userID: session.user.id
+          });
+  
+          if (existingFile.exists) {
+            const confirmReplace = window.confirm(
+              `File ${file.name} already exists. Do you want to replace it?`
+            );
+            if (!confirmReplace) {
+              continue; // Skip this file
+            }
+          }
+        }
+  
+        setFiles(prevFiles => [...prevFiles, ...uploadedFiles]);
+  
         // First, send to detection service
         const formData = new FormData();
         uploadedFiles.forEach((file) => {
@@ -88,13 +116,13 @@ const CadaidAtlas: React.FC = () => {
     }
   };
 
+  // Rest of your component remains the same...
   const handleFileRemove = (fileName: string) => {
     setFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileName));
     setResults((prevResults) =>
       prevResults.filter((result) => result.file_name !== fileName),
     );
   };
-
 
   return (
     <div
