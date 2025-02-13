@@ -1,14 +1,14 @@
-"use client";
-import React from "react";
-import Progressbar from "~/components/Progressbar";
+import React from 'react'
+import { ProgressBar } from '~/components/Progressbar'
+import StepperDemo from '~/components/ProgressBarStep'
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <Progressbar /> 
+    <div>
+      <ProgressBar steps={[]} />
+      <StepperDemo />
     </div>
-    
-  );
+  )
 }
 
-export default App;
+export default App
