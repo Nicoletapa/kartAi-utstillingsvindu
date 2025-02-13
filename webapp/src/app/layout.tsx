@@ -3,10 +3,12 @@ import "~/styles/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 
-import { TRPCReactProvider } from "~/trpc/react";
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { AuthProvider } from "~/context/AuthContext";
+
+import { getServerAuthSession } from "~/server/auth";
+import Providers from "../components/Providers";
 
 export const metadata: Metadata = {
   title: "KartAI AI-modeller",
@@ -15,21 +17,22 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await getServerAuthSession();
+  
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body className="min-h-screen">
-        <TRPCReactProvider>
-          <AuthProvider>
-            <div className="flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
-          </AuthProvider>
-        </TRPCReactProvider>
+        <Providers session={session}>
+            <Navbar />
+          <div className="flex min-h-screen flex-col">
+            <main className="flex-1">{children}
+            </main>
+            <Footer />
+          </div>
+        </Providers>
       </body>
     </html>
   );

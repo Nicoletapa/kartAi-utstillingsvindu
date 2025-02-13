@@ -1,78 +1,171 @@
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+provider      = "prisma-client-js"
+binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+provider = "mysql"
+url      = env("DATABASE_URL")
 }
 
-model Application {
-  applicationID  Int                @id @unique(map: "applicationID_UNIQUE") @default(autoincrement())
-  submissionDate DateTime           @db.DateTime(0)
-  status         ApplicationStatus @default(NEW)
-  address        String             @db.VarChar(256)
-  municipality   String             @db.VarChar(128)
-  documents      Document[]
-  responses     Response[]
+///////////////////////
+// USER MANAGEMENT
+///////////////////////
+
+model Account {
+id                String  @id @default(cuid())
+userId            String
+type              String
+provider          String
+providerAccountId String
+refresh_token     String? @db.Text
+access_token      String? @db.Text
+expires_at        Int?
+token_type        String?
+scope             String?
+id_token          String? @db.Text
+session_state     String?
+user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+@@unique([provider, providerAccountId])
 }
 
-enum ApplicationStatus {
-  APPROVED
-  NEW
-  UNDER_REVIEW
-  REJECTED
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires     DateTime
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Remove or make accessToken optional
+  accessToken String?  // Make it optional by adding the ? 
 }
-
-model Document {
-  documentID Int @id @unique(map: "documentID_UNIQUE") @default(autoincrement())
-  type       DocumentType @default(OTHER)
-  document   Bytes
-  applicationID Int
-  application Application @relation(fields: [applicationID], references: [applicationID])
-}
-
-enum DocumentType {
-  // TODO: Add more types
-  XML
-  OTHER
-}
-
-model Response {
-  responseID Int @id @unique(map: "responseID_UNIQUE") @default(autoincrement())
-  response   String
-  modelID Int
-  model Model @relation(fields: [modelID], references: [modelID])
-  applicationID Int
-  application Application @relation(fields: [applicationID], references: [applicationID])
-  errors ModelError[]
-}
-
-model ModelError {
-  errorID Int @id @unique(map: "errorID_UNIQUE") @default(autoincrement())
-  error   String
-  modelID Int
-  model Model @relation(fields: [modelID], references: [modelID])
-  responseID Int
-  response Response @relation(fields: [responseID], references: [responseID])
-}
-
-model Model {
-  modelID Int @id @unique(map: "modelID_UNIQUE") @default(autoincrement())
-  modelName String @unique
-  modelErrors ModelError[]
-  responses Response[]
-}
-
 
 model User {
-  id    String @id @default(uuid())
-  email String @unique
-  role  UserRole @default(USER)
+id            String         @id @default(cuid())
+name          String?
+email         String?       @unique
+emailVerified DateTime?
+image         String?
+createdAt     DateTime      @default(now())
+updatedAt     DateTime      @updatedAt
+role          UserRole      @default(USER)
+accounts      Account[]
+sessions      Session[]
+
+documents     Document[]
+applications  Application[]
+userDocuments UserDocument[]
+}
+
+model VerificationRequest {
+id         String   @id @default(cuid())
+identifier String
+token      String   @unique
+expires    DateTime
+createdAt  DateTime @default(now())
+updatedAt  DateTime @updatedAt
+
+@@unique([identifier, token])
 }
 
 enum UserRole {
-  USER
-  CASE_WORKER
+USER
+CASE_WORKER
+}
+
+///////////////////////
+// AI CATEGORIZATION
+///////////////////////
+
+model AiTech {
+aiID          Int            @id @default(autoincrement())
+name          String         @unique
+documents     Document[]
+userDocuments UserDocument[]
+}
+
+///////////////////////
+// PRE-SUBMISSION DOCUMENTS
+///////////////////////
+
+model UserDocument {
+userDocumentID Int       @id @default(autoincrement())
+userID         String
+user           User      @relation(fields: [userID], references: [id])
+documentID     Int? // Optional, since the document may not always exist yet
+document       Document? @relation(fields: [documentID], references: [documentID])
+aiID           Int
+aiTech         AiTech    @relation(fields: [aiID], references: [aiID])
+createdAt      DateTime  @default(now())
+}
+
+///////////////////////
+// APPLICATION & DOCUMENTS
+///////////////////////
+
+model Application {
+applicationID  Int               @id @unique(map: "applicationID_UNIQUE") @default(autoincrement())
+userID         String
+user           User              @relation(fields: [userID], references: [id])
+submissionDate DateTime          @db.DateTime(0)
+status         ApplicationStatus @default(NEW)
+address        String            @db.VarChar(256)
+municipality   String            @db.VarChar(128)
+documents      Document[]
+responses      Response[]
+}
+
+enum ApplicationStatus {
+APPROVED
+NEW
+UNDER_REVIEW
+REJECTED
+}
+
+///////////////////////
+// DOCUMENT STORAGE
+///////////////////////
+
+model Document {
+documentID    Int            @id @default(autoincrement())
+
+fileName      String
+document      Bytes
+applicationID Int?
+application   Application?   @relation(fields: [applicationID], references: [applicationID])
+aiID          Int
+aiTech        AiTech         @relation(fields: [aiID], references: [aiID])
+userID        String // Ensure we know who uploaded it
+user          User           @relation(fields: [userID], references: [id])
+userDocuments UserDocument[]
+}
+
+///////////////////////
+// AI MODEL RESPONSE HANDLING
+///////////////////////
+
+model Response {
+responseID    Int          @id @unique(map: "responseID_UNIQUE") @default(autoincrement())
+response      String
+modelID       Int
+model         Model        @relation(fields: [modelID], references: [modelID])
+applicationID Int
+application   Application  @relation(fields: [applicationID], references: [applicationID])
+errors        ModelError[]
+}
+
+model ModelError {
+errorID    Int      @id @unique(map: "errorID_UNIQUE") @default(autoincrement())
+error      String
+modelID    Int
+model      Model    @relation(fields: [modelID], references: [modelID])
+responseID Int
+response   Response @relation(fields: [responseID], references: [responseID])
+}
+
+model Model {
+modelID     Int          @id @unique(map: "modelID_UNIQUE") @default(autoincrement())
+modelName   String       @unique
+modelErrors ModelError[]
+responses   Response[]
 }
