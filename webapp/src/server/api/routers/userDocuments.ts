@@ -46,13 +46,24 @@ export const userDocumentsRouter = createTRPCRouter({
                 modelName: true,  
               },
             },
+            // Change documentValidation to validations
+            validations: {
+              select: {
+                drawingType: true,
+              }
+            }
           },
           orderBy: {
             documentID: 'desc',
           },
         });
 
-        return documents;
+        // Transform the data to match the expected format
+        return documents.map(doc => ({
+          ...doc,
+          drawing_type: doc.validations.map(v => v.drawingType)
+        }));
+
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -127,20 +138,20 @@ export const userDocumentsRouter = createTRPCRouter({
 
         console.log('Document created with ID:', newDocument.documentID);
 
-        // After creating the document, save the drawing types
-        if (input.detectionResults.length > 0) {
-          const drawingTypes = input.detectionResults.map(result => result.drawing_type).flat();
-          
-          // Save each drawing type
-          for (const type of drawingTypes) {
-            await ctx.db.documentValidation.create({
-              data: {
-                documentID: newDocument.documentID,
-                drawingType: type,
-              }
-            });
-          }
+       // After creating the document, save the drawing types
+       if (input.detectionResults.length > 0) {
+        const drawingTypes = input.detectionResults.map(result => result.drawing_type).flat();
+        
+        // Save each drawing type
+        for (const type of drawingTypes) {
+          await ctx.db.documentValidation.create({
+            data: {
+              documentID: newDocument.documentID,
+              drawingType: type,
+            }
+          });
         }
+      }
 
         return {
           success: true,
