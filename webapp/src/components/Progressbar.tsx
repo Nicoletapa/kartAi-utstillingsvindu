@@ -1,70 +1,92 @@
-"use client";
+import React from "react"
+import { Check } from "lucide-react"
+import { cn } from "~/lib/utils"
 
-import React, { useState } from "react";
+interface StepProps {
+  title: string
+  isCompleted: boolean
+  isActive: boolean
+  substepsCompleted: number
+  totalSubsteps: number
+  isLastStep: boolean
+  stepNumber: number
+}
 
-const ProgressBar = () => {
-  const steps = ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6"];
-  const [currentStep, setCurrentStep] = useState(0);
+interface StepperProps {
+  steps: StepProps[]
+}
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const progressPercentage = Math.round((currentStep / (steps.length - 1)) * 100);
-  const progressWidth = `${progressPercentage}%`;
-
+const Step: React.FC<StepProps> = ({ title, isCompleted, isActive, substepsCompleted, totalSubsteps, isLastStep, stepNumber }) => {
   return (
-    <div className="flex flex-col h-screen">
-      {/* Progress Bar */}
-      <div className="w-full px-6 mt-10">
-        <div className="relative h-4 bg-gray-200 rounded-full mx-4">
-          <div
-            className="absolute h-full bg-blue-500 rounded-full transition-all duration-300"
-            style={{ width: progressWidth }}
-          >
+    <div className="flex flex-col items-center flex-1 min-w-0">
+      {/* Main Step Circle and Substeps */}
+      <div className="flex items-center w-full">
+        <div className="flex flex-col items-center relative">
+        {/* Main Step Circle */}
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border z-10 duration-500 ease-in-out",
+            isCompleted
+              ? "border-kartAI-blue bg-kartAI-blue text-primary-foreground"
+              : isActive
+              ? "border-kartAI-blue"
+              : "border-muted-foreground"
+          )}
+        >
+          {isCompleted ? 
+            <Check className="h-6 w-6" />
+           :
+            <span className="text-sm font-medium">{stepNumber}</span>
+          }
+        </div>
+        {/* Step Title */}
+      <h3 className="mt-1 text-sm font-semibold text-center whitespace-nowrap truncate max-w-[100px]">
+        {title}
+      </h3>
+      </div>
+
+        {/* Substeps and Connector Lines */}
+        <div className="flex-1 flex items-center mb-5">
+          {Array.from({ length: totalSubsteps }).map((_, index) => (
+            <React.Fragment key={index}>
+              <div
+                className={cn(
+                  "flex-1 h-[2px] duration-200 ease-in-out",
+                  index < substepsCompleted ? "bg-kartAI-blue" : "bg-muted-foreground/30"
+                )}
+              />
+              <div
+                className={cn(
+                  "h-4 w-4 rounded-full border shrink-0 z-10 duration-500 ease-in-out",
+                  index < substepsCompleted ? "border-kartAI-blue bg-kartAI-blue" : "border-muted-foreground"
+                )}
+              />
+            </React.Fragment>
+          ))}
+          {!isLastStep && (
             <div
-              className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-sm font-bold text-blue-500"
-              style={{ left: progressWidth }}
-            >
-              {progressPercentage}%
-            </div>
-          </div>
+              className={cn(
+                "flex-1 h-[2px]",
+                isCompleted ? "bg-kartAI-blue" : "bg-muted-foreground/30"
+              )}
+            />
+          )}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-grow"></div>
-
-      {/* Buttons at the Bottom */}
-      <div className="fixed inset-x-9 bottom-2 shadow-t px-4 py-6">
-        <div className="flex justify-between">
-          <button
-            onClick={handlePrevious}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-            disabled={currentStep === 0}
-          >
-            Tilbake
-          </button>
-          <button
-            onClick={handleNext}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            disabled={currentStep === steps.length - 1}
-          >
-            Neste
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
 
-export default ProgressBar;
+export const ProgressBar: React.FC<StepperProps> = ({ steps }) => {
+  return (
+    <div className="w-full">
+      <div className="flex items-start">
+        {steps.map((step, index) => (
+          <Step key={index} {...step} isLastStep={index === steps.length - 1} stepNumber={index + 1} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
