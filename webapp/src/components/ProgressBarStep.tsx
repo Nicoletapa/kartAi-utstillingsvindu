@@ -92,7 +92,7 @@ export default function StepperDemo() {
 
     const isLastStep = currentStep === steps.length - 1;
     const currentStepInfo = getCurrentStepInfo();
-const currentStepData = steps[currentStepInfo.currentStep] ?? { title: "Unknown", totalSubsteps: 0 };
+    const currentStepData = steps[currentStepInfo.currentStep] ?? { title: "Unknown", totalSubsteps: 0 };
 
 
     return (
