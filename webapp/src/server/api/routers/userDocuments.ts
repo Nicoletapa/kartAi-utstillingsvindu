@@ -3,6 +3,38 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
 export const userDocumentsRouter = createTRPCRouter({
+  // Add this new procedure at the beginning of the router
+  deleteDocument: protectedProcedure
+    .input(z.object({
+      documentId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // First delete all validations
+        await ctx.db.documentValidation.deleteMany({
+          where: {
+            documentID: input.documentId,
+          },
+        });
+
+        // Then delete the document
+        await ctx.db.document.delete({
+          where: {
+            documentID: input.documentId,
+            userID: ctx.session.user.id, // Security check
+          },
+        });
+
+        return { success: true };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete document',
+          cause: error,
+        });
+      }
+    }),
+
   checkFileExists: protectedProcedure
     .input(z.object({
       fileName: z.string(),
@@ -16,8 +48,17 @@ export const userDocumentsRouter = createTRPCRouter({
         },
       });
 
+
+      
       if (existingDoc) {
-        // If file exists, delete the old one
+        // First delete all validations
+        await ctx.db.documentValidation.deleteMany({
+          where: {
+            documentID: existingDoc.documentID,
+          },
+        });
+
+        // Then delete the document
         await ctx.db.document.delete({
           where: {
             documentID: existingDoc.documentID,

@@ -13,14 +13,14 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ documentID, fileName }) => 
   );
 
   return (
-    <div className="p-3 border rounded-lg">
+    <div className="p-3 border rounded-lg ">
       <div className="font-medium">{fileName}</div>
       {documentQuery.data?.document && (
         <div className="mt-2">
           <img
             src={`data:image/*;base64,${documentQuery.data.document}`}
             alt={fileName}
-            className="max-w-full h-auto rounded"
+            className="max-w-full h-auto rounded-sm"
           />
         </div>
       )}

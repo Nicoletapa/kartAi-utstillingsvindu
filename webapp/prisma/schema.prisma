@@ -152,7 +152,7 @@ responses   Response[]
 model DocumentValidation {
   id          Int      @id @default(autoincrement())
   documentID  Int
-  document    Document @relation(fields: [documentID], references: [documentID])
+  document    Document @relation(fields: [documentID], references: [documentID], onDelete: Cascade)
   drawingType String
   createdAt   DateTime @default(now())
 

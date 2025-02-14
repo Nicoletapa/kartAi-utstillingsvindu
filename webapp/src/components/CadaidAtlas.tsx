@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import FileList from "./FileList";
 import Results from "./Results";
-import FilePreview from "./FilePreview";
+//import FilePreview from "./FilePreview";
 import type { Detection } from "~/types/detection";
 import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
-import DocumentItem from "./DocumentItem";
+//import DocumentItem from "./DocumentItem";
+import ExistingDocumentsList from './ExistingDocumentsList';
 
 async function fetchDetection(formData: FormData): Promise<Detection[]> {
   const response = await fetch("http://127.0.0.1:5001/detect", {
@@ -129,11 +130,11 @@ const CadaidAtlas: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col p-6 md:flex-row" data-cy="main-container">
-      <div className="w-full md:w-1/3 md:pr-4" data-cy="left-column">
+    <div className="flex min-h-screen p-6" data-cy="main-container">
+      <div className="md:w-full w-1/3 md:pr-4" data-cy="left-column">
         <h1 className="mb-5 mt-10 text-left text-3xl font-bold">CADAiD</h1>
         
-        {/* Add this section to display existing documents */}
+        {/* Replace the existing documents section */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-3">Your Documents</h2>
           {documentsQuery.isLoading ? (
@@ -141,16 +142,9 @@ const CadaidAtlas: React.FC = () => {
           ) : documentsQuery.error ? (
             <div className="text-red-500">Error loading documents</div>
           ) : (
-            // In your render method, replace the map section:
-                    <div className="space-y-2">
-                      {documentsQuery.data?.map((doc) => (
-                        <DocumentItem
-                          key={doc.documentID}
-                          documentID={doc.documentID}
-                          fileName={doc.fileName}
-                        />
-                      ))}
-                    </div>
+            <ExistingDocumentsList 
+              documents={documentsQuery.data || []}
+            />
           )}
         </div>
 
@@ -187,10 +181,13 @@ const CadaidAtlas: React.FC = () => {
         />
       </div>
 
-      {/* Right Column */}
+
+      
+{/* Forhåndsvisning av dokumenter */}
+      {/* Right Column
       <div className="w-full pt-10 md:w-2/3" data-cy="right-column">
         <FilePreview files={files} />
-      </div>
+      </div> */}
     </div>
   );
 };

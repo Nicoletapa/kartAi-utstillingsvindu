@@ -6,10 +6,10 @@ import type { Detection } from '~/types/detection';
 interface ExistingDocument {
   documentID: number;
   fileName: string;
-  document: Buffer;
+  
   applicationID: number | null;
   userID: string;
-  modelID : number;
+  
   createdAt?: Date; 
   modelName?: {        
     name: string;
