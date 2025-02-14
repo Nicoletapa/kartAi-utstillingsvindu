@@ -33,7 +33,8 @@ export const hasErrors = (result: Detection): boolean => {
  * @param str - The string to capitalize.
  * @returns The capitalized string.
  */
-export const capitalize = (str: string): string => {
+export const capitalize = (str: string | undefined | null): string => {
+  if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 

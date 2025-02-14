@@ -28,6 +28,40 @@ export const userDocumentsRouter = createTRPCRouter({
       return { exists: !!existingDoc };
     }),
 
+  getUserDocuments: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const documents = await ctx.db.document.findMany({
+          where: {
+            userID: ctx.session.user.id,
+          },
+          select: {
+            documentID: true,
+            fileName: true,
+            applicationID: true,
+            userID: true,
+            createdAt: true,
+            model: {              
+              select: {
+                modelName: true,  
+              },
+            },
+          },
+          orderBy: {
+            documentID: 'desc',
+          },
+        });
+
+        return documents;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch documents',
+          cause: error,
+        });
+      }
+    }),
+
   saveDetectionResults: protectedProcedure
     .input(z.object({
       fileName: z.string(),
@@ -36,18 +70,23 @@ export const userDocumentsRouter = createTRPCRouter({
       document: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        // First, verify that the AiTech exists
-        const aiTech = await ctx.db.aiTech.findFirst();
+
+        try {
+        // Find the CADAiD model
+        const model = await ctx.db.model.findFirst({
+          where: {
+            modelName: 'CADAiD'
+          }
+        });
         
-        if (!aiTech) {
+        if (!model) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "No AI technology configured in the system",
+            message: "CADAiD model not found in the system",
           });
         }
 
-        const { fileName, document, detectionResults, fileType } = input;
+        const { fileName, document, fileType } = input;
         const userId = ctx.session.user.id;
 
         // Add size logging before processing
@@ -60,7 +99,7 @@ export const userDocumentsRouter = createTRPCRouter({
           : document;
 
         // Convert base64 to Buffer
-        const documentBuffer = Buffer.from(base64Data, 'base64');
+        const documentBuffer = Buffer.from(base64Data ?? '', 'base64');
 
         // Log buffer size
         console.log('Document buffer size (bytes):', documentBuffer.length);
@@ -78,7 +117,7 @@ export const userDocumentsRouter = createTRPCRouter({
           data: {
             fileName,
             document: documentBuffer,
-            aiID: aiTech.aiID, // Use the verified aiID
+            modelID: model.modelID,
             userID: userId,
           },
           select: {
@@ -88,25 +127,30 @@ export const userDocumentsRouter = createTRPCRouter({
 
         console.log('Document created with ID:', newDocument.documentID);
 
-        // Then create the UserDocument entry
-        const userDocument = await ctx.db.userDocument.create({
-          data: {
-            userID: userId,
-            documentID: newDocument.documentID,
-            aiID: 1,
-          },
-        });
+        // After creating the document, save the drawing types
+        if (input.detectionResults.length > 0) {
+          const drawingTypes = input.detectionResults.map(result => result.drawing_type).flat();
+          
+          // Save each drawing type
+          for (const type of drawingTypes) {
+            await ctx.db.documentValidation.create({
+              data: {
+                documentID: newDocument.documentID,
+                drawingType: type,
+              }
+            });
+          }
+        }
 
         return {
           success: true,
           documentId: newDocument.documentID,
-          userDocumentId: userDocument.userDocumentID,
         };
       } catch (error) {
         console.error('Detailed error:', error);
         
         // Check for specific MySQL errors
-        const mysqlError = error as any;
+const mysqlError = error as { code: string; message: string };
         if (mysqlError.code === 'ER_DATA_TOO_LONG') {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -123,7 +167,43 @@ export const userDocumentsRouter = createTRPCRouter({
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Failed to create document entry: ${error.message || 'Unknown error'}`,
+          message: `Failed to create document entry: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          cause: error,
+        });
+      }
+
+    }),
+  getDocumentById: protectedProcedure
+    .input(z.object({
+      documentId: z.number(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const document = await ctx.db.document.findFirst({
+          where: {
+            documentID: input.documentId,
+            userID: ctx.session.user.id,
+          },
+          select: {
+            document: true,
+          },
+        });
+        
+        if (!document) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Document not found',
+          });
+        }
+
+        // Convert Buffer to base64 string on the server side
+        const base64String = document.document.toString('base64');
+        return { document: base64String };
+
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch document',
           cause: error,
         });
       }

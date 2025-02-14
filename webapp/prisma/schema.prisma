@@ -36,8 +36,7 @@ model Session {
   userId       String
   expires     DateTime
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Remove or make accessToken optional
-  accessToken String?  // Make it optional by adding the ? 
+  accessToken String?  
 }
 
 model User {
@@ -51,10 +50,9 @@ updatedAt     DateTime      @updatedAt
 role          UserRole      @default(USER)
 accounts      Account[]
 sessions      Session[]
-
 documents     Document[]
 applications  Application[]
-userDocuments UserDocument[]
+
 }
 
 model VerificationRequest {
@@ -73,31 +71,7 @@ USER
 CASE_WORKER
 }
 
-///////////////////////
-// AI CATEGORIZATION
-///////////////////////
 
-model AiTech {
-aiID          Int            @id @default(autoincrement())
-name          String         @unique
-documents     Document[]
-userDocuments UserDocument[]
-}
-
-///////////////////////
-// PRE-SUBMISSION DOCUMENTS
-///////////////////////
-
-model UserDocument {
-userDocumentID Int       @id @default(autoincrement())
-userID         String
-user           User      @relation(fields: [userID], references: [id])
-documentID     Int? // Optional, since the document may not always exist yet
-document       Document? @relation(fields: [documentID], references: [documentID])
-aiID           Int
-aiTech         AiTech    @relation(fields: [aiID], references: [aiID])
-createdAt      DateTime  @default(now())
-}
 
 ///////////////////////
 // APPLICATION & DOCUMENTS
@@ -127,18 +101,21 @@ REJECTED
 ///////////////////////
 
 model Document {
-documentID    Int            @id @default(autoincrement())
-
-fileName      String
-document      Bytes
-applicationID Int?
-application   Application?   @relation(fields: [applicationID], references: [applicationID])
-aiID          Int
-aiTech        AiTech         @relation(fields: [aiID], references: [aiID])
-userID        String // Ensure we know who uploaded it
-user          User           @relation(fields: [userID], references: [id])
-userDocuments UserDocument[]
+  documentID    Int            @id @default(autoincrement())
+  fileName      String
+  document      Bytes
+  applicationID Int?
+  application   Application?   @relation(fields: [applicationID], references: [applicationID])
+  modelID       Int           
+  model         Model       @relation(fields: [modelID], references: [modelID])
+  userID        String
+  user          User          @relation(fields: [userID], references: [id])
+  createdAt     DateTime      @default(now()) 
+  validations   DocumentValidation[] 
 }
+
+
+
 
 ///////////////////////
 // AI MODEL RESPONSE HANDLING
@@ -168,4 +145,16 @@ modelID     Int          @id @unique(map: "modelID_UNIQUE") @default(autoincreme
 modelName   String       @unique
 modelErrors ModelError[]
 responses   Response[]
+  documents   Document[] 
+  
+}
+
+model DocumentValidation {
+  id          Int      @id @default(autoincrement())
+  documentID  Int
+  document    Document @relation(fields: [documentID], references: [documentID])
+  drawingType String
+  createdAt   DateTime @default(now())
+
+  @@unique([documentID, drawingType])
 }

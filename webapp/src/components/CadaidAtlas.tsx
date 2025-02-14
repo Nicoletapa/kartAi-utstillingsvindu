@@ -7,6 +7,7 @@ import FilePreview from "./FilePreview";
 import type { Detection } from "~/types/detection";
 import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
+import DocumentItem from "./DocumentItem";
 
 async function fetchDetection(formData: FormData): Promise<Detection[]> {
   const response = await fetch("http://127.0.0.1:5001/detect", {
@@ -29,6 +30,9 @@ const CadaidAtlas: React.FC = () => {
 
   // Get session data
   const { data: session } = useSession();
+
+  // Add this query hook
+  const documentsQuery = api.userDocuments.getUserDocuments.useQuery();
 
   // tRPC mutations
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation();
@@ -125,13 +129,32 @@ const CadaidAtlas: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex min-h-screen flex-col p-6 md:flex-row"
-      data-cy="main-container"
-    >
-      {/* Left Column */}
+    <div className="flex min-h-screen flex-col p-6 md:flex-row" data-cy="main-container">
       <div className="w-full md:w-1/3 md:pr-4" data-cy="left-column">
         <h1 className="mb-5 mt-10 text-left text-3xl font-bold">CADAiD</h1>
+        
+        {/* Add this section to display existing documents */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-3">Your Documents</h2>
+          {documentsQuery.isLoading ? (
+            <div>Loading documents...</div>
+          ) : documentsQuery.error ? (
+            <div className="text-red-500">Error loading documents</div>
+          ) : (
+            // In your render method, replace the map section:
+                    <div className="space-y-2">
+                      {documentsQuery.data?.map((doc) => (
+                        <DocumentItem
+                          key={doc.documentID}
+                          documentID={doc.documentID}
+                          fileName={doc.fileName}
+                        />
+                      ))}
+                    </div>
+          )}
+        </div>
+
+        {/* Your existing upload section */}
         <span className="my-10 text-left text-xl">
           Her kan du laste opp og verifisere plantegningene dine.
         </span>
@@ -158,7 +181,10 @@ const CadaidAtlas: React.FC = () => {
           </div>
         )}
 
-        <Results results={results} />
+        <Results 
+          results={results} 
+          existingDocuments={documentsQuery.data || []} 
+        />
       </div>
 
       {/* Right Column */}
