@@ -81,6 +81,7 @@ export const userDocumentsRouter = createTRPCRouter({
             applicationID: true,
             userID: true,
             createdAt: true,
+            document: true, // Include document data
             model: {              
               select: {
                 modelName: true,  
@@ -97,9 +98,9 @@ export const userDocumentsRouter = createTRPCRouter({
           },
         });
 
-        // Return only metadata without the actual document content
         return documents.map(doc => ({
           ...doc,
+          document: doc.document.toString('base64'),
           drawing_type: doc.validations.map(v => v.drawingType)
         }));
 
@@ -197,12 +198,14 @@ export const userDocumentsRouter = createTRPCRouter({
     .input(z.object({
       fileName: z.string(),
       fileType: z.string(),
-      detectionResults: z.array(z.any()),
+      detectionResults: z.array(z.object({
+        drawing_type: z.union([z.string(), z.array(z.string())]),
+        file_name: z.string()
+      })),
       document: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
-        // Find the CADAiD model
         const model = await ctx.db.model.findFirst({
           where: {
             modelName: 'CADAiD'
@@ -216,7 +219,6 @@ export const userDocumentsRouter = createTRPCRouter({
           });
         }
 
-        // Process the base64 document
         const base64Data = input.document.includes('base64,') 
           ? input.document.split('base64,')[1] 
           : input.document;
@@ -240,20 +242,27 @@ export const userDocumentsRouter = createTRPCRouter({
           },
         });
 
-        // Save detection results
-        if (input.detectionResults.length > 0) {
-          await Promise.all(input.detectionResults.map(result => 
-            ctx.db.documentValidation.create({
-              data: {
-                documentID: newDocument.documentID,
-                drawingType: result.drawing_type,
-              }
-            })
-          ));
+        // Handle detection results
+        if (input.detectionResults && input.detectionResults.length > 0) {
+          await Promise.all(input.detectionResults.map(result => {
+            const drawingTypes = Array.isArray(result.drawing_type) 
+              ? result.drawing_type 
+              : [result.drawing_type];
+
+            return Promise.all(drawingTypes.map(type =>
+              ctx.db.documentValidation.create({
+                data: {
+                  documentID: newDocument.documentID,
+                  drawingType: type,
+                }
+              })
+            ));
+          }));
         }
 
         return { success: true };
       } catch (error) {
+        console.error('Save detection error:', error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to save detection results",

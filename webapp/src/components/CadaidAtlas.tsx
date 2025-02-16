@@ -99,7 +99,13 @@ const CadaidAtlas: React.FC = () => {
               reader.readAsDataURL(file);
             });
 
-            const fileDetections = detections.filter(d => d.file_name === file.name);
+            const fileDetections = detections
+                  .filter(d => d.file_name === file.name)
+                  .map(d => ({
+                    drawing_type: d.drawing_type || [],
+                    file_name: d.file_name
+                  }));
+            
             await saveResultsMutation.mutateAsync({
               fileName: file.name,
               fileType: file.type,

@@ -20,11 +20,45 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
 
   const deleteDocument = api.userDocuments.deleteDocument.useMutation({
     onSuccess: () => {
-      // Invalidate both documents and their validations
       utils.userDocuments.getUserDocuments.invalidate();
-      setDocumentImages({}); // Clear the images cache
+      setDocumentImages({});
     },
   });
+
+  // Single useEffect for batch fetching images
+  useEffect(() => {
+    const fetchImages = async () => {
+      const documentsToFetch = documents.filter(doc => !documentImages[doc.documentID]);
+      
+      if (documentsToFetch.length === 0) return;
+
+      try {
+        const results = await Promise.all(
+          documentsToFetch.map(doc =>
+            utils.client.userDocuments.getDocumentById.query({
+              documentId: doc.documentID,
+            })
+          )
+        );
+
+        const newImages = results.reduce((acc, result, index) => {
+          if (result?.document) {
+            acc[documentsToFetch[index]!.documentID] = `data:image/jpeg;base64,${result.document}`;
+          }
+          return acc;
+        }, {} as { [key: number]: string });
+
+        setDocumentImages(prev => ({
+          ...prev,
+          ...newImages
+        }));
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+      }
+    };
+
+    fetchImages();
+  }, [documents]);
 
   const handleDelete = async (documentId: number) => {
     if (window.confirm('Are you sure you want to delete this document?')) {
@@ -37,32 +71,32 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
     }
   };
 
-  // Fetch document images
-  // Modify the useEffect to use a proper cleanup
-  useEffect(() => {
-    const fetchImages = async () => {
-      for (const doc of documents) {
-        try {
-          const result = await utils.client.userDocuments.getDocumentById.query({
-            documentId: doc.documentID,
-          });
-          setDocumentImages(prev => ({
-            ...prev,
-            [doc.documentID]: `data:image/jpeg;base64,${result.document}`
-          }));
-        } catch (error) {
-          console.error('Error fetching document:', error);
-        }
-      }
-    };
+  // // Fetch document images
+  // // Modify the useEffect to use a proper cleanup
+  // useEffect(() => {
+  //   const fetchImages = async () => {
+  //     for (const doc of documents) {
+  //       try {
+  //         const result = await utils.client.userDocuments.getDocumentById.query({
+  //           documentId: doc.documentID,
+  //         });
+  //         setDocumentImages(prev => ({
+  //           ...prev,
+  //           [doc.documentID]: `data:image/jpeg;base64,${result.document}`
+  //         }));
+  //       } catch (error) {
+  //         console.error('Error fetching document:', error);
+  //       }
+  //     }
+  //   };
 
-    fetchImages();
+  //   fetchImages();
     
-    // Clear images when component unmounts or documents change
-    return () => {
-      setDocumentImages({});
-    };
-  }, [documents, utils.client.userDocuments.getDocumentById]);
+  //   // Clear images when component unmounts or documents change
+  //   return () => {
+  //     setDocumentImages({});
+  //   };
+  // }, [documents, utils.client.userDocuments.getDocumentById]);
 
 
 
