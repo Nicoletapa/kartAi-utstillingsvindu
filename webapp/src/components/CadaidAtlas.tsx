@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import FileList from "./FileList";
+//import FileList from "./FileList";
 import Results from "./Results";
 //import FilePreview from "./FilePreview";
 import type { Detection } from "~/types/detection";
@@ -25,116 +25,108 @@ async function fetchDetection(formData: FormData): Promise<Detection[]> {
 
 const CadaidAtlas: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [files, setFiles] = useState<File[]>([]);
   const [results, setResults] = useState<Detection[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Get session data
   const { data: session } = useSession();
+  const utils = api.useContext();
+  
+  // Add staleTime to reduce unnecessary refetches
+  const documentsQuery = api.userDocuments.getUserDocuments.useQuery(undefined, {
+    staleTime: 1000,
+  });
 
-  // Add this query hook
-  const documentsQuery = api.userDocuments.getUserDocuments.useQuery();
+  const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation({
+    onSuccess: () => {
+      utils.userDocuments.getUserDocuments.invalidate();
+      setResults([]); // Clear results after successful save
+    }
+  });
 
-  // tRPC mutations
-  const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation();
   const checkExistingFile = api.userDocuments.checkFileExists.useMutation();
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!session?.user?.id) {
       setErrorMessage("You must be logged in to upload files");
       return;
     }
 
-    if (event.target.files) {
-      const uploadedFiles = Array.from(event.target.files);
-      if (uploadedFiles.length === 0) {
-        setErrorMessage("No files selected");
-        return;
-      }
-  
-      setIsLoading(true);
-      try {
-        // Check for existing files before processing
-        for (const file of uploadedFiles) {
+    const uploadedFiles = Array.from(event.target.files || []);
+    if (uploadedFiles.length === 0) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      // Process all files in parallel
+      const filesToProcess = await Promise.all(
+        uploadedFiles.map(async (file) => {
           const existingFile = await checkExistingFile.mutateAsync({
             fileName: file.name,
             userID: session.user.id
           });
-  
+
           if (existingFile.exists) {
             const confirmReplace = window.confirm(
               `File ${file.name} already exists. Do you want to replace it?`
             );
-            if (!confirmReplace) {
-              continue; // Skip this file
-            }
+            return confirmReplace ? file : null;
           }
-        }
-  
-        setFiles(prevFiles => [...prevFiles, ...uploadedFiles]);
-  
-        // First, send to detection service
-        const formData = new FormData();
-        uploadedFiles.forEach((file) => {
-          formData.append("uploaded_files", file);
-        });
-  
-        const detections = await fetchDetection(formData);
-        setResults((prevResults) => [...prevResults, ...detections]);
-  
-        // Process files sequentially
-        for (const file of uploadedFiles) {
+          return file;
+        })
+      );
+
+      const validFiles = filesToProcess.filter(Boolean) as File[];
+      if (validFiles.length === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      validFiles.forEach(file => formData.append("uploaded_files", file));
+
+      const detections = await fetchDetection(formData);
+      setResults(detections);
+
+      // Process files in parallel
+      await Promise.all(
+        validFiles.map(async (file) => {
           try {
             const base64 = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
-              reader.onload = () => {
-                const result = reader.result as string;
-                resolve(result);
-              };
-              reader.onerror = () => reject(reader.error);
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
               reader.readAsDataURL(file);
             });
-  
+
             const fileDetections = detections.filter(d => d.file_name === file.name);
-            
             await saveResultsMutation.mutateAsync({
               fileName: file.name,
               fileType: file.type,
               detectionResults: fileDetections,
               document: base64,
             });
-  
-            console.log(`Successfully processed file: ${file.name}`);
           } catch (error) {
             console.error(`Error processing file ${file.name}:`, error);
-            setErrorMessage(`Failed to process file: ${file.name}`);
+            setErrorMessage(prev => 
+              prev ? `${prev}\nFailed to process: ${file.name}` : `Failed to process: ${file.name}`
+            );
           }
-        }
-      } catch (error) {
-        console.error('Upload error:', error);
-        setErrorMessage("En feil oppsto under opplasting av filer.");
-      } finally {
-        setIsLoading(false);
-      }
+        })
+      );
+    } catch (error) {
+      console.error('Upload error:', error);
+      setErrorMessage("Error uploading files");
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  // Rest of your component remains the same...
-  const handleFileRemove = (fileName: string) => {
-    setFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileName));
-    setResults((prevResults) =>
-      prevResults.filter((result) => result.file_name !== fileName),
-    );
   };
 
   return (
     <div className="flex min-h-screen p-6" data-cy="main-container">
-      <div className="md:w-full w-1/3 md:pr-4" data-cy="left-column">
+      <div className="w-full md:pr-4" data-cy="left-column">
         <h1 className="mb-5 mt-10 text-left text-3xl font-bold">CADAiD</h1>
         
-        {/* Replace the existing documents section */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-3">Your Documents</h2>
           {documentsQuery.isLoading ? (
@@ -144,19 +136,10 @@ const CadaidAtlas: React.FC = () => {
           ) : (
             <ExistingDocumentsList 
               documents={documentsQuery.data || []}
+              onUpload={handleFileUpload}
             />
           )}
         </div>
-
-        {/* Your existing upload section */}
-        <span className="my-10 text-left text-xl">
-          Her kan du laste opp og verifisere plantegningene dine.
-        </span>
-        <FileList
-          files={files}
-          onRemove={handleFileRemove}
-          onUpload={handleFileUpload}
-        />
 
         {isLoading && (
           <div className="mb-4 flex items-center justify-center">
@@ -165,12 +148,7 @@ const CadaidAtlas: React.FC = () => {
         )}
 
         {errorMessage && (
-          <div
-            className="mb-4 rounded bg-red-100 p-2 text-red-700"
-            role="alert"
-            aria-live="assertive"
-            data-cy="submission-validation"
-          >
+          <div className="mb-4 rounded bg-red-100 p-2 text-red-700" role="alert">
             {errorMessage}
           </div>
         )}
@@ -180,14 +158,6 @@ const CadaidAtlas: React.FC = () => {
           existingDocuments={documentsQuery.data || []} 
         />
       </div>
-
-
-      
-{/* Forhåndsvisning av dokumenter */}
-      {/* Right Column
-      <div className="w-full pt-10 md:w-2/3" data-cy="right-column">
-        <FilePreview files={files} />
-      </div> */}
     </div>
   );
 };

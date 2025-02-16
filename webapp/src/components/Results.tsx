@@ -27,9 +27,9 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
   const allDocuments = [...existingDocuments, ...results];
 
   // Create a summary of all drawing types found
+  // Create a map to track unique filenames
   const drawingTypeSummary = requiredDrawingTypes.map(requiredType => {
     const foundInDocuments = allDocuments.filter(doc => {
-      
       const types = 'drawing_type' in doc
         ? Array.isArray(doc.drawing_type)
           ? doc.drawing_type
@@ -38,12 +38,15 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
       return types.includes(requiredType);
     });
 
+    // Get unique filenames
+    const uniqueDocuments = [...new Set(foundInDocuments.map(doc => 
+      'fileName' in doc ? doc.fileName : doc.file_name
+    ))];
+
     return {
       type: requiredType,
-      found: foundInDocuments.length > 0,
-      documents: foundInDocuments.map(doc => 
-        'fileName' in doc ? doc.fileName : doc.file_name
-      ),
+      found: uniqueDocuments.length > 0,
+      documents: uniqueDocuments,
     };
   });
 

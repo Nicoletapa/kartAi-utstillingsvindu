@@ -49,7 +49,6 @@ export const userDocumentsRouter = createTRPCRouter({
       });
 
 
-      
       if (existingDoc) {
         // First delete all validations
         await ctx.db.documentValidation.deleteMany({
@@ -87,7 +86,6 @@ export const userDocumentsRouter = createTRPCRouter({
                 modelName: true,  
               },
             },
-            // Change documentValidation to validations
             validations: {
               select: {
                 drawingType: true,
@@ -99,7 +97,7 @@ export const userDocumentsRouter = createTRPCRouter({
           },
         });
 
-        // Transform the data to match the expected format
+        // Return only metadata without the actual document content
         return documents.map(doc => ({
           ...doc,
           drawing_type: doc.validations.map(v => v.drawingType)
@@ -114,6 +112,87 @@ export const userDocumentsRouter = createTRPCRouter({
       }
     }),
 
+  getDocumentById: protectedProcedure
+    .input(z.object({
+      documentId: z.number(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const document = await ctx.db.document.findFirst({
+          where: {
+            documentID: input.documentId,
+            userID: ctx.session.user.id,
+          },
+          select: {
+            document: true,
+            fileName: true,
+          },
+        });
+        
+        if (!document) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Document not found',
+          });
+        }
+
+        return {
+          document: document.document.toString('base64'),
+          fileName: document.fileName
+        };
+
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch document',
+          cause: error,
+        });
+      }
+    }),
+
+  // Add a new procedure for chunked document retrieval
+  getDocumentChunk: protectedProcedure
+    .input(z.object({
+      documentId: z.number(),
+      chunkIndex: z.number(),
+      chunkSize: z.number().max(1024 * 1024), // Max 1MB per chunk
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const document = await ctx.db.document.findFirst({
+          where: {
+            documentID: input.documentId,
+            userID: ctx.session.user.id,
+          },
+          select: {
+            document: true,
+          },
+        });
+
+        if (!document) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Document not found',
+          });
+        }
+
+        const base64String = document.document.toString('base64');
+        const start = input.chunkIndex * input.chunkSize;
+        const end = Math.min(start + input.chunkSize, base64String.length);
+
+        return {
+          chunk: base64String.slice(start, end),
+          isLastChunk: end >= base64String.length,
+          totalSize: base64String.length,
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch document chunk',
+          cause: error,
+        });
+      }
+    }),
   saveDetectionResults: protectedProcedure
     .input(z.object({
       fileName: z.string(),
@@ -122,8 +201,7 @@ export const userDocumentsRouter = createTRPCRouter({
       document: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-
-        try {
+      try {
         // Find the CADAiD model
         const model = await ctx.db.model.findFirst({
           where: {
@@ -138,124 +216,47 @@ export const userDocumentsRouter = createTRPCRouter({
           });
         }
 
-        const { fileName, document, fileType } = input;
-        const userId = ctx.session.user.id;
+        // Process the base64 document
+        const base64Data = input.document.includes('base64,') 
+          ? input.document.split('base64,')[1] 
+          : input.document;
 
-        // Add size logging before processing
-        console.log('Original document size:', document.length);
-        console.log('File type:', fileType);
-
-        // Remove the data URL prefix if present
-        const base64Data = document.includes('base64,') 
-          ? document.split('base64,')[1] 
-          : document;
-
-        // Convert base64 to Buffer
-        const documentBuffer = Buffer.from(base64Data ?? '', 'base64');
-
-        // Log buffer size
-        console.log('Document buffer size (bytes):', documentBuffer.length);
-
-        // Add size check (16MB limit as an example)
-        if (documentBuffer.length > 16 * 1024 * 1024) {
+        if (!base64Data) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "File size exceeds 16MB limit",
+            message: "Invalid document data",
           });
         }
 
-        // First create the Document entry with minimal data
+        const documentBuffer = Buffer.from(base64Data, 'base64');
+
+        // Create document entry
         const newDocument = await ctx.db.document.create({
           data: {
-            fileName,
+            fileName: input.fileName,
             document: documentBuffer,
             modelID: model.modelID,
-            userID: userId,
-          },
-          select: {
-            documentID: true,
-          },
-        });
-
-        console.log('Document created with ID:', newDocument.documentID);
-
-       // After creating the document, save the drawing types
-       if (input.detectionResults.length > 0) {
-        const drawingTypes = input.detectionResults.map(result => result.drawing_type).flat();
-        
-        // Save each drawing type
-        for (const type of drawingTypes) {
-          await ctx.db.documentValidation.create({
-            data: {
-              documentID: newDocument.documentID,
-              drawingType: type,
-            }
-          });
-        }
-      }
-
-        return {
-          success: true,
-          documentId: newDocument.documentID,
-        };
-      } catch (error) {
-        console.error('Detailed error:', error);
-        
-        // Check for specific MySQL errors
-const mysqlError = error as { code: string; message: string };
-        if (mysqlError.code === 'ER_DATA_TOO_LONG') {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "File size too large for database storage",
-          });
-        }
-
-        if (mysqlError.code === 'ER_PACKAGE_MAX_LENGTH') {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "File exceeds maximum allowed upload size",
-          });
-        }
-
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `Failed to create document entry: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          cause: error,
-        });
-      }
-
-    }),
-  getDocumentById: protectedProcedure
-    .input(z.object({
-      documentId: z.number(),
-    }))
-    .query(async ({ ctx, input }) => {
-      try {
-        const document = await ctx.db.document.findFirst({
-          where: {
-            documentID: input.documentId,
             userID: ctx.session.user.id,
           },
-          select: {
-            document: true,
-          },
         });
-        
-        if (!document) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Document not found',
-          });
+
+        // Save detection results
+        if (input.detectionResults.length > 0) {
+          await Promise.all(input.detectionResults.map(result => 
+            ctx.db.documentValidation.create({
+              data: {
+                documentID: newDocument.documentID,
+                drawingType: result.drawing_type,
+              }
+            })
+          ));
         }
 
-        // Convert Buffer to base64 string on the server side
-        const base64String = document.document.toString('base64');
-        return { document: base64String };
-
+        return { success: true };
       } catch (error) {
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch document',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save detection results",
           cause: error,
         });
       }
