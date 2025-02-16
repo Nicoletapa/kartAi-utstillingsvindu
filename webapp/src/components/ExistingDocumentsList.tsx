@@ -8,6 +8,7 @@ interface ExistingDocumentsListProps {
   documents: {
     documentID: number;
     fileName: string;
+    document?: string;  // Add this to accept base64 document data
   }[];
   onDelete?: (documentId: number) => void;
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,39 +26,16 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
     },
   });
 
-  // Single useEffect for batch fetching images
+  // Update useEffect to only process documents that have base64 data
   useEffect(() => {
-    const fetchImages = async () => {
-      const documentsToFetch = documents.filter(doc => !documentImages[doc.documentID]);
-      
-      if (documentsToFetch.length === 0) return;
-
-      try {
-        const results = await Promise.all(
-          documentsToFetch.map(doc =>
-            utils.client.userDocuments.getDocumentById.query({
-              documentId: doc.documentID,
-            })
-          )
-        );
-
-        const newImages = results.reduce((acc, result, index) => {
-          if (result?.document) {
-            acc[documentsToFetch[index]!.documentID] = `data:image/jpeg;base64,${result.document}`;
-          }
-          return acc;
-        }, {} as { [key: number]: string });
-
-        setDocumentImages(prev => ({
-          ...prev,
-          ...newImages
-        }));
-      } catch (error) {
-        console.error('Error fetching documents:', error);
+    const newImages = documents.reduce((acc, doc) => {
+      if (doc.document) {
+        acc[doc.documentID] = `data:image/jpeg;base64,${doc.document}`;
       }
-    };
+      return acc;
+    }, {} as { [key: number]: string });
 
-    fetchImages();
+    setDocumentImages(newImages);
   }, [documents]);
 
   const handleDelete = async (documentId: number) => {
@@ -70,35 +48,6 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
       }
     }
   };
-
-  // // Fetch document images
-  // // Modify the useEffect to use a proper cleanup
-  // useEffect(() => {
-  //   const fetchImages = async () => {
-  //     for (const doc of documents) {
-  //       try {
-  //         const result = await utils.client.userDocuments.getDocumentById.query({
-  //           documentId: doc.documentID,
-  //         });
-  //         setDocumentImages(prev => ({
-  //           ...prev,
-  //           [doc.documentID]: `data:image/jpeg;base64,${result.document}`
-  //         }));
-  //       } catch (error) {
-  //         console.error('Error fetching document:', error);
-  //       }
-  //     }
-  //   };
-
-  //   fetchImages();
-    
-  //   // Clear images when component unmounts or documents change
-  //   return () => {
-  //     setDocumentImages({});
-  //   };
-  // }, [documents, utils.client.userDocuments.getDocumentById]);
-
-
 
   return (
     <div className="w-full">
