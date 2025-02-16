@@ -1,16 +1,17 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { requiredDrawingTypes } from "~/utils/helpers";
 
 export const userDocumentsRouter = createTRPCRouter({
-  // Add this new procedure at the beginning of the router
+
   deleteDocument: protectedProcedure
     .input(z.object({
       documentId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
-        // First delete all validations
+
         await ctx.db.documentValidation.deleteMany({
           where: {
             documentID: input.documentId,
@@ -21,7 +22,7 @@ export const userDocumentsRouter = createTRPCRouter({
         await ctx.db.document.delete({
           where: {
             documentID: input.documentId,
-            userID: ctx.session.user.id, // Security check
+            userID: ctx.session.user.id,
           },
         });
 
@@ -61,6 +62,7 @@ export const userDocumentsRouter = createTRPCRouter({
         await ctx.db.document.delete({
           where: {
             documentID: existingDoc.documentID,
+            userID: ctx.session.user.id,
           },
         });
       }
@@ -206,6 +208,17 @@ export const userDocumentsRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       try {
+        const hasValidDrawingTypes = input.detectionResults.some(result => {
+          const types = Array.isArray(result.drawing_type) ? result.drawing_type : [result.drawing_type];
+          return types.some(type => requiredDrawingTypes.includes(type));
+        })
+        if(!hasValidDrawingTypes) {
+          return {
+            success:false,
+            message:'No valid drawing types found',
+            invalidDocument: true
+          };
+        }
         const model = await ctx.db.model.findFirst({
           where: {
             modelName: 'CADAiD'

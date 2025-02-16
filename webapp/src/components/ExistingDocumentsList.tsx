@@ -16,7 +16,7 @@ interface ExistingDocumentsListProps {
 }
 
 const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents, onDelete, onUpload }) => {
-  const utils = api.useContext();
+  const utils = api.useUtils();
   const [documentImages, setDocumentImages] = useState<{ [key: number]: string }>({});
 
   const deleteDocument = api.userDocuments.deleteDocument.useMutation({

@@ -1,14 +1,29 @@
 "use client";
-
 import React, { useState } from "react";
-//import FileList from "./FileList";
 import Results from "./Results";
-//import FilePreview from "./FilePreview";
 import type { Detection } from "~/types/detection";
 import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
-//import DocumentItem from "./DocumentItem";
 import ExistingDocumentsList from './ExistingDocumentsList';
+import InvalidFilesList from './InvalidFilesList';
+
+const processFile = async (file: File, detections: Detection[]) => {
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const fileDetections = detections
+    .filter(d => d.file_name === file.name)
+    .map(d => ({
+      drawing_type: Array.isArray(d.drawing_type) ? d.drawing_type : [],
+      file_name: d.file_name
+    }));
+  
+  return { base64, fileDetections };
+};
 
 async function fetchDetection(formData: FormData): Promise<Detection[]> {
   const response = await fetch("http://127.0.0.1:5001/detect", {
@@ -27,11 +42,15 @@ const CadaidAtlas: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [results, setResults] = useState<Detection[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const { data: session } = useSession();
-  const utils = api.useContext();
+  const [invalidFiles, setInvalidFiles] = useState<{ file: File; base64: string }[]>([]);
   
-  // Add staleTime to reduce unnecessary refetches
+  type FileDetection = {
+    drawing_type: string[];
+    file_name: string;
+  };
+  const { data: session } = useSession();
+  const utils = api.useUtils();
+  
   const documentsQuery = api.userDocuments.getUserDocuments.useQuery(undefined, {
     staleTime: 1000,
   });
@@ -39,11 +58,49 @@ const CadaidAtlas: React.FC = () => {
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation({
     onSuccess: () => {
       utils.userDocuments.getUserDocuments.invalidate();
-      setResults([]); // Clear results after successful save
+      setResults([]);
     }
   });
 
   const checkExistingFile = api.userDocuments.checkFileExists.useMutation();
+
+  const handleFileRemove = (index: number) => {
+    const fileToRemove = invalidFiles[index]?.file.name;
+    if (fileToRemove) {
+      setInvalidFiles(prev => prev.filter((_, i) => i !== index));
+      setResults(prev => prev.filter(result => result.file_name !== fileToRemove));
+      setErrorMessage(prev => {
+        if (!prev) return null;
+        const errors = prev.split('\n').filter(error => !error.includes(fileToRemove));
+        return errors.length > 0 ? errors.join('\n') : null;
+      });
+    }
+  };
+
+  const handleValidFile = async (file: File, fileDetections: FileDetection[], base64: string) => {
+    const result = await saveResultsMutation.mutateAsync({
+      fileName: file.name,
+      fileType: file.type,
+      detectionResults: fileDetections,
+      document: base64,
+    });
+
+    if (!result.success) {
+      setInvalidFiles(prev => [...prev, { file, base64 }]);
+      setErrorMessage(prev => 
+        prev ? `${prev}\n${result.message}: ${file.name}` 
+             : `${result.message}: ${file.name}`
+      );
+    }
+  };
+
+  const handleInvalidFile = (file: File, base64: string) => {
+    setInvalidFiles(prev => [...prev, { file, base64 }]);
+    setErrorMessage(prev => 
+      prev ? `${prev}\n${file.name} has no valid drawing types` 
+           : `${file.name} has no valid drawing types`
+    );
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!session?.user?.id) {
@@ -58,7 +115,6 @@ const CadaidAtlas: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      // Process all files in parallel
       const filesToProcess = await Promise.all(
         uploadedFiles.map(async (file) => {
           const existingFile = await checkExistingFile.mutateAsync({
@@ -88,30 +144,16 @@ const CadaidAtlas: React.FC = () => {
       const detections = await fetchDetection(formData);
       setResults(detections);
 
-      // Process files in parallel
       await Promise.all(
         validFiles.map(async (file) => {
           try {
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-
-            const fileDetections = detections
-                  .filter(d => d.file_name === file.name)
-                  .map(d => ({
-                    drawing_type: d.drawing_type || [],
-                    file_name: d.file_name
-                  }));
+            const { base64, fileDetections } = await processFile(file, detections);
             
-            await saveResultsMutation.mutateAsync({
-              fileName: file.name,
-              fileType: file.type,
-              detectionResults: fileDetections,
-              document: base64,
-            });
+            if (fileDetections.some(d => d.drawing_type.length > 0)) {
+              await handleValidFile(file, fileDetections, base64);
+            } else {
+              handleInvalidFile(file, base64);
+            }
           } catch (error) {
             console.error(`Error processing file ${file.name}:`, error);
             setErrorMessage(prev => 
@@ -158,6 +200,11 @@ const CadaidAtlas: React.FC = () => {
             {errorMessage}
           </div>
         )}
+
+        <InvalidFilesList 
+          invalidFiles={invalidFiles}
+          onRemove={handleFileRemove}
+        />
 
         <Results 
           results={results} 
