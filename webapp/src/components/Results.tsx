@@ -3,32 +3,31 @@ import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { requiredDrawingTypes, capitalize } from '../utils/helpers';
 import type { Detection } from '~/types/detection';
 
+// Types for document data structure
 interface ExistingDocument {
   documentID: number;
   fileName: string;
-  
   applicationID: number | null;
   userID: string;
-  
   createdAt?: Date; 
   modelName?: {        
     name: string;
   };
-  drawing_type? : string| string[];
+  drawing_type?: string | string[];
 }
 
 interface ResultsProps {
-  results: Detection[];
-  existingDocuments?: ExistingDocument[];
+  results: Detection[];           // New detection results
+  existingDocuments?: ExistingDocument[]; // Previously uploaded documents
 }
 
 const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) => {
-  // Combine all documents into a single array
+  // Combine existing and new documents for analysis
   const allDocuments = [...existingDocuments, ...results];
 
-  // Create a summary of all drawing types found
-  // Create a map to track unique filenames
+  // Generate summary of drawing types found across all documents
   const drawingTypeSummary = requiredDrawingTypes.map(requiredType => {
+    // Find documents containing each required drawing type
     const foundInDocuments = allDocuments.filter(doc => {
       const types = 'drawing_type' in doc
         ? Array.isArray(doc.drawing_type)
@@ -38,7 +37,7 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
       return types.includes(requiredType);
     });
 
-    // Get unique filenames
+    // Get unique filenames for documents containing the drawing type
     const uniqueDocuments = [...new Set(foundInDocuments.map(doc => 
       'fileName' in doc ? doc.fileName : doc.file_name
     ))];

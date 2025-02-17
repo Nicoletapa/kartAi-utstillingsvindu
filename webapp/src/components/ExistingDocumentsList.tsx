@@ -4,21 +4,25 @@ import { api } from '~/trpc/react';
 
 
 
+// Component for displaying and managing uploaded documents
 interface ExistingDocumentsListProps {
   documents: {
     documentID: number;
     fileName: string;
-    document?: string;  // Add this to accept base64 document data
+    document?: string;  // Base64 document data for preview
   }[];
   onDelete?: (documentId: number) => void;
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  
 }
 
 const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents, onDelete, onUpload }) => {
+  // API utilities for document management
   const utils = api.useUtils();
+  
+  // State for managing document preview images
   const [documentImages, setDocumentImages] = useState<{ [key: number]: string }>({});
 
+  // Mutation for deleting documents
   const deleteDocument = api.userDocuments.deleteDocument.useMutation({
     onSuccess: () => {
       utils.userDocuments.getUserDocuments.invalidate();
@@ -26,7 +30,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
     },
   });
 
-  // Update useEffect to only process documents that have base64 data
+  // Process base64 data for document previews
   useEffect(() => {
     const newImages = documents.reduce((acc, doc) => {
       if (doc.document) {
@@ -38,6 +42,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
     setDocumentImages(newImages);
   }, [documents]);
 
+  // Handle document deletion with confirmation
   const handleDelete = async (documentId: number) => {
     if (window.confirm('Are you sure you want to delete this document?')) {
       try {

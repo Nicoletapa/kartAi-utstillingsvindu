@@ -7,7 +7,9 @@ import { useSession } from "next-auth/react";
 import ExistingDocumentsList from './ExistingDocumentsList';
 import InvalidFilesList from './InvalidFilesList';
 
+// Utility functions for file processing
 const processFile = async (file: File, detections: Detection[]) => {
+  // Convert file to base64 for storage and preview
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -15,6 +17,7 @@ const processFile = async (file: File, detections: Detection[]) => {
     reader.readAsDataURL(file);
   });
 
+  // Process detections for the specific file
   const fileDetections = detections
     .filter(d => d.file_name === file.name)
     .map(d => ({
@@ -25,6 +28,7 @@ const processFile = async (file: File, detections: Detection[]) => {
   return { base64, fileDetections };
 };
 
+// API call to ML model for drawing type detection
 async function fetchDetection(formData: FormData): Promise<Detection[]> {
   const response = await fetch("http://127.0.0.1:5001/detect", {
     method: "POST",
@@ -39,22 +43,27 @@ async function fetchDetection(formData: FormData): Promise<Detection[]> {
 }
 
 const CadaidAtlas: React.FC = () => {
+  // State management for UI feedback and file processing
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [results, setResults] = useState<Detection[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [invalidFiles, setInvalidFiles] = useState<{ file: File; base64: string }[]>([]);
   
+  // Authentication and API utilities
+  const { data: session } = useSession();
+  const utils = api.useUtils();
+  
   type FileDetection = {
     drawing_type: string[];
     file_name: string;
   };
-  const { data: session } = useSession();
-  const utils = api.useUtils();
-  
+
+  // Query for fetching user's existing documents
   const documentsQuery = api.userDocuments.getUserDocuments.useQuery(undefined, {
     staleTime: 1000,
   });
 
+  // Mutation for saving new document detections
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation({
     onSuccess: () => {
       utils.userDocuments.getUserDocuments.invalidate();
@@ -62,8 +71,10 @@ const CadaidAtlas: React.FC = () => {
     }
   });
 
+  // Mutation for checking if file already exists
   const checkExistingFile = api.userDocuments.checkFileExists.useMutation();
 
+  // Handlers for file processing
   const handleFileRemove = (index: number) => {
     const fileToRemove = invalidFiles[index]?.file.name;
     if (fileToRemove) {
@@ -77,6 +88,7 @@ const CadaidAtlas: React.FC = () => {
     }
   };
 
+  // Handle successful file detection
   const handleValidFile = async (file: File, fileDetections: FileDetection[], base64: string) => {
     const result = await saveResultsMutation.mutateAsync({
       fileName: file.name,
@@ -94,6 +106,7 @@ const CadaidAtlas: React.FC = () => {
     }
   };
 
+  // Handle files with no valid drawing types
   const handleInvalidFile = (file: File, base64: string) => {
     setInvalidFiles(prev => [...prev, { file, base64 }]);
     setErrorMessage(prev => 
@@ -102,6 +115,7 @@ const CadaidAtlas: React.FC = () => {
     );
   };
 
+  // Main file upload handler
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!session?.user?.id) {
       setErrorMessage("You must be logged in to upload files");
