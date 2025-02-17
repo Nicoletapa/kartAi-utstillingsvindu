@@ -64,9 +64,10 @@ const CadaidAtlas: React.FC = () => {
   });
 
   // Mutation for saving new document detections
+  
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation({
-    onSuccess: () => {
-      utils.userDocuments.getUserDocuments.invalidate();
+    onSuccess: async () => {
+      await utils.userDocuments.getUserDocuments.invalidate();
       setResults([]);
     }
   });
@@ -122,7 +123,8 @@ const CadaidAtlas: React.FC = () => {
       return;
     }
 
-    const uploadedFiles = Array.from(event.target.files || []);
+    // Replace || with ?? for nullish coalescing
+    const uploadedFiles = Array.from(event.target.files ?? []);
     if (uploadedFiles.length === 0) return;
 
     setIsLoading(true);
@@ -197,7 +199,7 @@ const CadaidAtlas: React.FC = () => {
             <div className="text-red-500">Error loading documents</div>
           ) : (
             <ExistingDocumentsList 
-              documents={documentsQuery.data || []}
+              documents={documentsQuery.data ?? []}
               onUpload={handleFileUpload}
             />
           )}
@@ -222,7 +224,7 @@ const CadaidAtlas: React.FC = () => {
 
         <Results 
           results={results} 
-          existingDocuments={documentsQuery.data || []} 
+          existingDocuments={documentsQuery.data ?? []} 
         />
       </div>
     </div>
