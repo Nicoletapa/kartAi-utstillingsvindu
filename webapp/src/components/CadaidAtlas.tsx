@@ -186,6 +186,21 @@ const CadaidAtlas: React.FC = () => {
     }
   };
 
+  const deleteDocumentMutation = api.userDocuments.deleteDocument.useMutation({
+    onSuccess: () => {
+      utils.userDocuments.getUserDocuments.invalidate();
+    },
+  });
+
+  const handleDocumentDelete = async (documentId: number) => {
+    try {
+      await deleteDocumentMutation.mutateAsync({ documentId });
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      setErrorMessage('Failed to delete document');
+    }
+  };
+
   return (
     <div className="flex min-h-screen p-6" data-cy="main-container">
       <div className="w-full md:pr-4" data-cy="left-column">
@@ -201,6 +216,7 @@ const CadaidAtlas: React.FC = () => {
             <ExistingDocumentsList 
               documents={documentsQuery.data ?? []}
               onUpload={handleFileUpload}
+              onDelete={handleDocumentDelete}
             />
           )}
         </div>
