@@ -66,8 +66,8 @@ const CadaidAtlas: React.FC = () => {
   // Mutation for saving new document detections
   
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation({
-    onSuccess: async () => {
-      await utils.userDocuments.getUserDocuments.invalidate();
+    onSuccess: () => {
+      void utils.userDocuments.getUserDocuments.invalidate();
       setResults([]);
     }
   });
