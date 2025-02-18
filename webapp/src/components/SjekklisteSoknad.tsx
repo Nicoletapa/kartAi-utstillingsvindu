@@ -47,7 +47,7 @@ const toggleTaskCompletion = (index: number): void => {
 };
 
   return (
-    <div className="rounded-lg shadow-md border p-4 max-w-80 min-h-80 bg-gray-100">
+    <div className="rounded-lg shadow-md border p-4 max-w-72 min-h-80 bg-gray-100">
       <h2 className="text-lg font-semibold">Gjøremål for Steg {currentStep}</h2>
       <ul className="list-disc pl-5 space-y-2 mt-2">
         {currentTasks.map((task, index) => {
@@ -57,8 +57,9 @@ const toggleTaskCompletion = (index: number): void => {
           return (
             isVisible && (
                <li key={index} className="flex items-center">
+                {/* Logic for check and x, change logic later  */}
                 <button onClick={() => toggleTaskCompletion(index)} className="focus:outline-none">
-                  {isCompleted ? <Check size={24} /> : <X size={24} />}
+                  {isCompleted ? <Check size={24} /> : <X size={24} />} 
                 </button>
                 <span>{task}</span>
                </li>
