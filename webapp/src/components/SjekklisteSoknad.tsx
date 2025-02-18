@@ -11,7 +11,7 @@ interface SjekklisteSoknadProps {
 
 export default function SjekklisteSokad({ currentStep, currentSubstep }: SjekklisteSoknadProps) { 
 
-const sjekkliste: { [key: number]: string[] } = {
+  const sjekkliste: Record<number, string[]> = {
     1: ["Upload files", "Verify document", "Submit initial form"],
     2: ["Upload additional files", "Confirm identity", "Provide references"],
     3: ["Review application", "Add supporting documents", "Final review"],
@@ -20,13 +20,14 @@ const sjekkliste: { [key: number]: string[] } = {
     6: ["Final submission"] 
 };
 
-const currentTasks = sjekkliste[currentStep] || [];
+const currentTasks = sjekkliste[currentStep] ?? [];
 const storageKey = `step_${currentStep}_completed_tasks`; // For saving tasks in local storage
 
-const [completedTasks, setCompletedTasks] = useState(() => {
+const [completedTasks, setCompletedTasks] = useState<boolean[]>(() => {
   if (typeof window !== "undefined") {
     const storedTasks = localStorage.getItem(storageKey);
-    return storedTasks ? JSON.parse(storedTasks) : Array(currentTasks.length).fill(false);
+return storedTasks ? (JSON.parse(storedTasks) as boolean[]) : Array(currentTasks.length).fill(false);
+
   }
   return Array(currentTasks.length).fill(false);
 });
