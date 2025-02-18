@@ -1,68 +1,103 @@
 import React from 'react';
-import { FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
-import SubmissionValidation from './SubmissionValidation';
-import { hasErrors } from '../utils/helpers';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { requiredDrawingTypes, capitalize } from '../utils/helpers';
 import type { Detection } from '~/types/detection';
 
-interface ResultsProps {
-  results: Detection[];
+// Types for document data structure
+interface ExistingDocument {
+  documentID: number;
+  fileName: string;
+  applicationID: number | null;
+  userID: string;
+  createdAt?: Date; 
+  modelName?: {        
+    name: string;
+  };
+  drawing_type?: string | string[];
 }
 
-const Results: React.FC<ResultsProps> = ({ results }) => {
+interface ResultsProps {
+  results: Detection[];           // New detection results
+  existingDocuments?: ExistingDocument[]; // Previously uploaded documents
+}
+
+const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) => {
+  // Combine existing and new documents for analysis
+  const allDocuments = [...existingDocuments, ...results];
+
+  // Generate summary of drawing types found across all documents
+  const drawingTypeSummary = requiredDrawingTypes.map(requiredType => {
+    // Find documents containing each required drawing type
+    const foundInDocuments = allDocuments.filter(doc => {
+      const types = 'drawing_type' in doc
+        ? Array.isArray(doc.drawing_type)
+          ? doc.drawing_type
+          : [doc.drawing_type]
+        : [];
+      return types.includes(requiredType);
+    });
+
+    // Get unique filenames for documents containing the drawing type
+    const uniqueDocuments = [...new Set(foundInDocuments.map(doc => 
+      'fileName' in doc ? doc.fileName : doc.file_name
+    ))];
+
+    return {
+      type: requiredType,
+      found: uniqueDocuments.length > 0,
+      documents: uniqueDocuments,
+    };
+  });
+
   return (
-    <div className="mb-6 bg-white p-4 rounded-lg">
-      <h2 className="font-semibold text-lg mb-4">Resultater fra CADAiD</h2>
-
-      <SubmissionValidation results={results} />
-
-      <ul className="space-y-2">
-        {results.map((result) => (
-          <li
-            key={result.file_name}
-            className="flex flex-col p-3 border rounded-lg"
-            aria-labelledby={`result-${result.file_name}`}
-          >
-            {/* Display Drawing Types */}
-            {result.drawing_type && (
-              <div className="mb-2">
-                <b>{result.file_name}</b>
-                <div className="flex items-center">
-                  {hasErrors(result) ? (
-                    <>
-                      <FaExclamationTriangle
-                        className="text-red-500 mr-1"
-                        aria-hidden="true"
-                      />
-                      <p id={`result-${result.file_name}`} className="font-medium">
-                        {Array.isArray(result.drawing_type)
-                          ? result.drawing_type.join(', ')
-                          : result.drawing_type}
-                      </p>
-                      <p className="text-red-500 ml-2">
-                        {result.cardinal_direction}
-                        {result.scale}
-                        {result.room_names}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <FaCheckCircle
-                        className="text-green-500 mr-1"
-                        aria-hidden="true"
-                      />
-                      <p id={`result-${result.file_name}`} className="font-medium">
-                        {Array.isArray(result.drawing_type)
-                          ? result.drawing_type.join(', ')
-                          : result.drawing_type}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+    <div className="mt-6">
+      <h2 className="text-xl font-semibold mb-4">Validation Summary</h2>
+      
+      {allDocuments.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white rounded-lg shadow">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Required Drawing Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Found In Documents
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {drawingTypeSummary.map(({ type, found, documents }) => (
+                <tr key={type}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {capitalize(type)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center">
+                      {found ? (
+                        <FaCheckCircle className="text-green-500 mr-2" />
+                      ) : (
+                        <FaTimesCircle className="text-red-500 mr-2" />
+                      )}
+                      {found ? 'Found' : 'Missing'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {found ? documents.join(', ') : 'Not found in any document'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-gray-500 italic">
+          No documents analyzed yet. Upload a document to see results.
+        </div>
+      )}
     </div>
   );
 };

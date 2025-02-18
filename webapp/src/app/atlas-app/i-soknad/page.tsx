@@ -1,12 +1,12 @@
 import React from 'react'
 import { ProgressBar } from '~/components/Progressbar'
-import ProgressBarStep from '~/components/ProgressBarStep'
+import StepperDemo from '~/components/ProgressBarStep'
 
 const App = () => {
   return (
     <div>
       <ProgressBar steps={[]} />
-      <ProgressBarStep />
+      <StepperDemo />
     </div>
   )
 }

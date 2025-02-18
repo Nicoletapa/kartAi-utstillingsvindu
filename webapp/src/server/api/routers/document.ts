@@ -6,26 +6,24 @@ import { type Document } from "@prisma/client";
 const VALUES = ["OTHER", "XML"] as const;
 
 export const documentRouter = createTRPCRouter({
-  createDocument: publicProcedure
-    .input(
-      z.object({
-        type: z.enum(VALUES),
-        document: z.string().base64(), // Get file content as base64 string, convert to Buffer in resolver
-        applicationID: z.number(),
-      }),
-    )
+  create: publicProcedure
+    .input(z.object({
+      fileName: z.string(),
+      document: z.string(),
+      applicationID: z.number().optional(),
+      modelID: z.number(),
+      userID: z.string(),
+    }))
     .mutation(async ({ input }) => {
       const res: Document = await db.document.create({
         data: {
-          type: input.type,
+          fileName: input.fileName,
           document: Buffer.from(input.document),
           applicationID: input.applicationID,
+          modelID: input.modelID,
+          userID: input.userID,
         },
       });
-
-      if (!res) {
-        throw new Error("Failed to create application");
-      }
       return res;
     }),
   updateDocument: publicProcedure
@@ -41,7 +39,7 @@ export const documentRouter = createTRPCRouter({
       const res: Document = await db.document.update({
         where: { documentID: input.documentID },
         data: {
-          type: input.type,
+         
           document: Buffer.from(input.document ?? ""),
           applicationID: input.applicationID,
         },
