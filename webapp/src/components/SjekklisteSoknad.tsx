@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Check, X } from "lucide-react";
+import { steps } from "./ProgressBarStep";
 
 interface SjekklisteSoknadProps {
   currentStep: number;
@@ -16,11 +17,11 @@ const sjekkliste: { [key: number]: string[] } = {
     3: ["Review application", "Add supporting documents", "Final review"],
     4: ["Schedule interview", "Prepare documents", "Confirm attendance"],
     5: ["Submit final documents", "Sign agreement", "Receive confirmation"],
-    6: ["Final submission"], // Only appears at the last step
+    6: ["Final submission"] 
 };
 
 const currentTasks = sjekkliste[currentStep] || [];
-const storageKey = `step_${currentStep}_completed_tasks`;
+const storageKey = `step_${currentStep}_completed_tasks`; // For saving tasks in local storage
 
 const [completedTasks, setCompletedTasks] = useState(() => {
   if (typeof window !== "undefined") {
@@ -36,10 +37,6 @@ useEffect(() => {
 }
 }, [completedTasks, storageKey]);
 
-interface TaskToggleProps {
-  index: number;
-}
-
 const toggleTaskCompletion = (index: number): void => {
   const updatedTasks = [...completedTasks];
   updatedTasks[index] = !updatedTasks[index];
@@ -47,8 +44,8 @@ const toggleTaskCompletion = (index: number): void => {
 };
 
   return (
-    <div className="rounded-lg shadow-md border p-4 max-w-72 min-h-80 bg-gray-100">
-      <h2 className="text-lg font-semibold">Gjøremål for Steg {currentStep}</h2>
+    <div className="rounded-lg shadow-md border p-4 max-w-fit min-h-80 bg-gray-100">
+      <h2 className="text-lg font-semibold">Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title} </h2>
       <ul className="list-disc pl-5 space-y-2 mt-2">
         {currentTasks.map((task, index) => {
           const isVisible = index <= currentSubstep;
@@ -57,18 +54,15 @@ const toggleTaskCompletion = (index: number): void => {
           return (
             isVisible && (
                <li key={index} className="flex items-center">
-                {/* Logic for check and x, change logic later  */}
-                <button onClick={() => toggleTaskCompletion(index)} className="focus:outline-none">
-                  {isCompleted ? <Check size={24} /> : <X size={24} />} 
+                {/* Logic for check and x, change logic to fit with AI models */}
+                <button onClick={() => toggleTaskCompletion(index)} className="focus:outline-none mr-2">
+                  {isCompleted ? <Check size={18} className="text-green-600" /> : <X size={18} className="text-red-600" />} 
                 </button>
                 <span>{task}</span>
                </li>
-
             )
           )
         })}
-       
-        
       </ul>
     </div>
   );

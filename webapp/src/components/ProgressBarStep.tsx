@@ -6,17 +6,19 @@ import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
 
+export const steps = [
+        { title: "Oversikt", totalSubsteps: 3 },
+        { title: "Dokumentsjekk", totalSubsteps: 3 }, 
+        { title: "Nabovarsel", totalSubsteps: 3 }, 
+        { title: "Søknaden", totalSubsteps: 3 }, 
+        { title: "Mangel", totalSubsteps: 3 }, 
+        { title: "Kvittering", totalSubsteps: 0 } 
+    ];
+
 export default function ProgressBarStep() {
     const router = useRouter();
 
-    const steps = [
-        { title: "Steg 1", totalSubsteps: 3 },
-        { title: "Steg 2", totalSubsteps: 3 },
-        { title: "Steg 3", totalSubsteps: 3 },
-        { title: "Steg 4", totalSubsteps: 3 },
-        { title: "Steg 5", totalSubsteps: 3 },
-        { title: "Steg 6", totalSubsteps: 0 }
-    ];
+    
 
     const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
     const [currentOverallStep, setCurrentOverallStep] = useState(0);
