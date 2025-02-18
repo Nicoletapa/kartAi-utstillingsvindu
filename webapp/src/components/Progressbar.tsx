@@ -88,4 +88,3 @@ export const ProgressBar: React.FC<StepperProps> = ({ steps }) => {
     </div>
   )
 }
-

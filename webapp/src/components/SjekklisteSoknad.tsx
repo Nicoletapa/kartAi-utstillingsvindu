@@ -11,7 +11,7 @@ interface SjekklisteSoknadProps {
 
 export default function SjekklisteSokad({ currentStep, currentSubstep }: SjekklisteSoknadProps) { 
 
-  const sjekkliste: Record<number, string[]> = {
+const sjekkliste: { [key: number]: string[] } = {
     1: ["Upload files", "Verify document", "Submit initial form"],
     2: ["Upload additional files", "Confirm identity", "Provide references"],
     3: ["Review application", "Add supporting documents", "Final review"],
@@ -20,21 +20,16 @@ export default function SjekklisteSokad({ currentStep, currentSubstep }: Sjekkli
     6: ["Final submission"] 
 };
 
-const currentTasks = sjekkliste[currentStep] ?? [];
+const currentTasks = sjekkliste[currentStep] || [];
 const storageKey = `step_${currentStep}_completed_tasks`; // For saving tasks in local storage
 
-const [completedTasks, setCompletedTasks] = useState<boolean[]>(() => {
+const [completedTasks, setCompletedTasks] = useState(() => {
   if (typeof window !== "undefined") {
     const storedTasks = localStorage.getItem(storageKey);
-    const parsedTasks: unknown = storedTasks ? JSON.parse(storedTasks) : null;
-
-    return Array.isArray(parsedTasks) && parsedTasks.every(item => typeof item === "boolean")
-      ? parsedTasks
-      : Array(currentTasks.length).fill(false);
+    return storedTasks ? JSON.parse(storedTasks) : Array(currentTasks.length).fill(false);
   }
   return Array(currentTasks.length).fill(false);
 });
-
 
 useEffect(() => {
   if (typeof window !== "undefined") {
