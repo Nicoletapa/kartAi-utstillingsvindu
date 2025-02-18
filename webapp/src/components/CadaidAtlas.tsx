@@ -188,7 +188,7 @@ const CadaidAtlas: React.FC = () => {
 
   const deleteDocumentMutation = api.userDocuments.deleteDocument.useMutation({
     onSuccess: () => {
-      utils.userDocuments.getUserDocuments.invalidate();
+      void utils.userDocuments.getUserDocuments.invalidate();
     },
   });
 
