@@ -26,11 +26,15 @@ const storageKey = `step_${currentStep}_completed_tasks`; // For saving tasks in
 const [completedTasks, setCompletedTasks] = useState<boolean[]>(() => {
   if (typeof window !== "undefined") {
     const storedTasks = localStorage.getItem(storageKey);
-return storedTasks ? (JSON.parse(storedTasks) as boolean[]) : Array(currentTasks.length).fill(false);
+    const parsedTasks: unknown = storedTasks ? JSON.parse(storedTasks) : null;
 
+    return Array.isArray(parsedTasks) && parsedTasks.every(item => typeof item === "boolean")
+      ? parsedTasks
+      : Array(currentTasks.length).fill(false);
   }
   return Array(currentTasks.length).fill(false);
 });
+
 
 useEffect(() => {
   if (typeof window !== "undefined") {
