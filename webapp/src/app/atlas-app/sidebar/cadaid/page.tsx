@@ -1,4 +1,4 @@
-import CadaidPage from "~/components/CADAiD";
+import CadaidPage from "~/components/CadaidAtlas";
 import AtlasSidebar from "~/components/AtlasSidebar";
 
 export default async function PlantegningsAnalyse() {

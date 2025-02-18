@@ -14,6 +14,7 @@ export const applicationRouter = createTRPCRouter({
         status: z.enum(VALUES),
         address: z.string(),
         municipality: z.string(),
+        userID: z.string(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -23,7 +24,12 @@ export const applicationRouter = createTRPCRouter({
           status: input.status,
           address: input.address,
           municipality: input.municipality,
+          user: {
+            connect: {
+              id: input.userID,
+            },
         },
+      }
       });
 
       if (!res) {

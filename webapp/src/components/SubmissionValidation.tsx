@@ -48,22 +48,47 @@ const SubmissionValidation: React.FC<SubmissionValidationProps> = ({ results }) 
     );
   }
 
+  // Separate valid and invalid drawing types
+  const validDrawingTypes = allDrawingTypes.filter(type => 
+    requiredDrawingTypes.includes(type)
+  );
+ 
+
   return (
     <div
-      className="mb-4 p-2 text-red-700 bg-red-100 rounded"
+      className="mb-4 p-2 
+       rounded"
       role="alert"
       aria-live="assertive"
       data-cy="submission-validation"
     >
-      <strong>Manglende tegninger for søknad:</strong>
-      <ul className="list-disc list-inside">
-        {missingDrawingTypes.map((type) => (
-          <li key={type} className="flex items-center">
-            <FaTimesCircle className="text-red-500 mr-1" aria-hidden="true" />
-            <span>{capitalize(type)}</span>
-          </li>
-        ))}
-      </ul>
+      {validDrawingTypes.length > 0 && (
+        <div className="mb-3">
+          <strong>Godkjente tegninger:</strong>
+          <ul className="list-disc list-inside">
+            {validDrawingTypes.map((type) => (
+              <li key={type} className="flex items-center">
+                <FaCheckCircle className="text-green-500 mr-1" aria-hidden="true" />
+                <span>{capitalize(type)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {missingDrawingTypes.length > 0 && (
+        <div>
+          <strong>Manglende tegninger for søknad:</strong>
+          <ul className="list-disc list-inside">
+            {missingDrawingTypes.map((type) => (
+              <li key={type} className="flex items-center">
+                <FaTimesCircle className="text-red-500 mr-1" aria-hidden="true" />
+                <span>{capitalize(type)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
