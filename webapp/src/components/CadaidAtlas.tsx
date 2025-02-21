@@ -6,6 +6,7 @@ import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
 import ExistingDocumentsList from './ExistingDocumentsList';
 import InvalidFilesList from './InvalidFilesList';
+import { X } from 'lucide-react';
 
 // Utility functions for file processing
 const processFile = async (file: File, detections: Detection[]) => {
@@ -48,11 +49,20 @@ const CadaidAtlas: React.FC = () => {
   const [results, setResults] = useState<Detection[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [invalidFiles, setInvalidFiles] = useState<{ file: File; base64: string }[]>([]);
+  const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   
   // Authentication and API utilities
   const { data: session } = useSession();
   const utils = api.useUtils();
-  
+
+  const handleImageClick = (imageSrc: string) => {
+    setFullSizeImage(imageSrc);
+  };
+
+  const closeFullSizeImage = () => {
+    setFullSizeImage(null);
+  };
+
   type FileDetection = {
     drawing_type: string[];
     file_name: string;
@@ -217,6 +227,7 @@ const CadaidAtlas: React.FC = () => {
               documents={documentsQuery.data ?? []}
               onUpload={handleFileUpload}
               onDelete={handleDocumentDelete}
+              onImageClick={handleImageClick}
             />
           )}
         </div>
@@ -238,12 +249,37 @@ const CadaidAtlas: React.FC = () => {
           onRemove={handleFileRemove}
         />
 
-        <Results 
+        <Results
           results={results} 
-          existingDocuments={documentsQuery.data ?? []} 
+          existingDocuments={documentsQuery.data ?? []}
         />
+        </div>
+
+        {fullSizeImage && (
+          <div 
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 px-8 
+            transition-opacity duration-100 ease-in-out" 
+            onClick={() => setFullSizeImage(null)}
+          >
+            <div 
+              className="relative transform transition-all duration-100 ease-in-out opacity-0 animate-fadeIn" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={fullSizeImage} 
+                alt="Full Size" 
+                className="max-w-full max-h-full"
+              />
+              <X 
+                className="cursor-pointer absolute top-[-36px] right-[-36px] text-white rounded-full p-2 
+                hover:bg-white/10 transition-colors duration-200" 
+                size={42} 
+                onClick={closeFullSizeImage} 
+              />
+            </div>
+          </div>
+        )}
       </div>
-    </div>
   );
 };
 

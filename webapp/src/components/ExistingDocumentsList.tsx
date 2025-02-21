@@ -12,9 +12,10 @@ interface ExistingDocumentsListProps {
   }[];
   onDelete?: (documentId: number) => void;
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageClick?: (imageSrc: string) => void; // Callback for full-size image display
 }
 
-const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents, onDelete, onUpload }) => {
+const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents, onDelete, onUpload, onImageClick }) => {
   const utils = api.useUtils();
   // Change index signature to Record type
   const [documentImages, setDocumentImages] = useState<Record<number, string>>({});
@@ -63,7 +64,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
 
       {documents.map((doc) => (
         <div key={doc.documentID} className="relative group">
-          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer" onClick={() => onImageClick && documentImages[doc.documentID] ? onImageClick(`data:image/png;base64,${documentImages[doc.documentID]}`) : null}>
             {documentImages[doc.documentID] && typeof documentImages[doc.documentID] === 'string' ? (
               // Check if the image data is a base64 string and add the data URL prefix if needed
               <Image
@@ -80,6 +81,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
                 <span className="text-gray-400">No preview</span>
               </div>
             )}
+
           </div>
           <p className="mt-1 text-sm text-gray-500 truncate">{doc.fileName}</p>
           {onDelete && (
