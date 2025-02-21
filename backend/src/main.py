@@ -13,7 +13,7 @@ from src.services.external_ai_models import query_cad_aid
 
 app = FastAPI(
     title="KPRO API AI system",
-    description="retrives tekst from user and returns an answer based on building regulations.",
+    description="Retrieves text from user and returns an answer based on building regulations.",
     version="1.0.0",
 )
 
