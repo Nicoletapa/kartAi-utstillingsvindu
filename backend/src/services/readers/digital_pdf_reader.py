@@ -1,8 +1,4 @@
-from io import BytesIO
-from fastapi import UploadFile
-import pymupdf
-from tempfile import NamedTemporaryFile
-from src.services.reader import Reader
+
 
 from io import BytesIO
 from fastapi import UploadFile

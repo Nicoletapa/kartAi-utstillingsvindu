@@ -7,6 +7,7 @@ from src.configuration import (
     AZURE_DEPLOYMENT_NAME,
     AZURE_OPENAI_ENDPOINT,
     OPENAI_API_KEY,
+     TAVILY_API_KEY
 )
 
 
@@ -21,4 +22,4 @@ llm = AzureChatOpenAI(
 
 embedder = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
 
-web_search_tool = TavilySearchResults(k=3)
+web_search_tool = TavilySearchResults(k=3, tavily_api_key=TAVILY_API_KEY)
