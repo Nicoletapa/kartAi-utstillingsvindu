@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FaTrash } from 'react-icons/fa';
 import { api } from '~/trpc/react';
 import Image from 'next/image'; // Add Next.js Image component
 import { Upload } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+
 
 // Component for displaying and managing uploaded documents
 interface ExistingDocumentsListProps {
@@ -12,7 +14,7 @@ interface ExistingDocumentsListProps {
     document?: string;  // Base64 document data for preview
   }[];
   onDelete?: (documentId: number) => void;
-  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpload: (files: File[]) => void;
   onImageClick?: (imageSrc: string) => void; // Callback for full-size image display
 }
 
@@ -20,6 +22,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
   const utils = api.useUtils();
   // Change index signature to Record type
   const [documentImages, setDocumentImages] = useState<Record<number, string>>({});
+  const [isDragging, setIsDragging] = useState(false);
 
   const deleteDocument = api.userDocuments.deleteDocument.useMutation({
     onSuccess: async () => {
@@ -47,18 +50,37 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
     }
   };
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      onUpload(acceptedFiles);
+    }
+  }, [onUpload]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop, accept: {
+      'image/*': ['.png', '.jpg', '.jpeg', '.tiff', '.bmp'],
+      'application/pdf': ['.pdf'],
+      'application/dwg': ['.dwg'],
+      'application/dxf': ['.dxf'],
+    }, multiple: true,
+    onDragEnter: () => setIsDragging(true),
+    onDragLeave: () => setIsDragging(false),
+  });
+
   return (
     <>
-    <div className="h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border-2 border-dashed mb-4">
+    <div {... getRootProps()} className={`h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border-2 border-dashed mb-4 transition-colors ${isDragActive ? 'bg-gray-300 border-gray-400' : 'bg-gray-100 hover:bg-gray-100'}`}>
         <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
           <input
+            {... getInputProps()}
             type="file"
             className="hidden"
-            onChange={onUpload}
+            onChange={(e) => onUpload(Array.from(e.target.files || []))}
             multiple
             accept=".pdf,.dwg,.dxf,.png,.jpg,.jpeg,.tiff,.bmp"
           />
-          <span className="text-sm text-gray-500 inline-flex">Last opp dokumenter
+          <span className="text-sm text-gray-500 inline-flex">
+            {isDragActive ? 'Slipp filene her' : 'Dra og slipp filer eller klikk for å laste opp'}
             <Upload size={18} className="text-gray-500 ml-2" />
           </span>
         </label>

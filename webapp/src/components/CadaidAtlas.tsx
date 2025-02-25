@@ -131,15 +131,13 @@ const CadaidAtlas: React.FC = () => {
   };
 
   // Main file upload handler
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!session?.user?.id) {
-      setErrorMessage("Du må være logget inn for å laste opp dokumenter");
-      return;
-    }
-
-    // Replace || with ?? for nullish coalescing
-    const uploadedFiles = Array.from(event.target.files ?? []);
-    if (uploadedFiles.length === 0) return;
+  const handleFileUpload = async (uploadedFiles: File[]) => {
+      if (!session?.user?.id) {
+        setErrorMessage("Du må være logget inn for å laste opp dokumenter");
+        return;
+      }
+  
+      if (uploadedFiles.length === 0) return;
 
     setIsLoading(true);
     setErrorMessage(null);
