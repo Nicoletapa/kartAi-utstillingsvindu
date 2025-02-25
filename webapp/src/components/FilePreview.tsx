@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface FilePreviewProps {
   files: File[];
@@ -42,7 +43,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({ files }) => {
               frameBorder="0"
             ></iframe>
           ) : selectedFile.type.startsWith('image/') ? (
-            <img
+            <Image
               src={URL.createObjectURL(selectedFile)}
               alt={selectedFile.name}
               className="max-w-full h-auto rounded-lg"

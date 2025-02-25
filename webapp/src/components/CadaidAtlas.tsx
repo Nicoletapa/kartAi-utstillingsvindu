@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import ExistingDocumentsList from './ExistingDocumentsList';
 import InvalidFilesList from './InvalidFilesList';
 import { X, Info } from 'lucide-react';
+import Image from "next/image";
 
 // Utility functions for file processing
 const processFile = async (file: File, detections: Detection[]) => {
@@ -311,7 +312,7 @@ const CadaidAtlas: React.FC = () => {
               className="relative transform transition-all duration-100 ease-in-out opacity-0 animate-fadeIn" 
               onClick={(e) => e.stopPropagation()}
             >
-              <img 
+              <Image 
                 src={fullSizeImage} 
                 alt="Full Size" 
                 className="max-w-full max-h-full"

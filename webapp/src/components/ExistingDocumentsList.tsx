@@ -22,7 +22,6 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
   const utils = api.useUtils();
   // Change index signature to Record type
   const [documentImages, setDocumentImages] = useState<Record<number, string>>({});
-  const [isDragging, setIsDragging] = useState(false);
 
   const deleteDocument = api.userDocuments.deleteDocument.useMutation({
     onSuccess: async () => {
@@ -63,8 +62,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
       'application/dwg': ['.dwg'],
       'application/dxf': ['.dxf'],
     }, multiple: true,
-    onDragEnter: () => setIsDragging(true),
-    onDragLeave: () => setIsDragging(false),
+    
   });
 
   return (
@@ -75,7 +73,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
             {... getInputProps()}
             type="file"
             className="hidden"
-            onChange={(e) => onUpload(Array.from(e.target.files || []))}
+            onChange={(e) => onUpload(Array.from(e.target.files ?? []))}
             multiple
             accept=".pdf,.dwg,.dxf,.png,.jpg,.jpeg,.tiff,.bmp"
           />
