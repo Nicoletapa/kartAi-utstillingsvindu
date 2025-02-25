@@ -41,13 +41,13 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const handleResize = () => {
-            const breakpoint = 1050; // breakpoint for collapse
+            const breakpoint = 1050;
              if (window.innerWidth < breakpoint) {
                  setExpanded(false);
              } else {
                  setExpanded(true);
              }
-            // setExpanded(window.innerWidth >= breakpoint);
+            
         };
 
         handleResize();
@@ -56,33 +56,6 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
-
-    // useEffect(() => {
-    //     const observer = new IntersectionObserver(
-    //         (entries) => {
-    //             entries.forEach((entry) => {
-    //                 if(!entry.isIntersecting) {
-    //                     setExpanded(false);
-    //                 }
-    //             });
-    //         },
-    //         {
-    //             root: null,
-    //             rootMargin: "0px",
-    //             threshold: 1.0, 
-    //         }
-    //     );
-
-    //     if (contentRef.current) {
-    //         observer.observe(contentRef.current);
-    //     }
-
-    //     return () => {
-    //         if (contentRef.current) {
-    //             observer.unobserve(contentRef.current);
-    //         }
-    //     };
-    // }, [pathname]);
 
     return (
         <div className="flex">
@@ -155,19 +128,12 @@ interface SidebarItemProps {
 }
 
 export function SidebarItem({ icon, text, href, active, isSubItem = false }: SidebarItemProps) {
-    // const pathname = usePathname():
 
     const context = useContext(SidebarContext);
     if (!context) {
         throw new Error("SidebarItem must be used within a SidebarContext.Provider");
     }
     const { expanded } = context;
-    //         const [baseHref] = href.split("#");
-    //         return pathname === baseHref;
-    //     } else {
-    //         return pathname.startsWith(href);
-    //     }
-    // };
 
     return (
         <li className={`relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"} ${isSubItem ? "ml-4" : ""}`}>

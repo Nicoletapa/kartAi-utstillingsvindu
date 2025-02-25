@@ -20,26 +20,26 @@ const NextBreadcrumb = ({
   const pathname = usePathname();
   const [history, setHistory] = useState<{ url: string; alias: string }[]>([]);
 
-  const computeAlias = (path: string) => {
+  const computeAlias = useCallback((path: string) => {
     const shortcut = shortcuts.find((shortcut) =>
       shortcut.subgroups.some((subgroup) =>
         subgroup.links.some((link) => link.url === path),
       ),
     );
-
+  
     if (shortcut) {
       const foundLink = shortcut.subgroups
         .flatMap((subgroup) => subgroup.links)
         .find((link) => link.url === path);
-
+  
       if (foundLink) {
         return shortcut.header + " - " + foundLink.label;
       }
     }
-
+  
     return capitalize(path.split("/").pop() ?? path);
-  };
-
+  }, []);
+  
   const resetHistory = useCallback((path: string) => {
     const newHistory = [
       { url: "/", alias: "Home" },
@@ -47,12 +47,13 @@ const NextBreadcrumb = ({
     ];
     setHistory(newHistory);
     localStorage.setItem("breadcrumbHistory", JSON.stringify(newHistory));
-  }, []);
+  }, [computeAlias]);
+  
 
   const updateHistory = useCallback((path: string) => {
     const alias = computeAlias(path);
     if (alias === "Loading...") return;
-
+  
     setHistory((prevHistory) => {
       const pathIndex = prevHistory.findIndex((item) => item.url === path);
       if (pathIndex === -1) {
@@ -65,8 +66,8 @@ const NextBreadcrumb = ({
         return newHistory;
       }
     });
-  }, []);
-
+  }, [computeAlias]);
+  
   useEffect(() => {
     if (typeof window !== "undefined") {
       setHistory(getLocalStorageHistory());
