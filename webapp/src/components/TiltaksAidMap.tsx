@@ -7,13 +7,16 @@ import type { Map } from 'leaflet';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 
-
-
 const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
 const Overlay = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.Overlay), { ssr: false });
 
-const DrawControl = ({ map }: { map: Map }) => {
+interface DrawControlProps {
+  map: Map;
+  onShapeDrawn?: (shape: GeoJSON.Feature) => void;
+}
+
+const DrawControl = ({ map, onShapeDrawn }: DrawControlProps) => {
   useEffect(() => {
     if (!map) return;
 
@@ -55,14 +58,16 @@ const DrawControl = ({ map }: { map: Map }) => {
     });
     map.addControl(drawControl);
 
-
     map.on(L.Draw.Event.CREATED, ((e: L.DrawEvents.Created) => {
       const layer = e.layer;
       drawnItems.addLayer(layer);
       
-      if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-        const geoJson = layer.toGeoJSON();
-        console.log('Drawn shape GeoJSON:', geoJson);
+      // Convert to GeoJSON and pass to parent component
+      const geoJson = layer.toGeoJSON();
+      console.log('Drawn shape GeoJSON:', geoJson);
+      
+      if (onShapeDrawn) {
+        onShapeDrawn(geoJson);
       }
     }) as L.LeafletEventHandlerFn);
 
@@ -71,7 +76,7 @@ const DrawControl = ({ map }: { map: Map }) => {
       map.removeLayer(drawnItems);
       map.off(L.Draw.Event.CREATED);
     };
-  }, [map]);
+  }, [map, onShapeDrawn]);
 
   return null;
 };
@@ -80,7 +85,12 @@ interface PropertyData {
   geom: GeoJSON.GeoJSON;
 }
 
-const TiltaksAidMap = () => {
+interface TiltaksAidMapProps {
+  onMapReady?: (map: Map) => void;
+  onShapeDrawn?: (shape: GeoJSON.Feature) => void;
+}
+
+const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
   const mapRef = useRef<Map | null>(null);
   const [zoom] = useState(15);
   const [searchInput, setSearchInput] = useState('');
@@ -142,6 +152,9 @@ const TiltaksAidMap = () => {
       if (map) {
         mapRef.current = map;
         setMapReady(true);
+        if (onMapReady) {
+          onMapReady(map);
+        }
       }
     }, [map]);
     
@@ -192,7 +205,12 @@ const TiltaksAidMap = () => {
           className="h-full w-full"
         >
           <MapEvents />
-          {mapReady && mapRef.current && <DrawControl map={mapRef.current} />}
+          {mapReady && mapRef.current && 
+            <DrawControl 
+              map={mapRef.current} 
+              onShapeDrawn={onShapeDrawn}
+            />
+          }
           
           <LayersControl position="topright">
             <BaseLayer checked name="OpenStreetMap">

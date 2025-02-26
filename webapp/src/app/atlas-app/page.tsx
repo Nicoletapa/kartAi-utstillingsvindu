@@ -6,15 +6,15 @@ import { GeistSans } from "geist/font/sans";
 import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 import AtlasSidebar from "~/components/AtlasSidebar";
+import { MapChatIntegration } from "~/components/MapChatIntegration";
 
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
       <h1 className="flex justify-center pt-10 text-4xl">Før du søker</h1>
-      <div className="mx-auto mt-36 flex h-40 w-1/3 items-center justify-center rounded-lg border-4 border-solid p-10 align-middle">
-        {" "}
-        placeholder
-      </div>
+      <div className="lg:w-2/4 mx-auto mt-2">
+        <MapChatIntegration/>
+   </div>
       <AtlasSidebar>
         
         <Link
