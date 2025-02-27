@@ -12,7 +12,7 @@ interface SjekklisteSoknadProps {
 export default function SjekklisteSoknad({ currentStep, currentSubstep }: SjekklisteSoknadProps) { 
   const sjekkliste: Record<number, string[]> = {
     1: ["Upload files", "Verify document", "Submit initial form"],
-    2: ["Upload additional files", "Confirm identity", "Provide references"],
+    2: ["Oversikt", "Last opp de nødvendige filene", "Provide references"],
     3: ["Review application", "Add supporting documents", "Final review"],
     4: ["Schedule interview", "Prepare documents", "Confirm attendance"],
     5: ["Submit final documents", "Sign agreement", "Receive confirmation"],
@@ -32,7 +32,7 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep }: Sjekkl
   };
 
   return (
-    <div className="rounded-lg shadow-md border p-4 max-w-fit min-h-80 bg-gray-100">
+    <div className="rounded-lg shadow-md border p-4 min-w-52 min-h-80 bg-gray-100">
       <h2 className="text-lg font-semibold">
         Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
       </h2>

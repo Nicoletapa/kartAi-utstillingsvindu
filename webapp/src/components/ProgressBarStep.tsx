@@ -5,6 +5,10 @@ import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
+import Step1_0 from "./steps/Step1_0";
+import Step1_1 from "./steps/Steps1_1";
+import Step2_0 from "./steps/Step2_0";
+import Step2_1 from "./steps/Step2_1";
 
 
 export const steps = [
@@ -15,6 +19,23 @@ export const steps = [
         { title: "Mangel", totalSubsteps: 3 }, 
         { title: "Kvittering", totalSubsteps: 0 } 
     ];
+
+type StepComponentsType = {
+    [key: number]: {
+        [subkey: number]: React.ComponentType<any>;
+    };
+};
+
+const stepComponents: StepComponentsType = {
+    1: {
+        0: Step1_0,
+        1: Step1_1,
+    },
+    2: {
+        0: Step2_0,
+        1: Step2_1,
+    },
+};
 
 export default function ProgressBarStep() {
     const router = useRouter();
@@ -99,24 +120,26 @@ export default function ProgressBarStep() {
 
 
     const isLastStep = currentStep === steps.length;
+    const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;
 
     return (
-        <div className="container mx-auto py-6 px-4">
+        <div className="container mx-auto py-6 px-4 flex flex-col">
             <div className="mb-8 sticky top-0 bg-background pt-4 pb-8 z-10">
                 <ProgressBar steps={stepsWithStatus} />
             </div>
 
-            <div className="space-y-8">
+            <div className="flex space-x-8 flex-1">
                 <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
+                {CurrentStepComponent && <CurrentStepComponent />}
+            </div>
 
-                <div className="flex justify-between fixed bottom-16 left-1/2 transform -translate-x-1/2 gap-4">
-                    <Button onClick={handlePrev} className="bg-gray-500 hover:bg-gray-400">
-                        Tilbake
-                    </Button>
-                    <Button onClick={handleNext} className="bg-kartAI-blue hover:bg-blue-900">
-                        {isLastStep ? "Send inn" : "Neste"}
-                    </Button>
-                </div>
+            <div className="flex justify-between mt-8 gap-4">
+                <Button onClick={handlePrev} className="bg-gray-500 hover:bg-gray-400">
+                    Tilbake
+                </Button>
+                <Button onClick={handleNext} className="bg-kartAI-blue hover:bg-blue-900">
+                    {isLastStep ? "Send inn" : "Neste"}
+                </Button>
             </div>
         </div>
     );
