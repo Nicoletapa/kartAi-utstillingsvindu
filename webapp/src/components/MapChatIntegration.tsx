@@ -3,12 +3,14 @@ import { useRef, useState } from 'react';
 import TiltaksAidMap from './TiltaksAidMap';
 import { PlanPrat } from './PlanChatAtlas';
 import type { Map } from 'leaflet';
+import type { SpatialAnalysisResult } from './TiltaksAidMap';
 
 export function MapChatIntegration() {
   // Shared state between map and chat
   const mapRef = useRef<Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
+  const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
   
   // Function to handle when the map is ready
   const handleMapReady = (map: Map) => {
@@ -18,8 +20,14 @@ export function MapChatIntegration() {
   };
   
   // Function to handle when a shape is drawn on the map
-  const handleShapeDrawn = (shape: GeoJSON.Feature) => {
+  const handleShapeDrawn = (shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
     setLastDrawnShape(shape);
+    if (analysis) {
+      setSpatialAnalysis(analysis);
+      console.log('Spatial analysis:', analysis);
+    } else {
+      setSpatialAnalysis(null);
+    }
     console.log('Shape sent to chat:', shape);
   };
   
@@ -35,6 +43,7 @@ export function MapChatIntegration() {
         <PlanPrat 
           mapRef={mapRef}
           lastDrawnShape={lastDrawnShape}
+          spatialAnalysis={spatialAnalysis}
           mapReady={mapReady}
         />
       </div>

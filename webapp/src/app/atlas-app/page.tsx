@@ -6,14 +6,20 @@ import { GeistSans } from "geist/font/sans";
 import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 import AtlasSidebar from "~/components/AtlasSidebar";
-import { MapChatIntegration } from "~/components/MapChatIntegration";
+import dynamic from "next/dynamic";
+
+// Dynamically import the MapChatIntegration component with SSR disabled
+const MapChatIntegrationWithNoSSR = dynamic(
+  () => import("~/components/MapChatIntegration"),
+  { ssr: false } // This prevents server-side rendering
+);
 
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
       <h1 className="flex justify-center pt-10 text-4xl">Før du søker</h1>
       <div className="lg:w-2/4 mx-auto mt-2">
-        <MapChatIntegration/>
+        <MapChatIntegrationWithNoSSR/>
    </div>
       <AtlasSidebar>
         
