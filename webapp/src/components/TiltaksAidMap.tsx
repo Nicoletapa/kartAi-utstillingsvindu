@@ -432,23 +432,23 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
   }, []);
 
   return (
-    <div className='flex flex-col w-full'>
-      <div className="mb-4 flex gap-2">
+    <div className='flex flex-col w-full shadow-lg'>
+      {/* <div className="py-2 flex gap-2 rounded border-none">
         <input
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search property number (e.g., 152/842)"
-          className="flex-1 p-2 border rounded"
+          className="flex-1 border rounded ml-3"
           onKeyPress={(e) => e.key === 'Enter' && handlePropertySearch()}
         />
         <button
           onClick={handlePropertySearch}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-4 py-2 bg-kartAI-blue text-white rounded hover:bg-blue-900"
         >
-          Search Property
+          Søk
         </button>
-      </div>
+      </div> */}
       {errorMessage && (
         <div className="text-red-500 mb-4 p-2 bg-red-50 rounded">{errorMessage}</div>
       )}
@@ -458,7 +458,7 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
           center={[58.1447, 7.99828]}
           zoom={zoom}
           maxZoom={MAX_ZOOM}
-          className="h-full w-full"
+          className="h-full w-full rounded-r-lg"
         >
           <MapEvents />
           {mapReady && mapRef.current && 

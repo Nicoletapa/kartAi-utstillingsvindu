@@ -4,6 +4,7 @@ import Image from "next/image";
 import { api } from "~/trpc/react";
 import type { Map } from 'leaflet';
 import type { SpatialAnalysisResult } from './TiltaksAidMap';
+import { SendHorizonal } from "lucide-react";
 
 interface PlanPratProps {
   mapRef?: React.MutableRefObject<Map | null>;
@@ -153,15 +154,17 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       await handleSubmit();
     }
   };
-
+  
   return (
-    <section className="rounded-lg shadow-lg">
-      <h1 className="w-full rounded-lg bg-kartAI-blue pb-6 pt-1 text-center text-white">
-        PlanChat
-      </h1>
+    <section className="rounded-l-lg shadow-lg min-h-[500px]">
+      <div className="w-full bg-kartAI-blue pb-3 pt-1 text-center text-white rounded-tl-lg">
+        <h1>PlanChat</h1>
+        <p className="text-sm font-medium">Din adresse: [placeholder]</p>
+      </div>
+      
       
       {/* Map context indicator with spatial information */}
-      {mapReady && (
+      {/* {mapReady && (
         <div className="bg-green-100 p-2 text-sm">
           <span className="font-semibold">Map connected.</span>
           {shapeContext && (
@@ -195,20 +198,27 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </div>
           )}
         </div>
-      )}
+      )} */}
       
       <div id="planprat-input-output" className="relative w-full p-2">
         <ul
-          id="planprat-output "
-          className="flex h-96 w-full flex-col-reverse overflow-y-auto rounded-lg p-2 shadow-inner"
+          id="planprat-output"
+          className="flex w-full flex-1 h-80 max-h-[80vh] flex-col-reverse overflow-y-auto p-2"
         >
+          {error && (
+            <li className="m-2 mr-6 self-start rounded-lg bg-red-100 p-2 text-red-700 border border-red-500">
+              {error}
+            </li>
+          )}
+
+          
           {chatItems.map((chatItem, index) => (
             <li
               data-cy="chat-output"
               className={
                 chatItem.isUser
-                  ? "m-2 ml-6 self-end rounded-lg border-2 p-2 text-black shadow-lg"
-                  : "m-2 mr-6 self-start rounded-lg bg-kartAI-blue p-2 text-white shadow-lg"
+                  ? "m-2 ml-6 self-end rounded-lg p-2 text-black bg-gray-100"
+                  : "m-2 mr-6 self-start rounded-lg bg-kartAI-blue bg-opacity-20 p-2 text-black"
               }
               key={index}
             >
@@ -216,9 +226,10 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </li>
           ))}
         </ul>
-        <textarea
+        <div className="flex items-center gap-2 mt-2 mb-2">
+          <textarea
           id="planprat-input"
-          className="mt-2 w-full min-h-14 rounded-lg p-2 pr-12 text-black shadow-inner"
+          className="mt-2 w-full min-h-20 rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner"
           placeholder="Still meg et spørsmål ..."
           value={text}
           onChange={handleTextChange}
@@ -227,19 +238,14 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         <button
           type="submit"
           id="planprat-input-button"
-          className="absolute bottom-8 right-4 rounded"
+          className="self-end right-8 rounded"
           onClick={handleSubmit}
         >
-          <Image
-            src="/Ikoner/Dark/SVG/Comment.svg"
-            alt="send"
-            height="30"
-            width="30"
-            className="rounded bg-kartAI-blue p-1 text-white"
-          ></Image>
+          <SendHorizonal size={24} className="text-kartAI-blue"/>
         </button>
+        </div>
+        
       </div>
-      <p className="py-4 text-center text-red-500">{error}</p>
     </section>
   );
 }

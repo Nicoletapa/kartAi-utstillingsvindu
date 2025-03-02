@@ -17,8 +17,8 @@ const MapChatIntegrationWithNoSSR = dynamic(
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
-      <h1 className="flex justify-center pt-10 text-4xl">Før du søker</h1>
-      <div className="lg:w-2/4 mx-auto mt-2">
+      <h1 className="flex justify-center pt-6 text-4xl">Før du søker</h1>
+      <div className="lg:w-3/4 mx-auto mt-6">
         <MapChatIntegrationWithNoSSR/>
    </div>
       <AtlasSidebar>
