@@ -21,14 +21,14 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   const [shapeContext, setShapeContext] = useState<string | null>(null);
   const utils = api.useUtils();
 
-  // Monitor for changes in the drawn shape and spatial analysis
+
   useEffect(() => {
     if (lastDrawnShape) {
-      // Create a human-readable description of the shape
+      
       const shapeType = lastDrawnShape.geometry.type;
       let description = `I've drawn a ${shapeType.toLowerCase()} on the map.`;
-      
-      // Add coordinates info in a simplified format
+    
+
       if (shapeType === "Polygon" || shapeType === "LineString") {
         const coordsCount = Array.isArray(lastDrawnShape.geometry.coordinates[0]) 
           ? lastDrawnShape.geometry.coordinates[0].length 
@@ -47,7 +47,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       
       setShapeContext(description);
       
-      // Notify in chat about the new shape with spatial information
+      
       setChatItems((prevChatItems) => [
         { text: `System: ${description} Ask me about it!`, isUser: false },
         ...prevChatItems,
@@ -55,23 +55,25 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   }, [lastDrawnShape, spatialAnalysis]);
 
-  // Use mapRef when needed
+
   useEffect(() => {
     if (mapRef?.current && mapReady) {
       console.log("Map center: ", mapRef.current.getCenter());
+      // Can control the map here, e.g.,
+    // mapRef.current.setView([latitude, longitude], zoom);
     }
   }, [mapRef, mapReady]);
 
   async function queryPlanprat(queryInput: string) {
     try {
-      // Include information about the map context in the query
+      
       let enhancedQuery = queryInput;
       
       if (lastDrawnShape) {
-        // Create a condensed version of the shape for the query
+        
         const shapeSummary = {
           type: lastDrawnShape.geometry.type,
-          // Type-guard to safely handle different geometry types
+         
           coordinates: getCoordinatesFromGeometry(lastDrawnShape.geometry),
         };
         
@@ -106,17 +108,23 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         coordinates: getCoordinatesFromGeometry(g)
       }));
     } else if (geometry.type === 'Point') {
-      return (geometry as GeoJSON.Point).coordinates;
+      // Remove unnecessary type assertion
+      return geometry.coordinates;
     } else if (geometry.type === 'LineString') {
-      return (geometry as GeoJSON.LineString).coordinates;
+      // Remove unnecessary type assertion
+      return geometry.coordinates;
     } else if (geometry.type === 'Polygon') {
-      return (geometry as GeoJSON.Polygon).coordinates;
+      // Remove unnecessary type assertion
+      return geometry.coordinates;
     } else if (geometry.type === 'MultiPoint') {
-      return (geometry as GeoJSON.MultiPoint).coordinates;
+      // Remove unnecessary type assertion
+      return geometry.coordinates;
     } else if (geometry.type === 'MultiLineString') {
-      return (geometry as GeoJSON.MultiLineString).coordinates;
+      // Remove unnecessary type assertion
+      return geometry.coordinates;
     } else if (geometry.type === 'MultiPolygon') {
-      return (geometry as GeoJSON.MultiPolygon).coordinates;
+      // Remove unnecessary type assertion
+      return geometry.coordinates;
     } else {
       // Default case - should never happen with valid GeoJSON
       return [];
@@ -155,20 +163,20 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   };
 
   return (
-    <section className="rounded-lg shadow-lg">
-      <h1 className="w-full rounded-lg bg-kartAI-blue pb-6 pt-1 text-center text-white">
+    <section className="flex flex-col h-full">
+      <h1 className="bg-kartAI-blue py-3 text-center text-white font-bold text-lg">
         PlanChat
       </h1>
       
       {/* Map context indicator with spatial information */}
       {mapReady && (
-        <div className="bg-green-100 p-2 text-sm">
-          <span className="font-semibold">Map connected.</span>
+        <div className="bg-green-50 p-3 text-sm">
+          {/* <span className="font-semibold">Map connected.</span>
           {shapeContext && (
             <div className="mt-1">
               <span className="italic">{shapeContext}</span>
             </div>
-          )}
+          )} */}
           {spatialAnalysis && (
             <div className={`mt-2 p-2 rounded-md ${
               spatialAnalysis.isWithinProperty 
@@ -197,18 +205,18 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         </div>
       )}
       
-      <div id="planprat-input-output" className="relative w-full p-2">
+      <div className="flex-1 flex flex-col p-2 overflow-hidden">
         <ul
-          id="planprat-output "
-          className="flex h-96 w-full flex-col-reverse overflow-y-auto rounded-lg p-2 shadow-inner"
+          id="planprat-output"
+          className="flex-1 overflow-y-auto flex flex-col-reverse p-2 rounded-lg bg-gray-50"
         >
           {chatItems.map((chatItem, index) => (
             <li
               data-cy="chat-output"
               className={
                 chatItem.isUser
-                  ? "m-2 ml-6 self-end rounded-lg border-2 p-2 text-black shadow-lg"
-                  : "m-2 mr-6 self-start rounded-lg bg-kartAI-blue p-2 text-white shadow-lg"
+                  ? "m-2 ml-6 self-end rounded-lg border-2 p-2 text-black shadow-md bg-white"
+                  : "m-2 mr-6 self-start rounded-lg bg-kartAI-blue p-2 text-white shadow-md"
               }
               key={index}
             >
@@ -216,30 +224,32 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </li>
           ))}
         </ul>
-        <textarea
-          id="planprat-input"
-          className="mt-2 w-full min-h-14 rounded-lg p-2 pr-12 text-black shadow-inner"
-          placeholder="Still meg et spørsmål ..."
-          value={text}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-        ></textarea>
-        <button
-          type="submit"
-          id="planprat-input-button"
-          className="absolute bottom-8 right-4 rounded"
-          onClick={handleSubmit}
-        >
-          <Image
-            src="/Ikoner/Dark/SVG/Comment.svg"
-            alt="send"
-            height="30"
-            width="30"
-            className="rounded bg-kartAI-blue p-1 text-white"
-          ></Image>
-        </button>
+        <div className="relative mt-2">
+          <textarea
+            id="planprat-input"
+            className="w-full min-h-14 p-3 pr-12 rounded-lg border border-gray-300 focus:border-kartAI-blue focus:ring-1 focus:ring-kartAI-blue"
+            placeholder="Still meg et spørsmål ..."
+            value={text}
+            onChange={handleTextChange}
+            onKeyDown={handleKeyDown}
+          ></textarea>
+          <button
+            type="submit"
+            id="planprat-input-button"
+            className="absolute bottom-2 right-2 rounded-full p-2 bg-kartAI-blue hover:bg-kartAI-blue/90 transition-colors"
+            onClick={handleSubmit}
+          >
+            <Image
+              src="/Ikoner/Dark/SVG/Comment.svg"
+              alt="send"
+              height="24"
+              width="24"
+              className="text-white"
+            ></Image>
+          </button>
+        </div>
+        {error && <p className="py-2 text-center text-red-500 text-sm">{error}</p>}
       </div>
-      <p className="py-4 text-center text-red-500">{error}</p>
     </section>
   );
 }

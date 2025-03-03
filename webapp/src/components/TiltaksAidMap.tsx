@@ -13,36 +13,35 @@ const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.La
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
 const Overlay = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.Overlay), { ssr: false });
 
+// Update the SpatialAnalysisResult interface - remove intersection property
+interface SpatialAnalysisResult {
+  isWithinProperty: boolean;
+  distanceToProperty: number | null;  
+  nearestPropertyId: string | null;  // Changed from optional string | null to required string | null
+}
 interface DrawControlProps {
   map: Map;
   onShapeDrawn?: (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => void;
   propertyBoundaries?: GeoJSON.Feature[];
 }
 
-// Create a persistent FeatureGroup that won't be recreated on re-renders
+
 const drawnItemsRef = new L.FeatureGroup();
 
-// New interface for spatial analysis results
-interface SpatialAnalysisResult {
-  isWithinProperty: boolean;
-  distanceToProperty: number | null;  // in meters
-  nearestPropertyId?: string | null;
-  intersection?: GeoJSON.Feature | null;
-}
 
 const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControlProps) => {
-  // Track if draw control is initialized
+  
   const drawControlRef = useRef<L.Control.Draw | null>(null);
 
   useEffect(() => {
     if (!map) return;
     
-    // Add the feature group to the map only once
+  
     if (!map.hasLayer(drawnItemsRef)) {
       map.addLayer(drawnItemsRef);
     }
 
-    // Only initialize draw control once
+
     if (!drawControlRef.current) {
       drawControlRef.current = new L.Control.Draw({
         edit: {
@@ -133,22 +132,22 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControl
   return null;
 };
 
-// New function to analyze spatial relationships
+// Update analyzeSpatialRelationship function
 function analyzeSpatialRelationship(
   drawnShape: GeoJSON.Feature,
   propertyBoundaries: GeoJSON.Feature[]
 ): SpatialAnalysisResult {
   let isWithinProperty = false;
   let minDistance = Infinity;
-  let nearestPropertyId = null;
-  let intersection = null;
+  let nearestPropertyId: string | null = null;
+  // Removed: let intersection = null;
 
   // Default result if no analysis can be performed
   const defaultResult: SpatialAnalysisResult = {
     isWithinProperty: false,
     distanceToProperty: null,
     nearestPropertyId: null,
-    intersection: null
+    // Removed: intersection: null
   };
 
   // Handle case where no property boundaries exist
@@ -159,55 +158,52 @@ function analyzeSpatialRelationship(
   try {
     // Loop through each property boundary and check relationship
     propertyBoundaries.forEach(property => {
-      // Validate property before processing
-      if (!property || !property.geometry) {
+      // Fix: Use optional chaining instead of multiple conditionals
+      if (!property?.geometry) {
         console.warn('Invalid property object encountered:', property);
         return; // Skip this property
       }
 
-      // Check if drawn shape is within property
       try {
         // For point features
         if (drawnShape.geometry.type === 'Point') {
-          // Create a proper point feature for turf.js from the coordinates
-          const pointCoords = turf.point((drawnShape.geometry as GeoJSON.Point).coordinates);
+          // Fix: Remove unnecessary type assertion
+          const pointCoords = turf.point(drawnShape.geometry.coordinates) as GeoJSON.Feature<GeoJSON.Point>;
           
           if (property.geometry.type === 'Polygon' || property.geometry.type === 'MultiPolygon') {
-            // Fix: Use GeoJSON types instead of turf.helpers.Feature
             const polygonFeature = property as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
             const pointWithin = turf.booleanPointInPolygon(pointCoords, polygonFeature);
             
             if (pointWithin) {
               isWithinProperty = true;
-              nearestPropertyId = property.properties?.id || null;
+              // Add type assertion to ensure id is treated as a string
+              nearestPropertyId = typeof property.properties?.id === 'string' 
+                ? property.properties.id 
+                : String(property.properties?.id) || null;
             }
           }
         } 
         // For polygons and lines
         else if (drawnShape.geometry.type === 'Polygon' || drawnShape.geometry.type === 'MultiPolygon') {
-          // Fix: Use GeoJSON types for type casting
+          // Fix: Use GeoJSON types with proper type assertion
           const drawnPolygon = drawnShape as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
           
           if (property.geometry.type === 'Polygon' || property.geometry.type === 'MultiPolygon') {
-            // Fix: Use GeoJSON types for type casting
+            // Fix: Use GeoJSON types with proper type assertion
             const propertyPolygon = property as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
             
-            const overlaps = turf.booleanOverlap(drawnPolygon, propertyPolygon);
-            const within = turf.booleanWithin(drawnPolygon, propertyPolygon);
+            // Fix: Properly type function return values
+            const overlaps = turf.booleanOverlap(drawnPolygon, propertyPolygon) ;
+            const within = turf.booleanWithin(drawnPolygon, propertyPolygon) ;
             
             if (overlaps || within) {
               isWithinProperty = true;
-              nearestPropertyId = property.properties?.id || null;
+              // Add type assertion to ensure id is treated as a string
+              nearestPropertyId = typeof property.properties?.id === 'string' 
+                ? property.properties.id 
+                : String(property.properties?.id) || null;
               
-              // Use intersect with proper error handling
-              try {
-                intersection = turf.intersect(
-                  drawnPolygon as any, 
-                  propertyPolygon as any
-                );
-              } catch (e) {
-                console.error('Error calculating intersection:', e);
-              }
+              // Removed: Entire intersection calculation block
             }
           }
         }
@@ -216,18 +212,21 @@ function analyzeSpatialRelationship(
         if (!isWithinProperty && property.geometry) {
           try {
             // Get centers as proper points for distance calculation
-            const drawnShapeCenter = turf.centerOfMass(drawnShape);
-            const propertyCenter = turf.centerOfMass(property);
+            const drawnShapeCenter = turf.centerOfMass(drawnShape) as GeoJSON.Feature<GeoJSON.Point>;
+            const propertyCenter = turf.centerOfMass(property) as GeoJSON.Feature<GeoJSON.Point>;
             
             const distance = turf.distance(
               drawnShapeCenter,
               propertyCenter,
               { units: 'meters' }
-            );
+            ) ;
             
             if (distance < minDistance) {
               minDistance = distance;
-              nearestPropertyId = property.properties?.id || null;
+              // Add type assertion to ensure id is treated as a string
+              nearestPropertyId = typeof property.properties?.id === 'string' 
+                ? property.properties.id 
+                : String(property.properties?.id) || null;
             }
           } catch (e) {
             console.error('Error calculating distance:', e);
@@ -246,7 +245,7 @@ function analyzeSpatialRelationship(
     isWithinProperty,
     distanceToProperty: isWithinProperty ? 0 : minDistance === Infinity ? null : minDistance,
     nearestPropertyId,
-    intersection
+   
   };
 }
 
@@ -403,7 +402,8 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
       }
     };
     
-    importTurf();
+    // Fix: Add void operator to explicitly mark promise as ignored
+    void importTurf();
   }, []);
 
   // Load Leaflet Draw script
@@ -421,39 +421,39 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
     };
   }, []);
 
-  // Handle cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (mapRef.current) {
-        // Clear any drawn items if needed on component unmount
-        // drawnItemsRef.clearLayers();
-      }
-    };
-  }, []);
+  // // Handle cleanup on unmount
+  // useEffect(() => {
+  //   return () => {
+  //     if (mapRef.current) {
+  //       // Clear any drawn items if needed on component unmount
+  //       // drawnItemsRef.clearLayers();
+  //     }
+  //   };
+  // }, []);
 
   return (
-    <div className='flex flex-col w-full'>
-      <div className="mb-4 flex gap-2">
+    <div className='flex flex-col h-full'>
+      <div className="flex items-center gap-2 p-3 bg-white border-b border-gray-200">
         <input
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search property number (e.g., 152/842)"
-          className="flex-1 p-2 border rounded"
+          className="flex-1 p-2 border rounded focus:border-kartAI-blue focus:ring-1 focus:outline-none"
           onKeyPress={(e) => e.key === 'Enter' && handlePropertySearch()}
         />
         <button
           onClick={handlePropertySearch}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="px-4 py-2 bg-kartAI-blue text-white rounded hover:bg-kartAI-blue/90 transition-colors"
         >
-          Search Property
+          Search
         </button>
       </div>
       {errorMessage && (
-        <div className="text-red-500 mb-4 p-2 bg-red-50 rounded">{errorMessage}</div>
+        <div className="mx-3 text-red-500 mb-2 p-2 bg-red-50 rounded text-sm">{errorMessage}</div>
       )}
 
-      <div className="h-[500px] w-full">
+      <div className="flex-1">
         <MapContainer
           center={[58.1447, 7.99828]}
           zoom={zoom}
