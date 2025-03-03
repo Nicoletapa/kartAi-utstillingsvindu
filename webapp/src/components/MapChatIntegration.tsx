@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import TiltaksAidMap from './TiltaksAidMap';
 import { PlanPrat } from './PlanChatAtlas';
 import type { Map } from 'leaflet';
@@ -32,9 +32,11 @@ export function MapChatIntegration() {
   };
   
   return (
-    <div className="flex flex-col md:flex-row h-screen">
+    
+
+    <div className={`flex flex-col md:flex-row max-w-[900px] mx-auto px-4 transition-all duration-300`}>
       
-      <div className="md:w-1/3 h-1/2 md:h-full">
+      <div className="md:w-2/5 h-1/2 md:h-[calc(100vh-2rem)]">
         <PlanPrat 
           mapRef={mapRef}
           lastDrawnShape={lastDrawnShape}
@@ -42,7 +44,7 @@ export function MapChatIntegration() {
           mapReady={mapReady}
         />
       </div>
-  <div className="md:w-2/3 h-1/2 md:h-full z-10">
+  <div className="md:w-3/5 h-1/2 md:h-[calc(100vh-2rem)] z-10">
         <TiltaksAidMap
           onMapReady={handleMapReady} 
           onShapeDrawn={handleShapeDrawn}
