@@ -20,6 +20,10 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     const sidebarRef = useRef(null);
     const contentRef = useRef(null);
 
+    const isMainPage = () => {
+        return pathname === "/atlas-app" || pathname === "/atlas-app/";
+    }
+
     const sidebarItems = [
         { text: "Før du søker", href: "/atlas-app", icon: <Info size={20} /> },
         { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <ListChecks size={20} /> },
@@ -41,7 +45,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const handleResize = () => {
-            const breakpoint = 1400;
+            const breakpoint = 1350;
              if (window.innerWidth < breakpoint) {
                  setExpanded(false);
              } else {
@@ -55,7 +59,11 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
-
+    
+    useEffect(() => {
+        console.log('Current pathname:', pathname);
+        console.log('Is main page:', isMainPage());
+    }, [pathname]);
 
     return (
         <div className="flex">
@@ -63,7 +71,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                 ${expanded ? "w-48" : "w-16"}`}>
             <nav className="max-h-100 flex flex-col bg-white border-2 rounded-r-lg">
                 <div className="p-4 pb-2 flex justify-end group">
-                    <span className={`overflow-hidden transition-all font-bold text-gray-600 ${expanded ? "w-32" : "w-0"}`}>Meny</span>
+                    <span className={`overflow-hidden transition-all mt-1 font-bold text-gray-600 ${expanded ? "w-32 pl-8" : "w-0"}`}>Meny</span>
                     <button onClick={() => setExpanded(!expanded)} className="flex items-center py-2 px-3 font-medium
                              rounded-md cursor-pointer transition-colors group bg-gray-100 hover:bg-gray-200">
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
@@ -77,7 +85,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                 </div>
 
                 <SidebarContext.Provider value={{ expanded }}>
-                    <ul className="flex-1 px-3">
+                    <ul className="flex-1 px-2">
                         {sidebarItems.map((item, index) => (
                             <SidebarItem key={index} icon={item.icon} text={item.text} href={item.href} active={pathname === item.href} />
                         ))}
@@ -136,10 +144,10 @@ export function SidebarItem({ icon, text, href, active, isSubItem = false }: Sid
     const { expanded } = context;
 
     return (
-        <li className={`relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"} ${isSubItem ? "ml-4" : ""}`}>
+        <li className={`relative flex items-center py-2 px-2 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "bg-indigo-200 text-indigo-800" : "hover:bg-gray-100 text-gray-600"} ${isSubItem ? "ml-4" : ""}`}>
             <Link href={href} className="flex items-center w-full">
                 <div className="flex-shrink-0">{icon}</div>
-                <span className={`transition-all overflow-hidden whitespace-nowrap text-ellipsis font-normal ${expanded ? "w-40 ml-3" : "w-0"}`}>{text}</span>
+                <span className={`transition-all overflow-hidden whitespace-nowrap text-ellipsis font-normal ${expanded ? "w-36 ml-3" : "w-0"}`}>{text}</span>
                 
 
                 {expanded && !isSubItem && (

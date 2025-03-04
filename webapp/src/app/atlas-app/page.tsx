@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 import AtlasSidebar from "~/components/AtlasSidebar";
 import dynamic from "next/dynamic";
+import { SendApplication } from "~/components/SendApplication";
 
 // Dynamically import the MapChatIntegration component with SSR disabled
 const MapChatIntegrationWithNoSSR = dynamic(
@@ -17,11 +18,19 @@ const MapChatIntegrationWithNoSSR = dynamic(
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
-      <h1 className="flex justify-center pt-6 text-4xl">Før du søker</h1>
-      <div className="lg:w-3/4 mx-auto mt-6">
+      <h1 className="flex justify-center pt-8 text-4xl text-kartAI-blue font-medium">Før du søker</h1>
+      <div className="lg:w-3/4 mx-auto mt-8 mb-0">
         <MapChatIntegrationWithNoSSR/>
-   </div>
+      </div>
+
+      <SendApplication />
+
       <AtlasSidebar>
+        <></>
+      </AtlasSidebar>
+        
+        <SjekklisteOversikt />
+      
         
         <Link
           href="/"
@@ -42,17 +51,9 @@ export default function AtlasPage() {
           </svg>
           Tilbake til hovedsiden
         </Link>
-        </AtlasSidebar>
-      <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2 border-2 rounded-full border-kartAI-blue bg-white" 
-        >
-        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-        <span className="relative inline-block">
-          Send inn en søknad
-          <span className="absolute bottom-[-2px] left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
-        </span>
-        </Link>
+        
 
-        <SjekklisteOversikt />
+      
     </div>
   );
 }
