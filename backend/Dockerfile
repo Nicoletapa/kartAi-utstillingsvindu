@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 # Install Tesseract OCR and other necessary dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    curl \
     tesseract-ocr \
     tesseract-ocr-nor \
     libgl1-mesa-glx \

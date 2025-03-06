@@ -1,15 +1,9 @@
 import logging
-from fastapi import FastAPI, HTTPException, Query, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
-
-
-from src.types import SummaryResponse, PlanPratRequest, PlanPratResponse
-from src.services.reader import Reader
-from src.services.readers.factory import create_reader
-from src.services.agent import invoke_agent, invoke_plan_agent
-from src.services.external_ai_models import query_cad_aid
-
+from backend.src.types import PlanPratRequest, PlanPratResponse
+from src.services.agent import invoke_plan_agent
 
 app = FastAPI(
     title="KPRO API AI system",
@@ -36,70 +30,80 @@ logging.basicConfig(filename="summary-assistant.log", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@app.post("/summarize", response_model=SummaryResponse)
-def summarize(
-    files: list[UploadFile], include_modules: bool = Query(False)
-) -> SummaryResponse:
-    """
-    Summarize a file.
-
-    Args:
-        file (list[UploadFile]): The file to summarize.
-        include_modules (bool): Whether to include additional modules like CAD-AiD and ArkivGPT.
-    Returns:
-        ResponseSummary: The summarization response.
-
-    """
-
-    logger.info(f"Files: {files}")
-    logger.info(f"Include modules: {include_modules}")
-    logger.info(f"Number of files: {len(files)}")
-    logger.info(
-        f"First file: {files[0].filename}, content type: {files[0].content_type}"
-    )
-    try:
-        contents = [extract_text(file) for file in files]
-        logger.info(f"Contents: {contents}")
-        for content in contents:
-            if not content:
-                raise HTTPException(status_code=400, detail="File is empty")
-
-        cadaid_detections = query_cad_aid(files) if include_modules else []
-        response = invoke_agent(contents, cadaid_detections)
-        return response
-
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=str(e)
-        )
 
 
-def extract_text(file: UploadFile) -> str:
-    reader: Reader = create_reader(file)
-    return reader.read(file)
 
+import re
+from src.services.document_services.spatial_retriever import SpatialDocumentRetriever
+
+# Initialize services after the app definition
+spatial_retriever = SpatialDocumentRetriever()
 
 @app.post("/plan-prat", response_model=PlanPratResponse)
-def plan_prat(question: PlanPratRequest) -> PlanPratResponse:
+def plan_prat(request: PlanPratRequest) -> PlanPratResponse:
     """
-        PlanPrat a query.
+    PlanPrat a query.
 
-        Args:
-            question (PlanPratRequest): The query to PlanPrat.
-        Returns:
-            PlanPratResponse: The PlanPrat response.
-    backend/src/main.py
+    Args:
+        question (PlanPratRequest): The query to PlanPrat.
+    Returns:
+        PlanPratResponse: The PlanPrat response.
     """
-
-    logger.info(f"Query: {question}")
-    if not question.query:
+    query = request.query
+    logger.info(f"Query: {query}")
+    
+    if not query:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Query is empty"
         )
 
-    response = invoke_plan_agent(question.query)
-    return PlanPratResponse(answer=response)
+    # Extract any spatial context from the query (coordinates or polygon)
+    map_coordinates = extract_map_coordinates(query)
+    
+    # If we have spatial information, retrieve relevant documents
+    spatial_context = ""
+    if map_coordinates:
+        lat, lng = map_coordinates
+        spatial_docs = spatial_retriever.get_documents_for_coordinates(lat, lng)
+        if spatial_docs:
+            doc_titles = ", ".join([doc['title'] for doc in spatial_docs])
+            spatial_context = f"Retrieved {len(spatial_docs)} relevant documents for the location: {doc_titles}"
+    
+    logger.info(f"Spatial context: {spatial_context}")
+    
+    # Process with the agent
+    response = invoke_plan_agent(query)
+    
+    # Handle response format based on type
+    if isinstance(response, dict) and "answer" in response:
+        # New format with guide buttons
+        return PlanPratResponse(
+            answer=response["answer"], 
+            guides=response.get("guides", []),
+            sources=spatial_context if spatial_context else "General knowledge"
+        )
+    else:
+        # Legacy format (string only)
+        return PlanPratResponse(
+            answer=response,
+            sources=spatial_context if spatial_context else "General knowledge"
+        )
 
+def extract_map_coordinates(query: str):
+    """Extract map coordinates from query context."""
+    try:
+        # Look for patterns like [Map context: User is viewing map at coordinates 58.12345, 7.98765, zoom level 15]
+        coordinates_pattern = r'coordinates\s+(\d+\.\d+),\s*(\d+\.\d+)'
+        match = re.search(coordinates_pattern, query)
+        
+        if match:
+            lat = float(match.group(1))
+            lng = float(match.group(2))
+            return (lat, lng)
+    except Exception as e:
+        logger.error(f"Error extracting map coordinates: {e}")
+    
+    return None
 
 @app.get("/health")
 def health_check():

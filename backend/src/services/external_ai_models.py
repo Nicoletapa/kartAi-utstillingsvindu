@@ -1,8 +1,8 @@
 import logging
 from fastapi import requests, UploadFile
 
-from src.types import PropertyIdentifiers
-from src.types import ArkivGPTResponse, Detection
+from backend.src.types import PropertyIdentifiers
+from backend.src.types import ArkivGPTResponse, Detection
 from src.configuration import ARKIVGPT_URL, CADAID_URL
 
 logger = logging.getLogger(__name__)

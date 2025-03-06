@@ -19,12 +19,17 @@ RUN \
     else echo "Lockfile not found." && exit 1; \
     fi
 
+
+    
 ##### BUILDER
 
 FROM --platform=linux/amd64 node:20-alpine AS builder
 ARG DATABASE_URL
 ARG NEXT_PUBLIC_CLIENTVAR
 WORKDIR /app
+
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 

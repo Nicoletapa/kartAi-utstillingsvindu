@@ -1,24 +1,19 @@
 import logging
-from pydantic import Field
+
 from typing_extensions import TypedDict
-
+import time
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import AzureOpenAI
+
 from langgraph.graph import StateGraph
-from langchain.output_parsers import PydanticOutputParser
-from langchain_core.prompts import PromptTemplate
 
+from langchain_core.prompts import PromptTemplate
+import tiktoken 
 from typing import List
 from typing_extensions import TypedDict
 
 from langgraph.graph import StateGraph, START, END
 
-
 from src.services.agent_parts.generator import llm
-from src.services.agent_parts.checklist_api import (
-    Sjekkpunkt,
-    retrieve_current_national_checklist,
-)
 from src.services.agent_parts.crag import (
     decide_to_generate,
     generate,
@@ -28,15 +23,16 @@ from src.services.agent_parts.crag import (
     web_search,
 )
 
-from src.types import (
-    ApplicationSummary,
-    MarkedCheckpoint,
-    PropertyIdentifiers,
-    SummaryResponse,
-    Detection,
-)
+# Add import for AreaPlanRetriever
+from src.services.document_services.areaplan_retriever import AreaPlanRetriever
+
+from backend.src.types import PropertyIdentifiers
+
 
 logger = logging.getLogger(__name__)
+
+# Initialize the AreaPlanRetriever
+area_plan_retriever = AreaPlanRetriever()
 
 
 class RetrievalState(TypedDict):
@@ -57,26 +53,184 @@ class RetrievalState(TypedDict):
 
 
 class AgentState(TypedDict):
-    user_application_documents: list[str]
     retrieval_state: RetrievalState
-    checklist: list[Sjekkpunkt]
-    marked_checklist: list[MarkedCheckpoint]
-    revisor_feedback: List[dict]
-    should_retrieve: bool
-    should_continue: bool
-    revision_count: int
+
+def count_tokens(text):
+    """Count tokens in text using tiktoken"""
+    encoder = tiktoken.get_encoding("cl100k_base")
+    tokens = encoder.encode(text)
+    return len(tokens)
+
+def _retrieve_law_context(query: str = "") -> str:
+    """
+    Retrieve compact, relevant law context based on the query
+    """
+    # Extract key topic from query
+    query_lower = query.lower()
+    
+    # Define compact topic-based contexts
+    contexts = {
+        "general": """
+        BYGGFORSKRIFTER - HOVEDPUNKTER:
+        - Plan- og bygningsloven og TEK17 stiller minimumskrav til byggverk
+        - Krav til sikkerhet, helse, miljø og energi
+        - Reguleringsplan bestemmer hva som kan bygges hvor
+        - Kommunen gir byggetillatelser og fører tilsyn
+        """,
+        
+        "garasje": """
+        GARASJE/UTHUS - REGLER:
+        - Under 50 m²: Kan være unntatt søknadsplikt hvis:
+          * Minst 1m fra nabogrense eller nabosamtykke
+          * Maks 4m mønehøyde/3m gesimshøyde nær nabogrense
+        - Avstandskrav: 4m fra nabogrense (generelt)
+        - Må følge reguleringsplan og utnyttelsesgrad
+        """,
+        
+        "tilbygg": """
+        TILBYGG/PÅBYGG - REGLER:
+        - Under 15 m²: Kan være unntatt søknadsplikt
+        - Over 15 m²: Krever søknad og ansvarsrett
+        - Påbygg (vertikalt): Alltid søknadspliktig
+        - Må følge avstandskrav og reguleringsplan
+        """,
+        
+        "avstand": """
+        AVSTANDSKRAV - REGLER:
+        - 4m fra nabogrense (hovedregel)
+        - 8m mellom bygninger (brannkrav)
+        - Unntak med nabosamtykke
+        - Små byggverk (<50m²): 1m fra grense mulig
+        """,
+        
+        "høyde": """
+        HØYDEBEGRENSNINGER:
+        - Fastsettes i reguleringsplan
+        - Generelt: Mønehøyde maks 9m, gesimshøyde maks 8m for småhus
+        - Mindre bygg nær nabogrense: Maks 4m mønehøyde/3m gesimshøyde
+        """,
+        
+        "universell": """
+        UNIVERSELL UTFORMING:
+        - Tilgjengelig boenhet påkrevd i de fleste nye boliger
+        - Krav til snusirkel (1,5m) i bad/toalett/entre
+        - Trinnfri adkomst til alle hovedfunksjoner
+        - Unntak for enkelte småhus og fritidsboliger
+        """
+    }
+    
+    
+    # Find most relevant context
+    if "garasje" in query_lower or "uthus" in query_lower or "bod" in query_lower or "50" in query_lower:
+        return contexts["garasje"]
+    elif "tilbygg" in query_lower or "påbygg" in query_lower or "utvid" in query_lower:
+        return contexts["tilbygg"]
+    elif "avstand" in query_lower or "nabo" in query_lower or "grense" in query_lower:
+        return contexts["avstand"]
+    elif "høyde" in query_lower or "etasje" in query_lower or "tak" in query_lower:
+        return contexts["høyde"]
+    elif "universell" in query_lower or "tilgjengelig" in query_lower or "rullestol" in query_lower:
+        return contexts["universell"]
+    else:
+        # Default to general context
+        return contexts["general"]
 
 
-def invoke_plan_agent(query: str) -> str:
+def invoke_plan_agent(query: str) -> dict:
     """
     Invoke the plan agent.
 
     Args:
         query (str): The query to the plan agent.
     Returns:
-        str: The response from the plan agent.
-
+        dict: The response from the plan agent containing answer and guides.
     """
+    # Extract property identifiers from the query
+    property_ids = extract_property_ids_from_query(query)
+    
+    # Initialize context with general law information
+    context = _retrieve_law_context(query)
+    guide_buttons = []
+    
+    # Check if the query is about building something or regulations
+    building_related = is_building_related_query(query)
+    
+    # If related to building, search for relevant guides
+    if building_related:
+        logger.info("Query related to building construction, searching for guides")
+        
+        # Create specific targeted searches for DIBK and Kristiansand kommune
+        dibk_query = f"site:dibk.no byggveileder byggesøknad {query}"
+        kristiansand_query = f"site:kristiansand.kommune.no byggesak {query}"
+        
+        try:
+            from src.services.agent_parts.crag import web_search_tool
+            guide_context = "Relevante veivisere og nettsider:\n\n"
+            
+            # Search DIBK guides
+            logger.info(f"Searching DIBK guides with query: {dibk_query}")
+            dibk_results = web_search_tool.invoke({"query": dibk_query})
+            time.sleep(1)
+            
+            # Search Kristiansand kommune guides
+            logger.info(f"Searching Kristiansand guides with query: {kristiansand_query}")
+            kristiansand_results = web_search_tool.invoke({"query": kristiansand_query})
+            
+            # Process DIBK results
+            if dibk_results:
+                for result in dibk_results[:2]:  
+                    if isinstance(result, dict) and 'url' in result:
+                        title = result.get("title", "Byggveileder fra DIBK")
+                        url = result.get("url", "")
+                        content = result.get("content", "Ingen beskrivelse")
+                        
+                        # Only add if URL is from DIBK
+                        if "dibk.no" in url.lower():
+                            guide_context += f"- {title}\n  URL: {url}\n  Beskrivelse: {content}\n\n"
+                            guide_buttons.append({
+                                "title": f"DIBK: {title}",
+                                "url": url,
+                                "description": content[:100] + "..." if len(content) > 100 else content
+                            })
+                            logger.info(f"Added DIBK guide: {title}")
+            
+            # Process Kristiansand kommune results
+            if kristiansand_results:
+                for result in kristiansand_results[:2]:  
+                    if isinstance(result, dict) and 'url' in result:
+                        title = result.get("title", "Veiledning fra Kristiansand kommune")
+                        url = result.get("url", "")
+                        content = result.get("content", "Ingen beskrivelse")
+                        
+                        # Only add if URL is from Kristiansand kommune
+                        if "kristiansand.kommune.no" in url.lower():
+                            guide_context += f"- {title}\n  URL: {url}\n  Beskrivelse: {content}\n\n"
+                            guide_buttons.append({
+                                "title": f"Kristiansand: {title}",
+                                "url": url,
+                                "description": content[:100] + "..." if len(content) > 100 else content
+                            })
+                            logger.info(f"Added Kristiansand guide: {title}")
+            
+            if guide_buttons:
+                context += "\n\n" + guide_context
+                logger.info(f"Added {len(guide_buttons)} guide search results to context")
+            
+        except Exception as e:
+            logger.error(f"Error searching for building guides: {e}")
+    
+    # If property identifiers were found, retrieve relevant area plans
+    if property_ids and (property_ids.gnr is not None or property_ids.bnr is not None):
+        logger.info(f"Found property identifiers: gnr={property_ids.gnr}, bnr={property_ids.bnr}, snr={property_ids.snr}")
+        
+        # Retrieve documents for the property
+        area_plans = area_plan_retriever.get_area_plans_for_property(property_ids)
+        
+        # Format the documents as context
+        if area_plans:
+            property_context = area_plan_retriever.format_documents_as_context(area_plans)
+            context += "\n\nSpecific area plans for the property:\n" + property_context
+            logger.info(f"Added {len(area_plans)} area plans to context")
 
     prompt = PromptTemplate(
         template="""
@@ -88,422 +242,130 @@ def invoke_plan_agent(query: str) -> str:
         Remember that the user does not have the same level of expertise as you do, so make sure to explain the laws and regulations in a way that is easy to understand.
         Also know that the context is not seen by the user, only you.
         You shall answer the user's query in the same language as the user.
-
+        
+        If any building guides or resources were found in the context, mention them but do not include the URLs directly in your response as they will be provided separately as clickable buttons to the user. Just refer to them like "I've provided links to relevant guides that can help you with this process."
         """
     )
-    logger.info(f"context: {_retrieve_law_context()}")
+    # logger.info(f"Using context with {'building guides and ' if building_related else ''}{'property-specific information' if property_ids and (property_ids.gnr is not None or property_ids.bnr is not None) else 'general information'}")
+    final_token_count = count_tokens(context)
+    logger.info(f"Final context token count: {final_token_count}")
+    
+    # Generate response
     generate = prompt | llm
-    response = generate.invoke({"query": query, "context": _retrieve_law_context()})
+    response = generate.invoke({"query": query, "context": context})
     logger.info(f"Response: {response}")
-    return response.content
+    return { 
+        "answer": response.content,
+        "guides": guide_buttons
+    }
+    
 
 
-def _retrieve_law_context():
-    context = ""
-    with open("law_context.txt", "r") as file:
-        context = file.read()
-    return context
-
-
-def find_property_identifiers(file_contents: list[str]) -> PropertyIdentifiers:
-    content = "\n".join(file_contents)
-
-    prompt = PromptTemplate(
-        template="""
-        You are an assistant that helps with finding finding three particular numbers, gnr (gårdsnummer), bnr (bruksnummer), snr (seksjonsnummer) in building permits.
-
-        In Norway, a property's unique designation in the land register is known as the gårds- og bruksnummer (gnr/bnr), identifying a farm (gårdsnummer) and a subdivided unit (bruksnummer). 
-        New properties get sequential bruksnummer, and leased plots receive a festenummer (fnr). Apartments with independent ownership must also have a seksjonsnummer. 
-        For full uniqueness, the designation, or registernummeret, includes a municipality number (knr) as a prefix, though it's typically omitted within the municipality.
-
-        Examples:
-        (Knr. 1101,) gnr. 1, bnr. 2 (1/2)
-        (Knr. 1101,) gnr. 1, bnr. 2, fnr. 1 (1/2/1)
-        (Knr. 1101,) gnr. 1, bnr. 2, snr. 1 (1/2/0/1)
-
-        You are tasked with these numbers in the following text.
-        Building permit: {content}
-
-        Please format your response as a JSON object matching the PropertyIdentifiers model with these exact keys they can only be integers, else set it as None:
-        - "gnr": Optional(int) The gårdsnummer for the property.
-        - "bnr": Optional(int) The bruksnummer for the property.
-        - "snr": Optional(int) The seksjonsnummer for the property.
-        """
-    )
-    chain = prompt | llm | PydanticOutputParser(pydantic_object=PropertyIdentifiers)
-    property_identifiers = chain.invoke({"content": content})
-    return property_identifiers
-
-
-def invoke_agent(
-    file_contents: list[str], cadaid_detections: list[Detection]
-) -> SummaryResponse:
+def is_building_related_query(query: str) -> bool:
     """
-    Invoke the summarization agent.
-
-    Args:
-        file_content (list[str]): The content of the files to summarize.
-    Returns:
-        SummaryResponse: The summarization response.
-
+    Determine if a query is related to building construction or regulations.
     """
-    summary = summarize_application_documents(file_contents)
-
-    # Validate application with Checklist matching
-    agent = create_graph()
-    checklist = retrieve_current_national_checklist()
-    marked_list = []
-
-    for point in checklist:
-        # Initial state
-        initial_state = {
-            "user_application_documents": file_contents,
-            "retrieval_state": {
-                "question": "",
-                "generation": "",
-                "web_search": "",
-                "documents": [],
-            },
-            "checklist": [point],
-            "marked_checklist": [],
-            "reflection": "",
-            "grading": "",
-            "should_retrieve": False,
-            "should_continue": True,
-        }
-
-        # Run the agent
-        final_state = agent.invoke(initial_state)
-        marked_list.extend(final_state["marked_checklist"])
-
-    return SummaryResponse(
-        summary=summary,
-        marked_checklist=marked_list,
-        cad_aid_summary="",
-        arkivgpt_summary="",
-    )
-
-
-def summarize_application_documents(documents: list[str]) -> list[str]:
-    # Define the parser
-    summarization_parser = PydanticOutputParser(pydantic_object=ApplicationSummary)
-
-    # Define the prompt template
-    prompt = PromptTemplate(
-        template="Write a concise summary using this format: \n\n{format_instructions}\n\nof the following application:\n\n{context}",
-        input_variables=["context"],
-        partial_variables={
-            "format_instructions": summarization_parser.get_format_instructions(),
-        },
-    )
-
-    # Initialize the LLM (adjust parameters as needed)
-
-    chain = prompt | llm | summarization_parser
-
-    # Generate the summary
-    wrapper: ApplicationSummary = chain.invoke({"context": "\n\n".join(documents)})
-    return wrapper.summary
-
-
-import json
-
-
-def fill_out_checklist_responder(state):
-    logger.info("\n---Filling out Checklist---")
-    user_applications = state["user_application_documents"]
-    checklist = state["checklist"]
-    retrieval_state = state["retrieval_state"]
-    # Retrieved laws and regulations
-    documents = retrieval_state.get("documents", [])
-
-    # Combine all application documents into one string
-    application_text = "\n\n".join(user_applications)
-    # Combine all retrieved documents into one string
-    laws_and_regulations = "\n\n".join([doc.page_content for doc in documents])
-
-    marked_checklist = []
-    need_retrieval = False  # Flag to determine if retrieval is needed
-
-    # Check if there is feedback from the revisor
-    feedback = state.get("revisor_feedback", None)
-
-    # Determine if laws are available
-    laws_available = bool(laws_and_regulations.strip())
-
-    logger.info(f"Checklist: {checklist}")
-    for idx, checkpoint in enumerate(checklist):
-        # Extract the checkpoint text from the tuple
-        checkpoint: Sjekkpunkt
-        logger.info(f"Processing checkpoint {idx + 1}")
-        logger.info(f"Checkpoint: {checkpoint}")
-        checkpoint_text = checkpoint.model_dump()
-
-        # If there is feedback for this checkpoint, use it
-        if feedback:
-            feedback_item = next(
-                (item for item in feedback if item["checkpoint"] == checkpoint_text),
-                None,
-            )
-        else:
-            feedback_item = None
-
-        if feedback_item:
-            # Use the feedback to improve the marked checklist
-            previous_status = feedback_item.get("status", "Uncertain")
-            previous_reason = feedback_item.get("reason", "")
-        else:
-            previous_status = "Uncertain"
-            previous_reason = ""
-
-        # Construct the prompt
-        if not laws_available:
-            prompt = f"""
-You are an expert in building regulations and codes.
-
-First, read the following application documents:
-
-{application_text}
-
-Currently, you do not have access to the relevant laws and regulations.
-
-Now, evaluate the following checkpoint:
-
-"{checkpoint_text}"
-
-Using only the information from the application, determine whether you have enough information to assess this checkpoint. If you don't have enough information due to the absence of laws and regulations, state that you need more information.
-
-Provide your answer in the following JSON format without any additional text or formatting:
-
-{{
-  "status": "Uncertain",
-  "reason": "Your reason here, indicating the need for more information."
-}}
-
-ONLY provide the JSON object. Do not include any markdown formatting like triple backticks or language indicators.
-"""
-        else:
-            prompt = f"""
-You are an expert in building regulations and codes.
-
-First, read the following application documents:
-
-{application_text}
-
-Then, review the following laws and regulations:
-
-{laws_and_regulations}
-
-Previously, the status for the checkpoint was '{previous_status}' with the reason: '{previous_reason}'.
-
-Now, re-evaluate the following checkpoint, taking into account this feedback:
-
-"{checkpoint_text}"
-
-Using the information from the application and the laws, determine whether the checkpoint is 'Correct', 'Incorrect', or 'Uncertain'. Provide a revised reason for your determination.
-
-Provide your answer in the following JSON format without any additional text or formatting:
-
-{{
-  "check_point_name": "{checkpoint_text}",
-  "status": "Correct" or "Incorrect" or "Uncertain",
-  "reason": "Your reason here."
-}}
-
-ONLY provide the JSON object. Do not include any markdown formatting like triple backticks or language indicators.
-"""
-
-        # Get the response from the LLM
-        response = llm.predict(prompt)
-
-        # Clean the LLM response
-        response = response.strip()
-
-        # Remove Markdown code block formatting if present
-        if response.startswith("```") and response.endswith("```"):
-            response = response.strip("`")
-            # Remove language identifier if present
-            lines = response.strip().split("\n")
-            if lines[0].strip().lower() in ("json", "javascript"):
-                response = "\n".join(lines[1:])
-            else:
-                response = "\n".join(lines)
-
-        # Parse the response
-        try:
-            result = json.loads(response)
-            marked_checkpoint = MarkedCheckpoint(
-                check_point_name=result.get("check_point_name", checkpoint.Navn),
-                status=result.get("status", "Uncertain"),
-                reason=result.get("reason", "No reason provided."),
-            )
-            # Only set need_retrieval to True if laws are not available and retrieval hasn't been performed
-            if (not laws_available) and (
-                "more information" in marked_checkpoint.reason.lower()
-            ):
-                need_retrieval = True
-        except json.JSONDecodeError:
-            # If parsing fails, mark as Uncertain and set retrieval flag only if laws are not available
-            logger.error(f"Error parsing LLM response after cleanup: {response}")
-            marked_checkpoint = MarkedCheckpoint(
-                check_point_name=checkpoint.Navn,
-                status="Uncertain",
-                reason="Could not parse LLM response.",
-            )
-            if not laws_available:
-                need_retrieval = True
-        marked_checklist.append(marked_checkpoint)
-
-    # Update the state with the marked checklist
-    state["marked_checklist"] = marked_checklist
-    state["should_retrieve"] = need_retrieval
-
-    if need_retrieval:
-        logger.info("Writing questions for retrieval.")
-        uncertain_checkpoints = [
-            cp.check_point_name for cp in marked_checklist if cp.status == "Uncertain"
-        ]
-        response = llm.predict(
-            f"For the following checkpoints marked as 'Uncertain', ask max 3 questions to clarify the applicability of laws and regulations:\n\n{uncertain_checkpoints}"
-        )
-        logger.info(f"Question for retrieval: {response}")
-        state["retrieval_state"]["question"] = response
-        # Mark that retrieval has been performed
-        state["retrieval_performed"] = True
-
-    # Clear the feedback after using it
-    if "revisor_feedback" in state:
-        del state["revisor_feedback"]
-
-    # Initialize or increment the revision counter
-    if "revision_count" not in state:
-        state["revision_count"] = 0
-    else:
-        state["revision_count"] += 1
-
-    return state
-
-
-def decide_next_step_after_fill_out(state):
-    """Decide whether to proceed to 'retrieve' or 'marked_checklist_revisor'."""
-    if state["should_retrieve"]:
-        logger.info("---DECISION: Need more information, proceeding to 'retrieve'---")
-        return "retrieve"
-    else:
-        logger.info(
-            "---DECISION: Enough information, proceeding to 'marked_checklist_revisor'---"
-        )
-        return "marked_checklist_revisor"
-
-
-def decide_to_continue_after_revisor(state):
-    """Decide whether to continue processing or end."""
-    # Check if the revision count has reached the limit
-    if state.get("revision_count", 0) >= 3:
-        logger.info(
-            f"---DECISION: Maximum revision count reached ({state['revision_count']}), ending process---"
-        )
-        return END
-
-    if state.get("should_continue"):
-        # Check if retrieval has already been performed
-        if state.get("retrieval_performed", False):
-            logger.info("---DECISION: Retrieval already performed, ending process---")
-            return END
-        else:
-            logger.info(
-                "---DECISION: Looping back to 'fill_out_checklist_responder'---"
-            )
-            return "fill_out_checklist_responder"
-    else:
-        logger.info("---DECISION: Process complete---")
-        return END
-
-
-def marked_checklist_revisor(state):
-    """Node that revises the marked checklist and provides feedback."""
-    logger.info("\n---Marked Checklist Revisor---")
-    marked_checklist: list[MarkedCheckpoint] = state["marked_checklist"]
-    checklist: list[Sjekkpunkt] = state["checklist"]
-    application_text = "\n\n".join(state["user_application_documents"])
-    # Prepare the checklist items for review
-    checklist_with_marks = [
-        {
-            "checkpoint": checkpoint.Navn,  # Extract the text from the tuple
-            "status": marked_checkpoint.status,
-            "reason": marked_checkpoint.reason,
-        }
-        for checkpoint, marked_checkpoint in zip(checklist, marked_checklist)
+    # Simple keyword matching for building-related terms
+    building_keywords = [
+        "bygge", "bygging", "byggeregler", "garasje", "tilbygg", "påbygg", 
+        "hus", "bolig", "enebolig", "rekkehus", "hytte", "bod", "uthus",
+        "søknad", "søknadspliktig", "tillatelse", "regulering",
+        "avstand", "nabogrense", "høyde", "etasje", "areal"
     ]
+    
+    query_lower = query.lower()
+    
+    for keyword in building_keywords:
+        if keyword in query_lower:
+            return True
+            
+    return False
 
-    # Convert checklist_with_marks to JSON string for the prompt
-    checklist_json = json.dumps(checklist_with_marks, indent=2)
 
-    # Construct the prompt for the LLM
-    prompt = f"""
-You are an expert reviewer in building regulations.
-
-Review the following marked checklist items for correctness and consistency:
-
-{checklist_json}
-
-Here is the application text:
-
-{application_text}
-
-If any of the statuses or reasons seem incorrect or inconsistent, provide the corrected status and reason for those items.
-
-Provide your corrections in the following JSON format as a list without any additional text or formatting:
-
-[
-  {{
-    "checkpoint": "Name of the checkpoint",
-    "status": "Correct" or "Incorrect" or "Uncertain",
-    "reason": "Your reason here."
-  }},
-  ...
-]
-
-ONLY provide the JSON array. Do not include any markdown formatting like triple backticks or language indicators.
-"""
-
-    # Get the response from the LLM
-    response = llm.predict(prompt)
-
-    # Clean the LLM response
-    response = response.strip()
-
-    # Remove Markdown code block formatting if present
-    if response.startswith("```") and response.endswith("```"):
-        response = response.strip("`")
-        # Remove language identifier if present
-        lines = response.strip().split("\n")
-        if lines[0].strip().lower() in ("json", "javascript"):
-            response = "\n".join(lines[1:])
-        else:
-            response = "\n".join(lines)
-
-    if "All good" in response.strip():
-        # No revisions needed
-        logger.info("No revisions needed.")
-        state["should_continue"] = False
-    else:
+def extract_property_ids_from_query(query: str) -> PropertyIdentifiers:
+    """
+    Extract property identifiers (gnr, bnr, snr) from a query string.
+    
+    Args:
+        query (str): The query text to extract property identifiers from.
+    Returns:
+        PropertyIdentifiers: The extracted property identifiers.
+    """
+    # Define regex patterns for property identifiers
+    gnr_pattern = r'(?:g(?:år)?d?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?)(\d+)'
+    bnr_pattern = r'(?:b(?:ruk)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?)(\d+)'
+    snr_pattern = r'(?:s(?:eksjon)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?)(\d+)'
+    
+    # Alternative pattern for combined format like "1/2/3"
+    combined_pattern = r'(\d+)\/(\d+)(?:\/(?:0\/)?(\d+))?'
+    
+    # Initialize property identifiers
+    gnr = None
+    bnr = None
+    snr = None
+    
+    # Try to extract using individual patterns
+    import re
+    gnr_match = re.search(gnr_pattern, query, re.IGNORECASE)
+    if gnr_match:
+        gnr = int(gnr_match.group(1))
+    
+    bnr_match = re.search(bnr_pattern, query, re.IGNORECASE)
+    if bnr_match:
+        bnr = int(bnr_match.group(1))
+    
+    snr_match = re.search(snr_pattern, query, re.IGNORECASE)
+    if snr_match:
+        snr = int(snr_match.group(1))
+    
+    # If individual patterns didn't work, try combined pattern
+    if gnr is None and bnr is None:
+        combined_match = re.search(combined_pattern, query)
+        if combined_match:
+            gnr = int(combined_match.group(1))
+            bnr = int(combined_match.group(2))
+            if combined_match.group(3):
+                snr = int(combined_match.group(3))
+    
+    # If we still don't have property IDs, try using LLM to extract them
+    if gnr is None and bnr is None:
+        prompt = PromptTemplate(
+            template="""
+            Extract property identifiers (gnr, bnr, snr) from the following text if present:
+            
+            {query}
+            
+            In Norway, a property's unique designation in the land register is known as the gårds- og bruksnummer (gnr/bnr), identifying a farm (gårdsnummer) and a subdivided unit (bruksnummer).
+            These might appear in formats like:
+            - "gnr. 1, bnr. 2" 
+            - "gårdsnummer 1, bruksnummer 2"
+            - "1/2" (gnr/bnr)
+            - "1/2/3" (gnr/bnr/snr)
+            
+            If you find these identifiers, return them in this exact JSON format:
+            {"gnr": number, "bnr": number, "snr": number}
+            
+            If any identifier is not present, set its value to null.
+            If no identifiers are found, return:
+            {"gnr": null, "bnr": null, "snr": null}
+            """
+        )
+        
         try:
-            revised_items = json.loads(response)
-            # Store the feedback in the state
-            state["revisor_feedback"] = revised_items
-            state["should_continue"] = True
-            logger.info("Feedback provided by revisor.")
-        except json.JSONDecodeError:
-            logger.error(
-                f"Could not parse revision response after cleanup. LLM Response:\n{response}"
-            )
-            state["should_continue"] = False  # End process if parsing failed
+            llm_response = llm.predict(prompt.format(query=query))
+            import json
+            ids = json.loads(llm_response)
+            gnr = ids.get("gnr")
+            bnr = ids.get("bnr")
+            snr = ids.get("snr")
+        except Exception as e:
+            logger.error(f"Error extracting property IDs with LLM: {e}")
+    
+    return PropertyIdentifiers(gnr=gnr, bnr=bnr, snr=snr)
 
-    # Remove documents after revisor
-    state["retrieval_state"]["documents"] = []
 
-    return state
+
+    
 
 
 def create_graph() -> StateGraph:
@@ -516,11 +378,9 @@ def create_graph() -> StateGraph:
     workflow.add_node("generate", generate)
     workflow.add_node("transform_query", transform_query)
     workflow.add_node("web_search_node", web_search)
-    workflow.add_node("fill_out_checklist_responder", fill_out_checklist_responder)
-    workflow.add_node("marked_checklist_revisor", marked_checklist_revisor)
 
     # Build edges
-    workflow.add_edge(START, "fill_out_checklist_responder")
+    workflow.add_edge(START, "retrieve")
     workflow.add_edge("retrieve", "grade_documents")
     workflow.add_conditional_edges(
         "grade_documents",
@@ -532,23 +392,6 @@ def create_graph() -> StateGraph:
     )
     workflow.add_edge("transform_query", "web_search_node")
     workflow.add_edge("web_search_node", "generate")
-    workflow.add_edge("generate", "fill_out_checklist_responder")
-    workflow.add_conditional_edges(
-        "fill_out_checklist_responder",
-        decide_next_step_after_fill_out,
-        {
-            "retrieve": "retrieve",
-            "marked_checklist_revisor": "marked_checklist_revisor",
-        },
-    )
-    workflow.add_conditional_edges(
-        "marked_checklist_revisor",
-        decide_to_continue_after_revisor,
-        {
-            "fill_out_checklist_responder": "fill_out_checklist_responder",
-            END: END,
-        },
-    )
 
     # Compile the graph
     app = workflow.compile()

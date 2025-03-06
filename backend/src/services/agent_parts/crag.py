@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 urls = [
     "https://lovdata.no/dokument/NL/lov/2008-06-27-71/*#&#x2a;",
     "https://www.dibk.no/regelverk/byggteknisk-forskrift-tek17",
+    
 ]
 
 docs = [WebBaseLoader(url).load() for url in urls]
@@ -60,13 +61,14 @@ grade_prompt = ChatPromptTemplate.from_messages(
 
 retrieval_grader = grade_prompt | structured_llm_grader
 question = "agent memory"
-docs = retriever.get_relevant_documents(question)
+# Update docs retrieval to use invoke instead of get_relevant_documents
+docs = retriever.invoke(question)
 doc_txt = docs[1].page_content
 
 
 ### Generate
 
-from langchain import hub
+
 from langchain_core.output_parsers import StrOutputParser
 from langchain.schema import Document
 
@@ -126,8 +128,8 @@ def retrieve(state):
     question = state["retrieval_state"]["question"]
     logger.info(f"Question: {question}")
 
-    # Retrieval
-    documents = retriever.get_relevant_documents(question)
+    
+    documents = retriever.invoke(question)
     retrieval_state = {"documents": documents, "question": question}
     state["retrieval_state"] = retrieval_state
     return state

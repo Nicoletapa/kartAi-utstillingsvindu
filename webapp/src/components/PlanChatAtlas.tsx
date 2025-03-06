@@ -11,14 +11,21 @@ interface PlanPratProps {
   spatialAnalysis?: SpatialAnalysisResult | null;
   mapReady?: boolean;
 }
+interface GuideButton {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 
 export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = false }: PlanPratProps) {
   const [error, setError] = useState("");
   const [text, setText] = useState<string>("");
   const [chatItems, setChatItems] = useState<
-    { text: string; isUser: boolean }[]
+    { text: string; isUser: boolean, guides?: GuideButton[] }[]
   >([]);
   const [shapeContext, setShapeContext] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const utils = api.useUtils();
 
 
@@ -64,28 +71,38 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   }, [mapRef, mapReady]);
 
+  // Update the queryPlanprat function to include map information
   async function queryPlanprat(queryInput: string) {
     try {
-      
       let enhancedQuery = queryInput;
       
+      // Add drawn shape context if available
       if (lastDrawnShape) {
-        
         const shapeSummary = {
           type: lastDrawnShape.geometry.type,
-         
           coordinates: getCoordinatesFromGeometry(lastDrawnShape.geometry),
         };
         
-        // Add spatial analysis if available
         let spatialInfo = "";
         if (spatialAnalysis) {
           spatialInfo = `Spatial analysis: ${spatialAnalysis.isWithinProperty ? 
             'Shape is within property boundaries' : 
             `Shape is outside property boundaries by ${spatialAnalysis.distanceToProperty?.toFixed(2)} meters`}`;
+          
+          // Add property ID if available
+          if (spatialAnalysis.nearestPropertyId) {
+            spatialInfo += ` Property ID: ${spatialAnalysis.nearestPropertyId}`;
+          }
         }
         
         enhancedQuery = `${queryInput} [Context: User has drawn on the map: ${JSON.stringify(shapeSummary)}. ${spatialInfo}]`;
+      }
+      
+      // Add map view context if available
+      if (mapRef?.current && mapReady) {
+        const center = mapRef.current.getCenter();
+        const zoom = mapRef.current.getZoom();
+        enhancedQuery += ` [Map context: User is viewing map at coordinates ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}, zoom level ${zoom}]`;
       }
       
       const response = await utils.planprat.fetchResponse.fetch({
@@ -144,12 +161,25 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       ]); //question
       const sendText = text;
       setText("");
-      const response = await queryPlanprat(sendText);
-      if (!response) return;
-      setChatItems((prevChatItems) => [
-        { text: response.answer, isUser: false },
-        ...prevChatItems,
-      ]);
+      setLoading(true);
+      try {
+        const response = await queryPlanprat(sendText);
+        if (response) {
+          setChatItems((prevChatItems) => [
+            { 
+              text: response.answer, 
+              isUser: false,
+              guides: response.guides 
+            },
+            ...prevChatItems,
+          ]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to get a response. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -160,6 +190,36 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       e.preventDefault();
       await handleSubmit();
     }
+  };
+  const renderGuideButtons = (guides: GuideButton[]) => {
+    if (!guides || guides.length === 0) return null;
+    
+    return (
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <h4 className="text-sm font-semibold mb-2 text-blue-800">Relevante veivisere:</h4>
+        <div className="flex flex-col gap-2">
+          {guides.map((guide, index) => (
+            <a 
+              key={index}
+              href={guide.url}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="inline-flex items-center justify-between px-4 py-3 border border-blue-300 text-sm font-medium rounded-md shadow-sm text-blue-800 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+            >
+              <span className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                {guide.title}
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -221,6 +281,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
               key={index}
             >
               {chatItem.text}
+              {!chatItem.isUser && chatItem.guides && renderGuideButtons(chatItem.guides)}
             </li>
           ))}
         </ul>
@@ -232,20 +293,26 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             value={text}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
+            disabled={loading}
           ></textarea>
           <button
             type="submit"
             id="planprat-input-button"
-            className="absolute bottom-2 right-2 rounded-full p-2 bg-kartAI-blue hover:bg-kartAI-blue/90 transition-colors"
+            className={`absolute bottom-2 right-2 rounded-full p-2 bg-kartAI-blue hover:bg-kartAI-blue/90 transition-colors ${loading ? 'opacity-80' : ''}`}
             onClick={handleSubmit}
+            disabled={loading}
           >
-            <Image
-              src="/Ikoner/Dark/SVG/Comment.svg"
-              alt="send"
-              height="24"
-              width="24"
-              className="text-white"
-            ></Image>
+            {loading ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Image
+                src="/Ikoner/Dark/SVG/Comment.svg"
+                alt="send"
+                height="24"
+                width="24"
+                className="text-white"
+              ></Image>
+            )}
           </button>
         </div>
         {error && <p className="py-2 text-center text-red-500 text-sm">{error}</p>}

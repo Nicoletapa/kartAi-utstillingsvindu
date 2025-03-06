@@ -1,4 +1,4 @@
-from src.types import PropertyIdentifiers
+from backend.src.types import PropertyIdentifiers
 from src.services.agent import find_property_identifiers
 
 

@@ -29,9 +29,14 @@ class ApplicationSummary(BaseModel):
 class PlanPratRequest(BaseModel):
     query: str
 
-
+class GuideButton(BaseModel):
+    title:str
+    url: str
+    description: Optional[str] = None
+    
 class PlanPratResponse(BaseModel):
     answer: str
+    guides : Optional[List[GuideButton]] = None
 
 
 class PropertyIdentifiers(BaseModel):
@@ -52,3 +57,6 @@ class Detection(BaseModel):
     scale: Optional[str] = None
     room_names: Optional[str] = None
     cardinal_direction: Optional[str] = None
+    
+
+
