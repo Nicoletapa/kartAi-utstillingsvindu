@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from backend.src.types import PropertyIdentifiers
+from backend.src.models.types import PropertyIdentifiers
 
 logger = logging.getLogger(__name__)
 
