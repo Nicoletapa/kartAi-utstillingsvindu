@@ -116,7 +116,7 @@ const Step1_0 = () => {
               </label>
               <input
                 type="number"
-                className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
+                className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none"
               />
               <span className='ml-2 text-sm'>meter</span>
             </div>

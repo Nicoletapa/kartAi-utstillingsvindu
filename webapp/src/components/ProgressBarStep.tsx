@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,6 @@ import Step3_0 from "./steps/Step3_0";
 import Step3_1 from "./steps/Step3_1";
 import Step3_2 from "./steps/Step3_2";
 import Step4_0 from "./steps/Step4_0";
-import Step4_1 from "./steps/Step4_1";
 import Step5_0 from "./steps/Step5_0";
 import Step6_0 from "./steps/Step6_0";
 import Step6_1 from "./steps/Step6_1";
@@ -38,7 +38,7 @@ const stepComponents: StepComponentsType = {
     },
     4: {
         0: Step4_0,
-        1: Step4_1,
+        
     },
     5: {
         0: Step5_0,
@@ -95,7 +95,10 @@ export default function ProgressBarStep() {
 
     // Handle next button click
     const handleNext = () => {
-        if (currentOverallStep < totalSubsteps - 1) {
+        if (currentStep === 4 && currentSubstep === 0) {
+            const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
+            if (!confirmSend) return;
+        } if (currentOverallStep < totalSubsteps - 1) {
             setCurrentOverallStep(currentOverallStep + 1);
         } else if (!lastStepCompleted) {
             setLastStepCompleted(true);
@@ -132,7 +135,7 @@ export default function ProgressBarStep() {
         };
       });
     
-    const isLastStep = currentOverallStep === totalSubsteps - 1;
+    const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;
 
     return (
@@ -147,11 +150,13 @@ export default function ProgressBarStep() {
             </div>
 
             <div className="flex justify-between mt-8 gap-4">
-                <Button onClick={handlePrev} className="bg-gray-500 hover:bg-gray-400">
+                <Button onClick={handlePrev} className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44 ">
+                    <ArrowLeft size={18} className="mr-2"/>
                     Tilbake
                 </Button>
-                <Button onClick={handleNext} className="bg-kartAI-blue hover:bg-blue-900">
-                    {isLastStep ? "Send inn" : "Neste"}
+                <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44">
+                    {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
+                    <ArrowRight size={18} className="ml-2"/>
                 </Button>
             </div>
         </div>

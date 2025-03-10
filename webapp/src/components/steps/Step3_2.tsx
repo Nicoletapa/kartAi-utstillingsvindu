@@ -58,6 +58,9 @@ const Step3_2: React.FC = () => {
                             <div className="mb-8">
                                 <h1 className="text-xl font-medium">Hva er Merknader?</h1>
                                 <p className="text-sm mt-2">
+                                    Når naboene mottar nabovarselet, har de en frist på 14 dager til å komme med merknader.
+                                    En merknad er en skriftlig tilbakemenlding der naboen uttrykker eventuelle bekymringer
+                                    eller innsigelser til det planlagte tiltaket. <br />
                                     Du vil få varsel på e-post dersom det har blitt sendt inn digitaler merknader.
                                 </p>
                             </div>

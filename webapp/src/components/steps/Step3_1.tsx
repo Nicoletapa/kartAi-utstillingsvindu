@@ -22,10 +22,15 @@ const Step3_1 = () => {
               <div className="mb-8">
                 <h1 className="text-xl font-medium">Sending av Nabovarsel</h1>
                 <p className="text-sm mt-2">
-                  Dokumentsjekk er et verktøy som lar deg laste opp dokumenter for å sjekke om de inneholder nødvendige tegninger for byggesøknad ved hjelp av kunstig intelligens.
-                  <br />Du kan laste opp dokumenter i formatene PDF, DWG, DXF, PNG, JPG, JPEG, TIFF og BMP.
-                  <br />Validerte dokumenter vil bli lagret i din bruker for fremtidig bruk. Ugyldige opplastede dokumenter vil bli slettet.
+                  Nabovarselen vil sendes til berørende naboer via e-post. I nabovarselen vil følgende bli beskrevet:
                 </p>
+                <ul className='list-disc ml-7 text-sm mt-2'>
+                  <li>Beskrivelse av tiltaket</li>
+                  <li>Henvisning til plan- og bygningsloven</li>
+                  <li>Frist for merknader</li>
+                  <li>Tegninger og situasjonskart</li>
+                  <li>Kontaktinformasjon til tilhaver</li>
+                </ul>
               </div>
 
               <button className="absolute mt-4 px-4 py-2 right-3 bottom-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition"

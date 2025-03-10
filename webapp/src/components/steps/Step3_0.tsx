@@ -20,9 +20,10 @@ const Step3_0 = () => {
               <div className="mb-8">
                 <h1 className="text-xl font-medium">Hva er Nabovarsel?</h1>
                 <p className="text-sm mt-2">
-                  Dokumentsjekk er et verktøy som lar deg laste opp dokumenter for å sjekke om de inneholder nødvendige tegninger for byggesøknad ved hjelp av kunstig intelligens.
-                  <br />Du kan laste opp dokumenter i formatene PDF, DWG, DXF, PNG, JPG, JPEG, TIFF og BMP.
-                  <br />Validerte dokumenter vil bli lagret i din bruker for fremtidig bruk. Ugyldige opplastede dokumenter vil bli slettet.
+                  Et nabovarsel er en melding du sender til naboene dine når du planlegger et byggeprosjekt som kan påvirke dem.
+                  Dette kan være alt fra å bygge en garasje, tilbygg, eller endringer av eksisterende bygg.
+                  <br /><br />Når du sender en nabovarsel, gis en frist på 14 dager til naboene for å komme med
+                  eventuelle merknader. Deretter kan du sende søknaden til kommunen sammen med dokumentasjon på at naboene er varslet.
                 </p>
               </div>
 
