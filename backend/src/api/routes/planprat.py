@@ -1,45 +1,51 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 import logging
 
-from src.models.types import PlanPratRequest, PlanPratResponse
+from src.models.types import PlanPratRequest, PlanPratResponse, ApplicationFormResponse
 from src.core.agents.plan_agent import PlanAgent
+from src.services.agent_factory import get_plan_agent
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/plan-prat", tags=["planning"])
 
 # Initialize agent
 plan_agent = PlanAgent()
 
-@router.post("/plan-prat", response_model=PlanPratResponse)
-async def process_planprat_query(request: PlanPratRequest) -> PlanPratResponse:
-    """
-    Process a planning regulations query
-    
-    Args:
-        request: Request containing the user query
-        
-    Returns:
-        Response with answer and guide buttons
-    """
-    query = request.query
-    logger.info(f"Processing PlanPrat query: {query}")
-    
-    if not query:
+@router.post("", response_model=PlanPratResponse)
+async def plan_prat(question: PlanPratRequest) -> PlanPratResponse:
+    """Handle plan chat queries."""
+    if not question.query:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Query is empty"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Query is empty"
+        )
+
+    # Get user ID for form state tracking
+    user_id = question.user_id if hasattr(question, "user_id") else "default_user"
+    
+    # Get the plan agent instance
+    agent = get_plan_agent()
+    
+    # Process the query with the agent
+    response = agent.process(question.query, user_id=user_id)
+    
+    # Check if this is a form response
+    if isinstance(response, dict) and "form_state" in response:
+        # Special handling for form responses
+        form_state = response.pop("form_state")
+        answer = response.get("answer", "")
+        guides = response.get("guides", [])
+        
+        # Add form-specific data
+        return ApplicationFormResponse(
+            answer=answer,
+            guides=guides,
+            form_state=form_state,
+            current_section=response.get("current_section", ""),
+            form_summary=response.get("form_summary", "")
         )
     
-    try:
-        result = plan_agent.process(query)
-        
-        return PlanPratResponse(
-            answer=result["answer"],
-            guides=result.get("guides", [])
-        )
-    except Exception as e:
-        logger.error(f"Error processing query: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process query"
-        )
+    # Standard response handling
+    if isinstance(response, dict) and "answer" in response:
+        return PlanPratResponse(answer=response["answer"], guides=response.get("guides", []))
+    else:
+        return PlanPratResponse(answer=response)

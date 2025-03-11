@@ -34,7 +34,7 @@ class PropertyExtractor:
         # First try with regex patterns
         ids = self._extract_with_regex(text)
         
-        # If regex fails and we have LLM available, try with LLM
+      
         if self.llm and ids.gnr is None and ids.bnr is None:
             text_lower = text.lower()
             # Only use LLM if the text likely contains property identifiers

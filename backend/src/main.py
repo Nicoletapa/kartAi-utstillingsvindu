@@ -1,6 +1,10 @@
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query, UploadFile
+from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
+
+from src.models.types import PlanPratRequest, PlanPratResponse
+
 
 from src.api.routes import planprat
 from src.utils.logging import setup_logging

@@ -13,22 +13,14 @@ from src.configuration import (
 )
 
 
-# llm = AzureChatOpenAI(
-#     api_key=AZURE_API_KEY,  
-#     deployment_name=AZURE_DEPLOYMENT_NAME,
-#     api_version=AZURE_API_VERSION,
-#     azure_endpoint=AZURE_OPENAI_ENDPOINT,
-#     temperature=0,
-# )
 llm = ChatGoogleGenerativeAI(
     model=GOOGLE_API_KEY_MODEL,
     google_api_key=GOOGLE_API_KEY,
     openai_api_base=GEMINI_BASE_ENDPOINT,
+    streaming=True,
     temperature=0.3,
-    convert_system_message_to_human=True,  
-
+    
 )
-
 
 
 # Use separate key for embeddings

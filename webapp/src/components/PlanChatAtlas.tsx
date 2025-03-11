@@ -25,7 +25,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     { text: string; isUser: boolean, guides?: GuideButton[] }[]
   >([]);
   const [shapeContext, setShapeContext] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const utils = api.useUtils();
 
 
@@ -71,10 +70,41 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   }, [mapRef, mapReady]);
 
-  // Update the queryPlanprat function to include map information
+ 
+  const containsPropertyReference = (text: string): boolean => {
+    
+    const patterns = {
+    
+      gnr: /g(?:år)?d?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
+      bnr: /b(?:ruk)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
+      snr: /s(?:eksjon)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
+      
+   
+      combined: /(\d+)\/(\d+)(?:\/(?:0\/)?(\d+))?/,
+      
+      
+      propertyTerms: /\b(eiendom|tomt|adresse|eiendommen min|min eiendom)\b/i
+    };
+    
+    return Object.values(patterns).some(pattern => pattern.test(text));
+  };
+
+  // Function to check if coordinates should be included
+  const shouldIncludeCoordinates = (query: string): boolean => {
+    // Include coordinates if:
+    // 1. Query mentions property references
+    // 2. User has drawn a shape on the map
+    // 3. Spatial analysis data is available
+    return containsPropertyReference(query) || 
+           !!lastDrawnShape || 
+           !!spatialAnalysis?.nearestPropertyId;
+  };
+
+  // Update the queryPlanprat function
   async function queryPlanprat(queryInput: string) {
     try {
       let enhancedQuery = queryInput;
+      const includeCoordinates = shouldIncludeCoordinates(queryInput);
       
       // Add drawn shape context if available
       if (lastDrawnShape) {
@@ -98,8 +128,8 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         enhancedQuery = `${queryInput} [Context: User has drawn on the map: ${JSON.stringify(shapeSummary)}. ${spatialInfo}]`;
       }
       
-      // Add map view context if available
-      if (mapRef?.current && mapReady) {
+      // Add map view context ONLY if property-related
+      if (mapRef?.current && mapReady && includeCoordinates) {
         const center = mapRef.current.getCenter();
         const zoom = mapRef.current.getZoom();
         enhancedQuery += ` [Map context: User is viewing map at coordinates ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}, zoom level ${zoom}]`;
@@ -116,39 +146,38 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   }
 
-  // Helper function to safely extract coordinates from various geometry types
+  
   function getCoordinatesFromGeometry(geometry: GeoJSON.Geometry): GeoJSON.Position | GeoJSON.Position[] | GeoJSON.Position[][] | GeoJSON.Position[][][] | Array<{type: string; coordinates: unknown}> {
     if (geometry.type === 'GeometryCollection') {
-      // For GeometryCollection, return an array of geometries
+     
       return geometry.geometries.map(g => ({
         type: g.type,
         coordinates: getCoordinatesFromGeometry(g)
       }));
     } else if (geometry.type === 'Point') {
-      // Remove unnecessary type assertion
+      
       return geometry.coordinates;
     } else if (geometry.type === 'LineString') {
-      // Remove unnecessary type assertion
+      
       return geometry.coordinates;
     } else if (geometry.type === 'Polygon') {
-      // Remove unnecessary type assertion
+      
       return geometry.coordinates;
     } else if (geometry.type === 'MultiPoint') {
-      // Remove unnecessary type assertion
+      
       return geometry.coordinates;
     } else if (geometry.type === 'MultiLineString') {
-      // Remove unnecessary type assertion
+      
       return geometry.coordinates;
     } else if (geometry.type === 'MultiPolygon') {
-      // Remove unnecessary type assertion
+      
       return geometry.coordinates;
     } else {
-      // Default case - should never happen with valid GeoJSON
+      
       return [];
     }
   }
 
-  // Rest of the component code stays the same
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setText(e.target.value);
   };
@@ -158,28 +187,19 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       setChatItems((prevChatItems) => [
         { text: text, isUser: true },
         ...prevChatItems,
-      ]); //question
+      ]); 
       const sendText = text;
       setText("");
-      setLoading(true);
-      try {
-        const response = await queryPlanprat(sendText);
-        if (response) {
-          setChatItems((prevChatItems) => [
-            { 
-              text: response.answer, 
-              isUser: false,
-              guides: response.guides 
-            },
-            ...prevChatItems,
-          ]);
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to get a response. Please try again.");
-      } finally {
-        setLoading(false);
-      }
+      const response = await queryPlanprat(sendText);
+      if (!response) return;
+      setChatItems((prevChatItems) => [
+        { 
+          text: response.answer, 
+          isUser: false,
+          guides: response.guides 
+        },
+        ...prevChatItems,
+      ]);
     }
   };
 
@@ -191,6 +211,41 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       await handleSubmit();
     }
   };
+
+  // Format text with markdown-like syntax using Tailwind classes
+  const formatText = (text: string): JSX.Element => {
+    // Split the text into paragraphs
+    const paragraphs = text.split(/\n\n+/);
+    
+    return (
+      <>
+        {paragraphs.map((paragraph, idx) => {
+          if (!paragraph.trim()) return null;
+          
+          // Process bold text - ** or __ for bold
+          const formattedText = paragraph.replace(
+            /(\*\*|__)(.*?)\1/g, 
+            '<strong class="font-semibold">$2</strong>'
+          );
+          
+          // Check if this is a list item
+          if (formattedText.match(/^[-*•] /)) {
+            return (
+              <ul key={idx} className="list-disc ml-6 mb-3">
+                {formattedText.split(/\n/).map((item, i) => {
+                  const listItem = item.replace(/^[-*•] /, '');
+                  return <li key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: listItem }} />;
+                })}
+              </ul>
+            );
+          }
+          
+          return <p key={idx} className="mb-3" dangerouslySetInnerHTML={{ __html: formattedText }} />;
+        })}
+      </>
+    );
+  };
+
   const renderGuideButtons = (guides: GuideButton[]) => {
     if (!guides || guides.length === 0) return null;
     
@@ -231,12 +286,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       {/* Map context indicator with spatial information */}
       {mapReady && (
         <div className="bg-green-50 p-3 text-sm">
-          {/* <span className="font-semibold">Map connected.</span>
-          {shapeContext && (
-            <div className="mt-1">
-              <span className="italic">{shapeContext}</span>
-            </div>
-          )} */}
+          
           {spatialAnalysis && (
             <div className={`mt-2 p-2 rounded-md ${
               spatialAnalysis.isWithinProperty 
@@ -280,8 +330,14 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
               }
               key={index}
             >
-              {chatItem.text}
-              {!chatItem.isUser && chatItem.guides && renderGuideButtons(chatItem.guides)}
+              {chatItem.isUser ? (
+                chatItem.text
+              ) : (
+                <div>
+                  {formatText(chatItem.text)}
+                  {chatItem.guides && renderGuideButtons(chatItem.guides)}
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -293,26 +349,20 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             value={text}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
-            disabled={loading}
           ></textarea>
           <button
             type="submit"
             id="planprat-input-button"
-            className={`absolute bottom-2 right-2 rounded-full p-2 bg-kartAI-blue hover:bg-kartAI-blue/90 transition-colors ${loading ? 'opacity-80' : ''}`}
+            className="absolute bottom-2 right-2 rounded-full p-2 bg-kartAI-blue hover:bg-kartAI-blue/90 transition-colors"
             onClick={handleSubmit}
-            disabled={loading}
           >
-            {loading ? (
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <Image
-                src="/Ikoner/Dark/SVG/Comment.svg"
-                alt="send"
-                height="24"
-                width="24"
-                className="text-white"
-              ></Image>
-            )}
+            <Image
+              src="/Ikoner/Dark/SVG/Comment.svg"
+              alt="send"
+              height="24"
+              width="24"
+              className="text-white"
+            ></Image>
           </button>
         </div>
         {error && <p className="py-2 text-center text-red-500 text-sm">{error}</p>}
