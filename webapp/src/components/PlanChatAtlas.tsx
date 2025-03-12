@@ -1,5 +1,5 @@
 "use client";
-import { type ChangeEvent, useState, type KeyboardEvent, useEffect } from "react";
+import { type ChangeEvent, useState, type KeyboardEvent, useEffect, useRef } from "react";
 import Image from "next/image";
 import { api } from "~/trpc/react";
 import type { Map } from 'leaflet';
@@ -26,7 +26,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   >([]);
   const [shapeContext, setShapeContext] = useState<string | null>(null);
   const utils = api.useUtils();
-
+  const mapCenterLogged = useRef(false);
 
   useEffect(() => {
     if (lastDrawnShape) {
@@ -63,10 +63,11 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
 
 
   useEffect(() => {
-    if (mapRef?.current && mapReady) {
+    if (mapRef?.current && mapReady && !mapCenterLogged.current) {
       console.log("Map center: ", mapRef.current.getCenter());
+      mapCenterLogged.current = true;
       // Can control the map here, e.g.,
-    // mapRef.current.setView([latitude, longitude], zoom);
+      // mapRef.current.setView([latitude, longitude], zoom);
     }
   }, [mapRef, mapReady]);
 

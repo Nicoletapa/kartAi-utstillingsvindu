@@ -3,34 +3,33 @@ import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
 import * as L from 'leaflet';
-import * as turf from '@turf/turf';  // Add this import
 import type { Map } from 'leaflet';
-import type { Feature, Geometry, GeoJsonProperties } from 'geojson';
+import type { Feature, Geometry, GeoJsonProperties } from 'geojson'; // Add missing imports
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
+import { PropertySearchBar } from './map/PropertySearchBar';
+import { 
+  PropertyData, 
+  SpatialAnalysisResult, 
+  analyzeSpatialRelationship,
+  formatPropertyNumber,
+  searchProperty as fetchProperty
+} from '~/utils/propertyUtils';
+import { usePropertySearch } from '~/hooks/usePropertySearch';
 
 const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
 const Overlay = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.Overlay), { ssr: false });
 
-// Update the SpatialAnalysisResult interface - remove intersection property
-interface SpatialAnalysisResult {
-  isWithinProperty: boolean;
-  distanceToProperty: number | null;  
-  nearestPropertyId: string | null;  // Changed from optional string | null to required string | null
-}
 interface DrawControlProps {
   map: Map;
   onShapeDrawn?: (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => void;
   propertyBoundaries?: GeoJSON.Feature[];
 }
 
-
+// Keep the DrawControl component as is
 const drawnItemsRef = new L.FeatureGroup();
-
-
 const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControlProps) => {
-  
   const drawControlRef = useRef<L.Control.Draw | null>(null);
 
   useEffect(() => {
@@ -132,246 +131,154 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControl
   return null;
 };
 
-// Update analyzeSpatialRelationship function
-function analyzeSpatialRelationship(
-  drawnShape: GeoJSON.Feature,
-  propertyBoundaries: GeoJSON.Feature[]
-): SpatialAnalysisResult {
-  let isWithinProperty = false;
-  let minDistance = Infinity;
-  let nearestPropertyId: string | null = null;
-  // Removed: let intersection = null;
-
-  // Default result if no analysis can be performed
-  const defaultResult: SpatialAnalysisResult = {
-    isWithinProperty: false,
-    distanceToProperty: null,
-    nearestPropertyId: null,
-    // Removed: intersection: null
-  };
-
-  // Handle case where no property boundaries exist
-  if (!propertyBoundaries.length) {
-    return defaultResult;
-  }
-
-  try {
-    // Loop through each property boundary and check relationship
-    propertyBoundaries.forEach(property => {
-      // Fix: Use optional chaining instead of multiple conditionals
-      if (!property?.geometry) {
-        console.warn('Invalid property object encountered:', property);
-        return; // Skip this property
-      }
-
-      try {
-        // For point features
-        if (drawnShape.geometry.type === 'Point') {
-          // Fix: Remove unnecessary type assertion
-          const pointCoords = turf.point(drawnShape.geometry.coordinates) as GeoJSON.Feature<GeoJSON.Point>;
-          
-          if (property.geometry.type === 'Polygon' || property.geometry.type === 'MultiPolygon') {
-            const polygonFeature = property as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
-            const pointWithin = turf.booleanPointInPolygon(pointCoords, polygonFeature);
-            
-            if (pointWithin) {
-              isWithinProperty = true;
-              // Add type assertion to ensure id is treated as a string
-              nearestPropertyId = typeof property.properties?.id === 'string' 
-                ? property.properties.id 
-                : String(property.properties?.id) || null;
-            }
-          }
-        } 
-        // For polygons and lines
-        else if (drawnShape.geometry.type === 'Polygon' || drawnShape.geometry.type === 'MultiPolygon') {
-          // Fix: Use GeoJSON types with proper type assertion
-          const drawnPolygon = drawnShape as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
-          
-          if (property.geometry.type === 'Polygon' || property.geometry.type === 'MultiPolygon') {
-            // Fix: Use GeoJSON types with proper type assertion
-            const propertyPolygon = property as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
-            
-            // Fix: Properly type function return values
-            const overlaps = turf.booleanOverlap(drawnPolygon, propertyPolygon) ;
-            const within = turf.booleanWithin(drawnPolygon, propertyPolygon) ;
-            
-            if (overlaps || within) {
-              isWithinProperty = true;
-              // Add type assertion to ensure id is treated as a string
-              nearestPropertyId = typeof property.properties?.id === 'string' 
-                ? property.properties.id 
-                : String(property.properties?.id) || null;
-              
-              // Removed: Entire intersection calculation block
-            }
-          }
-        }
-        
-        // Calculate distance if not within property
-        if (!isWithinProperty && property.geometry) {
-          try {
-            // Get centers as proper points for distance calculation
-            const drawnShapeCenter = turf.centerOfMass(drawnShape) as GeoJSON.Feature<GeoJSON.Point>;
-            const propertyCenter = turf.centerOfMass(property) as GeoJSON.Feature<GeoJSON.Point>;
-            
-            const distance = turf.distance(
-              drawnShapeCenter,
-              propertyCenter,
-              { units: 'meters' }
-            ) ;
-            
-            if (distance < minDistance) {
-              minDistance = distance;
-              // Add type assertion to ensure id is treated as a string
-              nearestPropertyId = typeof property.properties?.id === 'string' 
-                ? property.properties.id 
-                : String(property.properties?.id) || null;
-            }
-          } catch (e) {
-            console.error('Error calculating distance:', e);
-          }
-        }
-      } catch (e) {
-        console.error('Error in spatial analysis:', e);
-      }
-    });
-  } catch (e) {
-    console.error('Error performing spatial analysis:', e);
-    return defaultResult;
-  }
-
-  return {
-    isWithinProperty,
-    distanceToProperty: isWithinProperty ? 0 : minDistance === Infinity ? null : minDistance,
-    nearestPropertyId,
-   
-  };
-}
-
-interface PropertyData {
-  geom: GeoJSON.GeoJSON;
-  matrikkelnummer?: string;
-}
-
 interface TiltaksAidMapProps {
   onMapReady?: (map: Map) => void;
   onShapeDrawn?: (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => void;
+  userGnr?: number;
+  userBnr?: number;
+  userFnr?: number;
+  userSnr?: number;
+  autoZoom?: boolean;
 }
 
-const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
+const TiltaksAidMap = ({ 
+  onMapReady, 
+  onShapeDrawn,
+  userGnr, 
+  userBnr,
+  userFnr,
+  userSnr,
+  autoZoom = true 
+}: TiltaksAidMapProps) => {
   const mapRef = useRef<Map | null>(null);
   const [zoom] = useState(15);
-  const MAX_ZOOM = 19; 
-  const [searchInput, setSearchInput] = useState('');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const MAX_ZOOM = 19;
   const [propertyBoundary, setPropertyBoundary] = useState<L.Layer | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [propertyBoundaries, setPropertyBoundaries] = useState<GeoJSON.Feature[]>([]);
-  
-  // Fix unused variable warning by removing or using the state
-  // Option 1: Remove the unused state
-  // Option 2: Keep it and use it somewhere (showing here)
-  const [currentPropertyData, setCurrentPropertyData] = useState<PropertyData | null>(null);
+  const [autoZoomAttempted, setAutoZoomAttempted] = useState(false);
+  const [autoZoomSuccessful, setAutoZoomSuccessful] = useState(false);
 
-  // Add a useEffect that uses currentPropertyData for something
+  // Use our custom hook
+  const { 
+    searchInput, 
+    setSearchInput, 
+    errorMessage, 
+    setErrorMessage
+  } = usePropertySearch();
+
+  // Ref to track if we've already triggered map ready callback
+  const mapReadyCallbackFired = useRef(false);
+  const stableOnMapReady = useRef(onMapReady).current;
+
+  // Add ref to track logging status
+  const loggedPropertyData = useRef(false);
+
+  // Force a search when user property data changes
   useEffect(() => {
-    if (currentPropertyData) {
-      // Do something with the data, for example log it
-      console.log('Current property data:', currentPropertyData);
-      // Or set a document title with property info
-      // document.title = `Property: ${currentPropertyData.matrikkelnummer || 'Unknown'}`;
+    if (autoZoomSuccessful || !userGnr || !userBnr) return;
+    
+    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+    if (propertyNumber) {
+      setSearchInput(propertyNumber);
+      
+      if (mapReady && !autoZoomAttempted) {
+        setAutoZoomAttempted(true);
+        handlePropertySearch(propertyNumber);
+      }
     }
-  }, [currentPropertyData]);
+  }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful]);
 
-  const handlePropertySearch = async () => {
-    if (!searchInput.trim()) {
-      setErrorMessage('Please enter a property number');
+  // Auto-zoom effect
+  useEffect(() => {
+    if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
+    
+    if (!userGnr || !userBnr) return;
+
+    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+    if (propertyNumber) {
+      setAutoZoomAttempted(true);
+      handlePropertySearch(propertyNumber);
+    }
+  }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful]);
+
+  // Handle property search
+  const handlePropertySearch = async (propertyNumberToSearch: string = searchInput) => {
+    const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
+    
+    if (!data || data.length === 0) {
+      setErrorMessage('No property found with this number or invalid property data');
       return;
     }
-
-    try {
-      const response = await fetch(
-        `https://dctlsklovjueodoiygak.supabase.co/rest/v1/teig_utvalg?select=geom,matrikkelnummertekst&matrikkelnummertekst=eq.${searchInput}`,
-        {
-          headers: {
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_KEY ?? '',
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      const data = await response.json() as PropertyData[];
-      console.log('API response for property search:', data);
-
-      if (data.length > 0 && data[0]?.geom) {
-        if (propertyBoundary && mapRef.current) {
-          mapRef.current.removeLayer(propertyBoundary);
-        }
-
-        // Add debug logging to check the structure
-        console.log('Raw property data:', data[0]);
-        console.log('Property geom:', data[0]?.geom);
-
-        // Convert the property data to a GeoJSON feature with ID
-        // Ensure the geom object has the correct structure for a GeoJSON Feature
-        const propertyFeature = {
-          type: 'Feature',
-          geometry: data[0]?.geom,
-          properties: { 
-            id: searchInput,
-            matrikkelnummer: data[0]?.matrikkelnummer
-          }
-        } as GeoJSON.Feature;
-
-        // Debug log the created feature
-        console.log('Created property feature:', propertyFeature);
-
-        // Save the raw property data - fix undefined error with null coalescing
-        setCurrentPropertyData(data[0] ?? null);
-        
-        // Update our property boundaries state
-        setPropertyBoundaries([propertyFeature]);
-
-        const newBoundary = L.geoJSON(data[0]?.geom, {
-          style: {
-            color: 'blue',
-            weight: 2,
-            fillOpacity: 0.1
-          }
-        });
-
-        if (mapRef.current) {
-          newBoundary.addTo(mapRef.current);
-          
-          mapRef.current.fitBounds(newBoundary.getBounds(), {
-            maxZoom: MAX_ZOOM,
-            padding: [20, 20] 
-          });
-        }
-
-        setPropertyBoundary(newBoundary);
-        setErrorMessage(null);
-      } else {
-        console.warn('No valid property data found:', data);
-        setErrorMessage('No property found with this number or invalid property data');
+    
+    if (data[0]?.geom) {
+      if (propertyBoundary && mapRef.current) {
+        mapRef.current.removeLayer(propertyBoundary);
       }
-    } catch (error) {
-      console.error('Error searching for property:', error);
-      setErrorMessage(`Error searching for property: ${(error as Error).message}`);
+
+      // Convert the property data to a GeoJSON feature with ID
+      const propertyFeature = {
+        type: 'Feature',
+        geometry: data[0]?.geom,
+        properties: { 
+          id: propertyNumberToSearch,
+          matrikkelnummer: data[0]?.matrikkelnummer
+        }
+      } as GeoJSON.Feature;
+
+      // Replace setter with direct assignment to a local constant to prevent unused state
+      const currentPropertyData = data[0] ?? null;
+      
+      // Only log once per component instance
+      if (!loggedPropertyData.current && currentPropertyData) {
+        console.log('Current property data:', currentPropertyData);
+        loggedPropertyData.current = true;
+      }
+      
+      setPropertyBoundaries([propertyFeature]);
+
+      const newBoundary = L.geoJSON(data[0]?.geom, {
+        style: {
+          color: 'blue',
+          weight: 2,
+          fillOpacity: 0.1
+        }
+      });
+
+      if (mapRef.current) {
+        newBoundary.addTo(mapRef.current);
+        
+        mapRef.current.fitBounds(newBoundary.getBounds(), {
+          maxZoom: MAX_ZOOM,
+          padding: [20, 20] 
+        });
+        
+        setAutoZoomSuccessful(true);
+      }
+
+      setPropertyBoundary(newBoundary);
+      setErrorMessage(null);
     }
   };
-  
+
   const MapEvents = () => {
     const map = useMap();
     
     useEffect(() => {
-      if (map) {
-        mapRef.current = map;
-        setMapReady(true);
-        if (onMapReady) {
-          onMapReady(map);
-        }
+      if (!map || mapReadyCallbackFired.current) return;
+      
+      mapRef.current = map;
+      setMapReady(true);
+      mapReadyCallbackFired.current = true;
+      
+      if (stableOnMapReady) {
+        stableOnMapReady(map);
+      }
+      
+      // Auto-search on map ready
+      if (searchInput && !autoZoomAttempted && !autoZoomSuccessful && userGnr && userBnr) {
+        setAutoZoomAttempted(true);
+        handlePropertySearch(searchInput);
       }
     }, [map]);
     
@@ -381,7 +288,6 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
   // Handle shape drawing with spatial analysis
   const handleShapeDrawn = (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => {
     if (onShapeDrawn) {
-      // If it's a new shape and we have property boundaries, calculate spatial relationships
       if (!spatialAnalysis && propertyBoundaries.length > 0) {
         spatialAnalysis = analyzeSpatialRelationship(shape, propertyBoundaries);
       }
@@ -390,30 +296,12 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
     }
   };
 
-  // Add required packages
+  // Load required scripts & libraries
   useEffect(() => {
-    // Dynamically import @turf/turf
-    const importTurf = async () => {
-      try {
-        await import('@turf/turf');
-        console.log('Turf.js loaded successfully');
-      } catch (error) {
-        console.error('Error loading Turf.js:', error);
-      }
-    };
-    
-    // Fix: Add void operator to explicitly mark promise as ignored
-    void importTurf();
-  }, []);
-
-  // Load Leaflet Draw script
-  useEffect(() => {
+    // Load leaflet draw
     const script = document.createElement('script');
     script.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js";
     script.async = true;
-    script.onload = () => {
-      console.log('Leaflet Draw loaded');
-    };
     document.head.appendChild(script);
 
     return () => {
@@ -421,37 +309,14 @@ const TiltaksAidMap = ({ onMapReady, onShapeDrawn }: TiltaksAidMapProps) => {
     };
   }, []);
 
-  // // Handle cleanup on unmount
-  // useEffect(() => {
-  //   return () => {
-  //     if (mapRef.current) {
-  //       // Clear any drawn items if needed on component unmount
-  //       // drawnItemsRef.clearLayers();
-  //     }
-  //   };
-  // }, []);
-
   return (
     <div className='flex flex-col h-full'>
-      <div className="flex items-center gap-2 p-3 bg-white border-b border-gray-200">
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search property number (e.g., 152/842)"
-          className="flex-1 p-2 border rounded focus:border-kartAI-blue focus:ring-1 focus:outline-none"
-          onKeyPress={(e) => e.key === 'Enter' && handlePropertySearch()}
-        />
-        <button
-          onClick={handlePropertySearch}
-          className="px-4 py-2 bg-kartAI-blue text-white rounded hover:bg-kartAI-blue/90 transition-colors"
-        >
-          Search
-        </button>
-      </div>
-      {errorMessage && (
-        <div className="mx-3 text-red-500 mb-2 p-2 bg-red-50 rounded text-sm">{errorMessage}</div>
-      )}
+      <PropertySearchBar
+        searchInput={searchInput}
+        onSearchInputChange={setSearchInput}
+        onSearch={() => handlePropertySearch()}
+        errorMessage={errorMessage}
+      />
 
       <div className="flex-1">
         <MapContainer
