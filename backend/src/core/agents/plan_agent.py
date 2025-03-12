@@ -1,16 +1,15 @@
 import logging
 import time
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any
 
 from langchain_core.prompts import PromptTemplate
 
 from src.core.agents.base import BaseAgent
+from src.core.embeddings.document_store import DocumentStore
 from src.core.retrieval.law_retriever import LawContextRetriever
 from src.core.retrieval.spatial_retriever import SpatialDocumentRetriever
-from src.core.extractors.property_extractor import PropertyExtractor, PropertyIdentifiers
-from src.data.application_types import get_application_types_by_keyword, get_all_application_types
-# Import the new application form module
-from src.data.application_form import FormFillingState, get_form_questions
+from src.core.retrieval.property_extractor import PropertyExtractor, PropertyIdentifiers
+from src.data.application_types import get_application_types_by_keyword
 
 logger = logging.getLogger(__name__)
 
@@ -19,25 +18,65 @@ class PlanAgent(BaseAgent):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.law_retriever = LawContextRetriever()
+        self.law_retriever = LawContextRetriever()  # Changed from DocumentStore to LawContextRetriever
+        self.document_store = DocumentStore()  # Added document_store for document retrieval
         self.property_extractor = PropertyExtractor(llm=self.llm)
         self.spatial_retriever = SpatialDocumentRetriever()
-        # Add form handling state
-        self.form_states = {}  # Dictionary to store form states by user ID
     
-    def _is_greeting(self, query:str) -> bool:
-        """Detect if the query is a simple greeting message"""
-        greeting_patterns = [
-           "hei", "hello", "hallo", "hi", "hey", "god dag", "god morgen", 
-        "god kveld", "morn", "halla", "heisann", "hva skjer", "hvordan går det"
-        ]
-        
+    def _is_greeting(self, query: str) -> bool:
+        """
+        Detect if the query is a simple greeting message using LLM classification.
+        For very short messages, still use pattern matching for efficiency.
+        """
         query_lower = query.lower().strip().rstrip("!.,?")
         
-        if len(query_lower.split()) <=3:
-            return any(greeting in query_lower for greeting in greeting_patterns)
+        # For very short queries (1-2 words), use pattern matching for efficiency
+        if len(query_lower.split()) <= 2:
+            greeting_patterns = [
+                "hei", "hello", "hallo", "hi", "hey", "god dag", "god morgen", 
+                "god kveld", "morn", "halla", "heisann", "hva skjer", "hvordan går det"
+            ]
+            if any(pattern in query_lower for pattern in greeting_patterns):
+                return True
+        
+        # For slightly longer queries (3-5 words), use LLM classification
+        if len(query_lower.split()) <= 5:
+            greeting_prompt = PromptTemplate(
+                template="""
+                Analyze whether this message is ONLY a greeting or contains a substantive question.
+                
+                Examples of just greetings:
+                - "Hei"
+                - "God morgen"
+                - "Hallo, hvordan går det?"
+                - "Hei, er du der?"
+                
+                Examples of substantive questions:
+                - "Hei, kan jeg bygge en garasje?"
+                - "God dag, jeg lurer på regler for tilbygg"
+                - "Hallo, trenger jeg byggetillatelse?"
+                
+                User message: "{query}"
+                
+                Is this ONLY a greeting without a substantive question? Answer YES or NO.
+                """
+            )
+            
+            try:
+                response = self.llm.invoke(greeting_prompt.format(query=query))
+                
+                if hasattr(response, "content"):
+                    content = response.content.strip().upper()
+                else:
+                    content = str(response).strip().upper()
+                
+                return "YES" in content
+            except Exception as e:
+                logger.error(f"Error in greeting classification: {e}")
+                # Fall back to simple length check if LLM fails
+                return len(query_lower.split()) <= 3
+        
         return False
-    
     
     def _handle_greeting(self, query:str) -> Dict[str, Any]:
         """Generate a naturla, conversational respose to greetings"""
@@ -79,8 +118,6 @@ class PlanAgent(BaseAgent):
             }
     
     
-    
-    
     def _add_followup_suggestions(self, response_text:str, query:str) ->str:
         """Add follow-up suggestions to the response if appropriate""" 
         
@@ -113,10 +150,6 @@ class PlanAgent(BaseAgent):
             logger.error(f"Error generating follow-up suggestions: {e}")
             return response_text
         
-        
-        
-        
-        
     
     def process(self, query: str, **kwargs) -> Dict[str, Any]:
         """
@@ -131,14 +164,6 @@ class PlanAgent(BaseAgent):
         start_time = time.time()
         logger.info(f"Processing query: {query[:50]}...")
         
-        # Check for form-related intent
-        user_id = kwargs.get("user_id", "default_user")
-        form_state = self.form_states.get(user_id)
-        
-        # Check if this is a form-filling related query
-        if self._is_form_related(query) or (form_state and form_state.active):
-            return self._handle_application_form(query, user_id)
-        
         if self._is_greeting(query):
             logger.info("Detected greeting, generating conversational response")
             return self._handle_greeting(query)
@@ -148,7 +173,7 @@ class PlanAgent(BaseAgent):
             property_ids = self.property_extractor.extract_ids(query)
         
             # Get relevant law context
-            context = self.law_retriever.get_context(query)
+            context = self.law_retriever.get_context(query)  # This now correctly calls get_context on LawContextRetriever
             self._log_token_usage(context, "Law context")
             
             
@@ -178,19 +203,25 @@ class PlanAgent(BaseAgent):
                     
             prompt = PromptTemplate(
             template="""
-    Instructions for the AI assistant:
-    - You are a senior municipality worker specializing in building permits.
-    - Answer the user's question using the context provided.
-    - Explain regulations in simple, easy-to-understand language.
-    - Answer in the same language as the user's question.
-    - Don't include URLs directly in your response - they will be provided as clickable buttons.
-    - The context below is not seen by the user, only you.
-    
-    User query: {query}
-    
-    Context (not visible to user):
-    {context}
-    """
+Instructions for the AI assistant:
+- You are a senior municipality worker with deep expertise in building permits and regulations.
+- Answer the user's question using the context provided.
+- Your answers MUST be DEFINITIVE and DIRECT.
+- When the user asks if they can build something, give a clear YES or NO answer whenever possible.
+- Provide SPECIFIC measurements, distances, and requirements whenever applicable.
+- Use CONCRETE examples to illustrate your points.
+- Avoid hedging language like "it might be", "perhaps", "it depends", unless absolutely necessary.
+- When regulations have exceptions, clearly state both the rule AND the specific exceptions.
+- If the user's question doesn't provide enough details for a definitive answer, ask 1-2 specific follow-up questions.
+- Answer in the same language as the user's question.
+- Don't include URLs directly in your response - they will be provided as clickable buttons.
+- The context below is not seen by the user, only you.
+
+User query: {query}
+
+Context (not visible to user):
+{context}
+"""
 )
             self._log_token_usage(prompt.format(query=query, context=context), "Final prompt")
             
@@ -219,313 +250,70 @@ class PlanAgent(BaseAgent):
                 "guides": []
             }
     
-    def _is_form_related(self, query: str) -> bool:
-        """Check if query is related to filling out an application form using LLM"""
+    def _is_building_related(self, query: str) -> bool:
+        """Check if query is related to building regulations using LLM instead of keywords"""
         
-        # For very short queries, use a quick check first to avoid unnecessary LLM calls
-        if len(query.split()) <= 3:
-            return False
-            
-        intent_prompt = PromptTemplate(
+        # For very short queries, still use a quick check to avoid unnecessary LLM calls
+        if len(query.split()) <= 2:
+            quick_check_keywords = ["bygge", "garasje", "tilbygg", "søknad", "avstand"]
+            query_lower = query.lower()
+            if any(keyword in query_lower for keyword in quick_check_keywords):
+                return True
+        
+        building_prompt = PromptTemplate(
             template="""
-            Analyze the following user query and determine if it is related to filling out an application form or application process.
+            Analyze the following user query and determine if it is related to building regulations, construction, 
+            building permits, property development, or similar topics.
             
             User query: "{query}"
             
-            Examples of form-related queries:
-            - "Jeg trenger hjelp med å fylle ut byggesøknaden"
-            - "Hvordan søker jeg om byggetillatelse?"
-            - "Kan du hjelpe meg med skjemaet for garasje?"
-            - "Jeg vil starte en søknadsprosess for tilbygg"
+            Examples of building-related queries:
+            - "Kan jeg bygge garasje på tomten min?"
+            - "Hvor nær nabogrensen kan jeg sette opp en bod?"
+            - "Trenger jeg byggetillatelse for å bygge veranda?"
+            - "Regler for å bygge tilbygg til huset"
+            - "Hva er maks høyde for en garasje?"
             
-            Examples of non-form-related queries:
-            - "Hva er reglene for å bygge garasje?"
-            - "Hvor langt fra tomtegrensen må jeg bygge?"
-            - "Hei, hvordan går det?"
-            - "Hvilke dokumenter trenger jeg for byggetillatelse?"
+            Examples of non-building-related queries:
+            - "Når åpner biblioteket?"
+            - "Hvordan betaler jeg kommunale avgifter?"
+            - "Hvem er ordføreren i kommunen?"
+            - "Kan jeg få barnehageplass nå?"
             
-            Respond with only "YES" if the query is about filling out forms or starting an application process, otherwise respond with "NO".
+            Respond with only "YES" if the query is about building regulations, construction, property development, 
+            or related topics. Otherwise respond with "NO".
             """
         )
         
         try:
-            # Use LLM to classify the intent
-            response = self.llm.invoke(intent_prompt.format(query=query))
+            # Use LLM to classify if the query is building-related
+            response = self.llm.invoke(building_prompt.format(query=query))
             
             # Extract response content
             if hasattr(response, "content"):
                 content = response.content.strip().upper()
             else:
                 content = str(response).strip().upper()
-                
-            # Check if the response indicates a form-related query
+            
+            # Log the classification result
+            logger.debug(f"Building classification for '{query[:30]}...': {content}")
+            
+            # Check if the response indicates a building-related query
             return "YES" in content
             
         except Exception as e:
-            logger.error(f"Error in form intent classification: {e}")
+            logger.error(f"Error in building classification: {e}")
             
-            # Fall back to keyword matching if LLM fails
-            form_keywords = [
-                "fyll ut søknad", "søknadsskjema", "fylle ut skjema", "hjelp med søknad", 
-                "søknadsprosess", "registrere søknad", "starte søknad", "begynne søknad"
+            # Fall back to basic keyword matching if LLM fails
+            building_keywords = [
+                "bygge", "bygging", "byggeregler", "garasje", "tilbygg", "påbygg", 
+                "hus", "bolig", "enebolig", "rekkehus", "hytte", "bod", "uthus",
+                "søknad", "søknadspliktig", "tillatelse", "regulering",
+                "avstand", "nabogrense", "høyde", "etasje", "areal"
             ]
             
             query_lower = query.lower()
-            return any(keyword in query_lower for keyword in form_keywords)
-    
-    def _handle_application_form(self, query: str, user_id: str) -> Dict[str, Any]:
-        """Handle application form filling process with context awareness"""
-        # Initialize form state if doesn't exist
-        if user_id not in self.form_states:
-            self.form_states[user_id] = FormFillingState()
-            
-        form_state = self.form_states[user_id]
-        
-        # Special case for "reset" command
-        if query.strip().lower() in ["start over", "reset", "restart", "begynn på nytt"]:
-            self.form_states[user_id] = FormFillingState()
-            form_state = self.form_states[user_id]
-            form_state.active = True
-            form_state.current_section = "application_type"
-            questions = get_form_questions("application_type")
-            return {
-                "answer": f"Ok, la oss starte på nytt!\n\n{questions['application_type']}",
-                "guides": [],
-                "form_state": "active",
-                "current_section": "application_type"
-            }
-        
-        # Check if this is the initial form request
-        if not form_state.active:
-            form_state.active = True
-            form_state.current_section = "application_type"
-            
-            # Extract any form data that might already be in the initial query
-            prefilled_data = self._extract_form_data_from_query(query)
-            logger.info(f"Extracted data from initial query: {prefilled_data}")
-            
-            # Pre-fill data if available and update current section
-            intro_message = "Jeg kan hjelpe deg med å fylle ut søknaden! "
-            
-            if "application_type" in prefilled_data:
-                app_type_data = prefilled_data["application_type"]
-                if "selected_application_type" in app_type_data:
-                    selected_type = app_type_data["selected_application_type"]
-                    description = app_type_data.get("description", "")
-                    
-                    # Update form state
-                    form_state.update_section("application_type", app_type_data)
-                    
-                    # Customize message
-                    intro_message += f"Jeg forstår at du ønsker å {selected_type.lower()}"
-                    if description:
-                        intro_message += f" ({description}). "
-                    else:
-                        intro_message += ". "
-                        
-                    # Move directly to the next section
-                    next_section = form_state.get_next_question()
-                    form_state.current_section = next_section
-                    questions = get_form_questions(next_section)
-                    
-                    return {
-                        "answer": f"{intro_message}\n\nLa oss fortsette med neste steg:\n\n{questions[next_section]}",
-                        "guides": [],
-                        "form_state": "active",
-                        "current_section": next_section
-                    }
-            
-            # If no application type was detected, ask for it
-            questions = get_form_questions("application_type")
-            return {
-                "answer": f"{intro_message}\n\n{questions['application_type']}",
-                "guides": [],
-                "form_state": "active",
-                "current_section": "application_type"
-            }
-        
-        # Handle form exit commands
-        if query.strip().lower() in ["cancel", "exit", "quit", "avbryt", "avslutt"]:
-            form_state.active = False
-            return {
-                "answer": "Jeg har avbrutt utfyllingen av søknaden. Du kan starte på nytt når du vil.",
-                "guides": [],
-                "form_state": "cancelled"
-            }
-        
-        # Process answer to the current section's question and get next section
-        processed_answer = self._process_form_section_answer(query, form_state)
-        
-        # Get the next section AFTER processing the current answer
-        next_section = form_state.get_next_question()
-        logger.info(f"Moving from section '{form_state.current_section}' to '{next_section}'")
-        
-        # If we're done with the form
-        if next_section == "review":
-            summary = form_state.get_complete_form_summary()
-            form_state.active = False
-            
-            return {
-                "answer": f"Takk! Du har fullført søknadsskjemaet. Her er en oppsummering av informasjonen:\n\n{summary}\n\nDu kan nå sende inn søknaden, eller si fra hvis du vil endre noe.",
-                "guides": [],
-                "form_state": "complete",
-                "form_summary": summary
-            }
-        
-        # Otherwise, move to the next section
-        form_state.current_section = next_section
-        questions = get_form_questions(next_section)
-        
-        return {
-            "answer": f"{processed_answer}\n\n{questions[next_section]}",
-            "guides": [],
-            "form_state": "in_progress",
-            "current_section": next_section
-        }
-
-    def _extract_form_data_from_query(self, query: str) -> Dict[str, Any]:
-        """Extract form data from initial query using LLM"""
-        
-        extraction_prompt = PromptTemplate(
-            template="""
-            Analyze the user's query about a building project to identify what type of application they need.
-            
-            User query: "{query}"
-            
-            Available application types:
-            1. "Bygge tilbygg" (mindre enn 50 m2) - For building extensions under 50m²
-            2. "Rive et tilbygg" (mindre enn 50 m2) - For demolishing extensions under 50m²
-            3. "Bygge frittliggende bygning" (mindre enn 70 m2) - For building detached structures under 70m²
-            4. "Rive frittliggende bygning" (mindre enn 70 m2) - For demolishing detached structures under 70m²
-            5. "Annet" - For other types of applications
-            
-            First, determine if the user is asking about filling out an application.
-            If yes, return a JSON object with:
-            1. The most appropriate application type name (exact match from the list above)
-            2. Any details mentioned (like size, purpose, location)
-            
-            Example:
-            For query "Kan jeg bygge en garasje på 45m²", return:
-            {{
-              "application_type": {{
-                "selected_application_type": "Bygge frittliggende bygning",
-                "description": "garasje på 45m²"
-              }},
-              "property_details": {{
-                /* any property details if mentioned */
-              }}
-            }}
-            
-            If the user isn't asking about filling out an application, return empty JSON: {{}}
-            """
-        )
-        
-        try:
-            # Extract using LLM
-            response = self.llm.invoke(extraction_prompt.format(query=query))
-            
-            # Process content
-            if hasattr(response, "content"):
-                content = response.content
-            else:
-                content = str(response)
-                
-            # Extract JSON data
-            import json
-            import re
-            
-            # Find JSON pattern
-            json_match = re.search(r'(\{[\s\S]*\})', content)
-            if json_match:
-                json_str = json_match.group(1)
-                extracted_data = json.loads(json_str)
-                logger.info(f"Extracted application data: {extracted_data}")
-                return extracted_data
-                    
-        except Exception as e:
-            logger.error(f"Error extracting form data from query: {e}")
-            
-        # Return empty dict if extraction fails
-        return {}
-
-    def _process_form_section_answer(self, answer: str, form_state: FormFillingState) -> str:
-        """Process user's answer for a form section and update the form"""
-        current_section = form_state.current_section
-        
-        # Check for skip command
-        if answer.strip().lower() in ["skip", "hopp over", "neste"]:
-            return "Hopper over denne delen."
-        
-        # Add more debugging to track the flow
-        logger.info(f"Processing answer for section: {current_section}")
-        
-        # Use LLM to extract structured data from the user's response
-        extraction_prompt = PromptTemplate(
-            template="""
-            Given the user's response to a question about {section} in a building application form,
-            extract the relevant information in JSON format.
-            
-            Section: {section}
-            Question: {question}
-            User response: {answer}
-            
-            Extract only the factual information related to the section. Return as valid JSON.
-            """
-        )
-        
-        questions = get_form_questions(current_section)
-        question = questions.get(current_section, "")
-        
-        try:
-            # Extract structured data using LLM
-            extraction_response = self.llm.invoke(
-                extraction_prompt.format(
-                    section=current_section,
-                    question=question,
-                    answer=answer
-                )
-            )
-            
-            import json
-            import re
-            
-            # Try to extract JSON content
-            if hasattr(extraction_response, "content"):
-                content = extraction_response.content
-            else:
-                content = str(extraction_response)
-                
-            # Find JSON pattern
-            json_match = re.search(r'(\{[\s\S]*\})', content)
-            if json_match:
-                json_str = json_match.group(1)
-                extracted_data = json.loads(json_str)
-                
-                # Update the form state with extracted data
-                form_state.update_section(current_section, extracted_data)
-                logger.info(f"Successfully updated section {current_section} with data: {extracted_data}")
-                
-                return f"Takk! Jeg har registrert dine svar for {current_section}."
-            else:
-                logger.warning(f"Could not extract JSON from LLM response for section {current_section}")
-                return "Jeg forstår ikke helt svaret ditt. La oss gå videre, og du kan endre dette senere hvis nødvendig."
-                
-        except Exception as e:
-            logger.error(f"Error processing form answer: {e}")
-            return "Jeg hadde litt problemer med å tolke svaret ditt, men la oss fortsette. Du kan endre informasjonen senere."
-    
-    def _is_building_related(self, query: str) -> bool:
-        """Check if query is related to building regulations"""
-        building_keywords = [
-            "bygge", "bygging", "byggeregler", "garasje", "tilbygg", "påbygg", 
-            "hus", "bolig", "enebolig", "rekkehus", "hytte", "bod", "uthus",
-            "søknad", "søknadspliktig", "tillatelse", "regulering",
-            "avstand", "nabogrense", "høyde", "etasje", "areal"
-        ]
-        
-        query_lower = query.lower()
-        return any(keyword in query_lower for keyword in building_keywords)
-    
+            return any(keyword in query_lower for keyword in building_keywords)
     
     
     def _find_relevant_guides(self, query: str) -> List[Dict[str, str]]:
@@ -541,24 +329,125 @@ class PlanAgent(BaseAgent):
         return f"Property information for gnr: {property_ids.gnr}, bnr: {property_ids.bnr}"
     
     def _is_application_related(self, query: str) -> bool:
-        """Check if query is related to building application processes"""
-        application_keywords = [
-            "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
-            "tillatelse", "unntatt søknadsplikt", "søknadsprosess", "ansvarlig søker"
-        ]
+        """Check if query is related to building application processes using LLM classification"""
+        # Use keyword check for very short queries to avoid unnecessary LLM calls
+        if len(query.split()) <= 3:
+            application_keywords = [
+                "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
+                "tillatelse", "unntatt søknadsplikt", "søknadsprosess", "ansvarlig søker"
+            ]
+            query_lower = query.lower()
+            if any(keyword in query_lower for keyword in application_keywords):
+                return True
         
-        query_lower = query.lower()
-        return any(keyword in query_lower for keyword in application_keywords)
+        application_prompt = PromptTemplate(
+            template="""
+            Analyze if this query is about building permit applications, application processes, 
+            documentation requirements, or anything related to permission/permitting processes 
+            for construction.
+            
+            Examples of application-related queries:
+            - "Hvordan søker jeg om å bygge garasje?"
+            - "Trenger jeg å søke om tillatelse for et tilbygg?"
+            - "Hvilken dokumentasjon trenger jeg for byggesøknaden?"
+            - "Er garasjer under 50m² søknadspliktige?"
+            - "Hva er forskjellen mellom søknadspliktig og ikke-søknadspliktig?"
+            
+            Examples of non-application-related queries:
+            - "Hvor høy kan en garasje være?"
+            - "Hva er minsteavstand til nabogrense?"
+            - "Hvilke materialer kan jeg bruke i ytterveggen?"
+            - "Kan jeg bygge på den tomten?"
+            
+            User query: "{query}"
+            
+            Is this query related to building permits or application processes? Answer YES or NO.
+            """
+        )
+        
+        try:
+            response = self.llm.invoke(application_prompt.format(query=query))
+            
+            if hasattr(response, "content"):
+                content = response.content.strip().upper()
+            else:
+                content = str(response).strip().upper()
+            
+            return "YES" in content
+        except Exception as e:
+            logger.error(f"Error in application classification: {e}")
+            
+            # Fall back to keyword matching if LLM fails
+            application_keywords = [
+                "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
+                "tillatelse", "unntatt søknadsplikt", "søknadsprosess", "ansvarlig søker"
+            ]
+            
+            query_lower = query.lower()
+            return any(keyword in query_lower for keyword in application_keywords)
     
     def _extract_building_keywords(self, query: str) -> List[str]:
-        """Extract relevant building keywords from the query"""
-        building_keywords = [
+        """Extract relevant building keywords from the query using LLM analysis"""
+        # Define standard building keywords for fallback
+        standard_keywords = [
             "garasje", "tilbygg", "påbygg", "enebolig", "hytte", "bod", 
             "uthus", "carport", "brygge", "terrasse", "veranda"
         ]
         
+        # For short queries, check if any standard keywords are present
         query_lower = query.lower()
-        return [keyword for keyword in building_keywords if keyword in query_lower]
+        if len(query.split()) <= 3:
+            return [keyword for keyword in standard_keywords if keyword in query_lower]
+        
+        keyword_prompt = PromptTemplate(
+            template="""
+            Extract the specific building structure types mentioned in this query.
+            
+            Common structure types include:
+            - garasje/carport
+            - tilbygg/påbygg
+            - enebolig
+            - hytte/fritidsbolig
+            - bod/uthus
+            - terrasse/veranda/balkong
+            - brygge
+            - levegg/gjerde
+            
+            User query: "{query}"
+            
+            List only the specific structure types mentioned, one per line. Use Norwegian terms.
+            If no specific structure is mentioned, respond with "none".
+            """
+        )
+        
+        try:
+            response = self.llm.invoke(keyword_prompt.format(query=query))
+            
+            if hasattr(response, "content"):
+                content = response.content.strip()
+            else:
+                content = str(response).strip()
+            
+            if content.lower() == "none":
+                return []
+            
+            # Extract building keywords from LLM response
+            extracted_keywords = [kw.strip().lower() for kw in content.split('\n')]
+            
+            # Filter out empty strings and normalize common variations
+            extracted_keywords = [kw for kw in extracted_keywords if kw]
+            
+            # If LLM returned nothing useful, fall back to basic matching
+            if not extracted_keywords:
+                return [keyword for keyword in standard_keywords if keyword in query_lower]
+                
+            return extracted_keywords
+            
+        except Exception as e:
+            logger.error(f"Error in keyword extraction: {e}")
+            
+            # Fall back to keyword matching if LLM fails
+            return [keyword for keyword in standard_keywords if keyword in query_lower]
     
     def _format_application_types(self, app_types: List) -> str:
         """Format application types into a readable context string"""

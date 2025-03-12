@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status
 import logging
 
 from src.models.types import PlanPratRequest, PlanPratResponse, ApplicationFormResponse

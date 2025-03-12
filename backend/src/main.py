@@ -3,11 +3,9 @@ from fastapi import FastAPI, HTTPException, Query, UploadFile
 from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.models.types import PlanPratRequest, PlanPratResponse
-
-
 from src.api.routes import planprat
 from src.utils.logging import setup_logging
+from src.api.routes import guidance
 
 # Set up logging
 setup_logging()
@@ -36,6 +34,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(planprat.router)
+app.include_router(guidance.router, prefix="/api/guidance", tags=["guidance"])
 
 @app.get("/health")
 async def health_check():

@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 
-from src.services.agent_parts.generator import llm, embedder, web_search_tool
+from src.generator import llm, embedder, web_search_tool
 from langchain_core.language_models.llms import BaseLLM
 from src.utils.token_counter import count_tokens
 
@@ -13,10 +13,10 @@ class BaseAgent(ABC):
     
     def __init__(self, llm: Optional[BaseLLM] = None):
         """Initialize the agent with an optional LLM"""
-        # Use the provided LLM or the default from generator.py
+        
         self.llm = llm or self._get_default_llm()
-        self.embedder = embedder  # Use embedder from generator.py
-        self.web_search_tool = web_search_tool  # Use web_search_tool from generator.py
+        self.embedder = embedder 
+        self.web_search_tool = web_search_tool 
     
     def _get_default_llm(self) -> BaseLLM:
         """Get the default LLM from generator.py"""
