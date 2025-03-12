@@ -9,7 +9,7 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 import { PropertySearchBar } from './map/PropertySearchBar';
 import { 
-  PropertyData, 
+ 
   SpatialAnalysisResult, 
   analyzeSpatialRelationship,
   formatPropertyNumber,
