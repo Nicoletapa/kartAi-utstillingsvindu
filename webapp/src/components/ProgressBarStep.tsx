@@ -22,7 +22,7 @@ import Step6_2 from "./steps/Step6_2";
 
 type StepComponentsType = {
     [key: number]: {
-        [key: number]: React.ComponentType;
+        [key: number]: React.ComponentType<any>;
     };
 };
 
@@ -67,11 +67,21 @@ export default function ProgressBarStep() {
     const router = useRouter();
     const [currentOverallStep, setCurrentOverallStep] = useState(0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
+    const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
 
-    // Calculate total number of substeps
+    const [formData, setFormData] = useState({
+            size: '',
+            material: '',
+            ridgeHeight: '',
+            eavesHeight: '',
+            roofAngle: '',
+            distanceToNeighbor: '',
+            description: '',
+            impactReason: '',
+        });
+
     const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
 
-    // Get current step and substep based on currentOverallStep
     const getCurrentStepInfo = (step = currentOverallStep) => {
         let stepIndex = 0;
         let substepCount = 0;
@@ -97,7 +107,6 @@ export default function ProgressBarStep() {
 
     const { currentStep, currentSubstep } = getCurrentStepInfo(currentOverallStep);
 
-    // Handle next button click
     const handleNext = () => {
         if (currentStep === 4 && currentSubstep === 0) {
             const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
@@ -109,7 +118,6 @@ export default function ProgressBarStep() {
         }
     };
 
-    // Handle previous button click
     const handlePrev = () => {
         if (currentOverallStep === 0) {
             const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
@@ -121,12 +129,10 @@ export default function ProgressBarStep() {
         }
     };
 
-    // Map steps with status for the progress bar
     const stepsWithStatus = steps.map((step, index) => {
         const stepStart = steps.slice(0, index).reduce((acc, s) => acc + s.totalSubsteps, 0);
         const stepEnd = stepStart + step.totalSubsteps;
       
-        // Calculate substepsCompleted based on the currentOverallStep
         const substepsCompleted = Math.min(step.totalSubsteps, Math.max(0, currentOverallStep - stepStart));
       
         return {
@@ -145,13 +151,18 @@ export default function ProgressBarStep() {
 
     return (
         <div className="container mx-auto py-6 px-4 flex flex-col">
-            <div className="mb-8 sticky top-0 bg-background pt-4 pb-8 z-10">
+            <div className="mb-8 top-0 bg-background pt-4 pb-8 z-10">
                 <ProgressBar steps={stepsWithStatus} />
             </div>
 
             <div className="flex space-x-8 flex-1">
                 <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
-                {CurrentStepComponent && <CurrentStepComponent />}
+                {CurrentStepComponent && (
+                    <CurrentStepComponent 
+                    onValidityChange={setIsStep1_0Valid}
+                    formData={formData}
+                    setFormData={setFormData}
+                    />)}
             </div>
 
             <div className="flex justify-between mt-8 gap-4">
@@ -159,7 +170,8 @@ export default function ProgressBarStep() {
                     <ArrowLeft size={18} className="mr-2"/>
                     Tilbake
                 </Button>
-                <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44">
+                <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
+                disabled={currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid}>
                     {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
                     <ArrowRight size={18} className="ml-2"/>
                 </Button>

@@ -29,9 +29,7 @@ const Step: React.FC<StepProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center flex-1 min-w-0">
-      {/* Main step circle and connector lines */}
       <div className="flex items-center w-full relative">
-        {/* Main step circle */}
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border z-10 duration-500 ease-in-out",
@@ -49,38 +47,34 @@ const Step: React.FC<StepProps> = ({
           )}
         </div>
 
-        {/* Substeps and connector lines */}
         <div className="flex-1 flex items-center">
           {Array.from({ length: totalSubsteps }).map((_, index) => (
             <React.Fragment key={index}>
-              {/* Connector line before each substep */}
               <div
                 className={cn(
                   "flex-1 h-[2px] duration-200 ease-in-out",
-                  (isFirstStep && index === 0) || // Pre-fill only the first substep connector for the first main step
-                  (index <= substepsCompleted && (isCompleted || isActive)) // Fill substep connectors progressively
+                  (isFirstStep && index === 0) || 
+                  (index <= substepsCompleted && (isCompleted || isActive)) 
                     ? "bg-kartAI-blue"
                     : "bg-muted-foreground/30"
                 )}
               />
-              {/* Substep circle */}
               <div
                 className={cn(
                   "h-4 w-4 rounded-full border shrink-0 z-10 duration-500 ease-in-out",
-                  (isFirstStep && index === 0) || // Pre-fill only the first substep circle for the first main step
-                  (index < substepsCompleted && (isCompleted || isActive)) // Fill substep circles progressively
+                  (isFirstStep && index === 0) || 
+                  (index < substepsCompleted && (isCompleted || isActive)) 
                     ? "border-kartAI-blue bg-kartAI-blue"
                     : "border-muted-foreground"
                 )}
               />
             </React.Fragment>
           ))}
-          {/* Connector line after the last substep (if not the last main step) */}
           {!isLastStep && (
             <div
               className={cn(
                 "flex-1 h-[2px]",
-                (isCompleted || substepsCompleted === totalSubsteps) // Only fill if the current main step is completed or all substeps are done
+                (isCompleted || substepsCompleted === totalSubsteps)
                   ? "bg-kartAI-blue"
                   : "bg-muted-foreground/30"
               )}
@@ -89,7 +83,6 @@ const Step: React.FC<StepProps> = ({
         </div>
       </div>
 
-      {/* Title */}
       <h3 className="mt-1 mr-44 ml-3 text-sm font-semibold text-center truncate max-w-none">
         {title}
       </h3>
