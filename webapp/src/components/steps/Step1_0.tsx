@@ -90,7 +90,17 @@ const Step1_0 = () => {
 
             <div className="">
               <label className="text-sm font-medium text-gray-700 mb-1 mr-1">
-                Høyde:
+                Mønehøyde:
+              </label>
+              <input
+                type="number"
+                className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
+              />
+              <span className='ml-2 text-sm'>meter</span>
+            </div>
+            <div className="">
+              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">
+                Gesimshøyde:
               </label>
               <input
                 type="number"

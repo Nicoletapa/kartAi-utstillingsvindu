@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
 import Step1_0 from "./steps/Step1_0";
 import Step2_0 from "./steps/Step2_0";
+import Step2_1 from "./steps/Step2_1";
+import Step2_2 from "./steps/Step2_2";
 import Step3_0 from "./steps/Step3_0";
 import Step3_1 from "./steps/Step3_1";
 import Step3_2 from "./steps/Step3_2";
@@ -30,11 +32,13 @@ const stepComponents: StepComponentsType = {
     },
     2: {
         0: Step2_0,
+        1: Step2_1,
+        2: Step2_2,
     },
     3: {
         0: Step3_0,
         1: Step3_1,
-        2: Step3_2
+        2: Step3_2,
     },
     4: {
         0: Step4_0,
@@ -132,8 +136,9 @@ export default function ProgressBarStep() {
           substepsCompleted,
           isLastStep: index === steps.length - 1,
           stepNumber: index + 1,
+        isFirstStep: index === 0,
         };
-      });
+    });
     
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;

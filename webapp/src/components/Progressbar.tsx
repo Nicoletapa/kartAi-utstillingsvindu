@@ -10,6 +10,7 @@ interface StepProps {
   totalSubsteps: number
   isLastStep: boolean
   stepNumber: number
+  isFirstStep: boolean
 }
 
 interface StepperProps {
@@ -24,66 +25,74 @@ const Step: React.FC<StepProps> = ({
   totalSubsteps,
   isLastStep,
   stepNumber,
+  isFirstStep,
 }) => {
   return (
     <div className="flex flex-col items-center flex-1 min-w-0">
-      {/* Main Step Circle and Substeps */}
-      <div className="flex items-center w-full">
-        <div className="flex flex-col items-center relative">
-          {/* Main Step Circle */}
-          <div
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border z-10 duration-500 ease-in-out",
-              isCompleted
-                ? "border-kartAI-blue bg-kartAI-blue text-primary-foreground"
-                : isActive
-                ? "border-kartAI-blue"
-                : "border-muted-foreground"
-            )}
-          >
-            {isCompleted ? (
-              <Check className="h-6 w-6" />
-            ) : (
-              <span className="text-sm font-medium">{stepNumber}</span>
-            )}
-          </div>
-          {/* Step Title */}
-          <h3 className="mt-1 text-sm font-semibold text-center truncate max-w-none">
-            {title}
-          </h3>
+      {/* Main step circle and connector lines */}
+      <div className="flex items-center w-full relative">
+        {/* Main step circle */}
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border z-10 duration-500 ease-in-out",
+            isCompleted
+              ? "border-kartAI-blue bg-kartAI-blue text-primary-foreground"
+              : isActive
+              ? "border-kartAI-blue"
+              : "border-muted-foreground"
+          )}
+        >
+          {isCompleted ? (
+            <Check className="h-6 w-6" />
+          ) : (
+            <span className="text-sm font-medium">{stepNumber}</span>
+          )}
         </div>
 
-        {/* Substeps and Connector Lines */}
-        <div className="flex-1 flex items-center mb-5">
+        {/* Substeps and connector lines */}
+        <div className="flex-1 flex items-center">
           {Array.from({ length: totalSubsteps }).map((_, index) => (
             <React.Fragment key={index}>
-              {/* Connector Line */}
+              {/* Connector line before each substep */}
               <div
                 className={cn(
                   "flex-1 h-[2px] duration-200 ease-in-out",
-                  index <= substepsCompleted ? "bg-kartAI-blue" : "bg-muted-foreground/30"
+                  (isFirstStep && index === 0) || // Pre-fill only the first substep connector for the first main step
+                  (index <= substepsCompleted && (isCompleted || isActive)) // Fill substep connectors progressively
+                    ? "bg-kartAI-blue"
+                    : "bg-muted-foreground/30"
                 )}
               />
-              {/* Substep Circle */}
+              {/* Substep circle */}
               <div
                 className={cn(
                   "h-4 w-4 rounded-full border shrink-0 z-10 duration-500 ease-in-out",
-                  index < substepsCompleted ? "border-kartAI-blue bg-kartAI-blue" : "border-muted-foreground"
+                  (isFirstStep && index === 0) || // Pre-fill only the first substep circle for the first main step
+                  (index < substepsCompleted && (isCompleted || isActive)) // Fill substep circles progressively
+                    ? "border-kartAI-blue bg-kartAI-blue"
+                    : "border-muted-foreground"
                 )}
               />
             </React.Fragment>
           ))}
-          {/* Connector Line after the last substep (if not the last step) */}
+          {/* Connector line after the last substep (if not the last main step) */}
           {!isLastStep && (
             <div
               className={cn(
                 "flex-1 h-[2px]",
-                substepsCompleted === totalSubsteps ? "bg-kartAI-blue" : "bg-muted-foreground/30"
+                (isCompleted || substepsCompleted === totalSubsteps) // Only fill if the current main step is completed or all substeps are done
+                  ? "bg-kartAI-blue"
+                  : "bg-muted-foreground/30"
               )}
             />
           )}
         </div>
       </div>
+
+      {/* Title */}
+      <h3 className="mt-1 mr-44 ml-3 text-sm font-semibold text-center truncate max-w-none">
+        {title}
+      </h3>
     </div>
   );
 };
@@ -93,7 +102,13 @@ export const ProgressBar: React.FC<StepperProps> = ({ steps }) => {
     <div className="w-full">
       <div className="flex items-start">
         {steps.map((step, index) => (
-          <Step key={index} {...step} isLastStep={index === steps.length - 1} stepNumber={index + 1} />
+          <Step 
+            key={index} 
+            {...step} 
+            isLastStep={index === steps.length - 1} 
+            isFirstStep={index === 0} 
+            stepNumber={index + 1} 
+          />
         ))}
       </div>
     </div>
