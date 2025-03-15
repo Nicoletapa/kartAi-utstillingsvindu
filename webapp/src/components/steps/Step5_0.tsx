@@ -34,7 +34,14 @@ const Step5_0 = () => {
                 <li>Vedtak fattes</li>
                 <li>Klagefrist og endelig avgjørelse</li>
               </ul>
-              <p className='text-sm mt-3'>Du vil få varsel på e-post dersom statusen på søknaden din endrer seg.</p>
+              <p className='font-medium text-sm mt-4'>Søknadstiden starter når søknaden er komplett. Kommunen har frister som de forholder seg til.
+          <br /> Vanlige frister:
+        </p>
+        <ul className='list-disc ml-7 text-sm'>
+          <li>3 Ukers tidsfrist hvis søknaden ikke inneholder dispensasjon og nabomerknader.</li>
+          <li>12 ukers tidsfrist hvis søknaden inneholder dispensasjon og/eller nabomerknader.</li>
+        </ul>
+        <p className='font-medium text-sm'>Du vil motta "varsel om saksoppdatering" når det forekommer endring i byggesøknaden din.</p>
             </div>
 
             <button className="absolute mt-4 px-4 py-2 right-3 bottom-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
@@ -56,8 +63,8 @@ const Step5_0 = () => {
           {status}
         </div>
       )}
-
     </div>
+    
   )
 }
 

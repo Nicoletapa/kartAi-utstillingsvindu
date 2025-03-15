@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ const stepComponents: StepComponentsType = {
     },
     4: {
         0: Step4_0,
-        
+
     },
     5: {
         0: Step5_0,
@@ -70,15 +70,15 @@ export default function ProgressBarStep() {
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
 
     const [formData, setFormData] = useState({
-            size: '',
-            material: '',
-            ridgeHeight: '',
-            eavesHeight: '',
-            roofAngle: '',
-            distanceToNeighbor: '',
-            description: '',
-            impactReason: '',
-        });
+        size: '',
+        material: '',
+        ridgeHeight: '',
+        eavesHeight: '',
+        roofAngle: '',
+        distanceToNeighbor: '',
+        description: '',
+        impactReason: '',
+    });
 
     const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
 
@@ -132,22 +132,23 @@ export default function ProgressBarStep() {
     const stepsWithStatus = steps.map((step, index) => {
         const stepStart = steps.slice(0, index).reduce((acc, s) => acc + s.totalSubsteps, 0);
         const stepEnd = stepStart + step.totalSubsteps;
-      
+
         const substepsCompleted = Math.min(step.totalSubsteps, Math.max(0, currentOverallStep - stepStart));
-      
+
         return {
-          ...step,
-          isCompleted: currentOverallStep >= stepEnd,
-          isActive: currentOverallStep >= stepStart && currentOverallStep < stepEnd,
-          substepsCompleted,
-          isLastStep: index === steps.length - 1,
-          stepNumber: index + 1,
-        isFirstStep: index === 0,
+            ...step,
+            isCompleted: currentOverallStep >= stepEnd,
+            isActive: currentOverallStep >= stepStart && currentOverallStep < stepEnd,
+            substepsCompleted,
+            isLastStep: index === steps.length - 1,
+            stepNumber: index + 1,
+            isFirstStep: index === 0,
         };
     });
-    
+
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;
+    const isNextButtonDisabled = currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid;
 
     return (
         <div className="container mx-auto py-6 px-4 flex flex-col">
@@ -158,23 +159,31 @@ export default function ProgressBarStep() {
             <div className="flex space-x-8 flex-1">
                 <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
                 {CurrentStepComponent && (
-                    <CurrentStepComponent 
-                    onValidityChange={setIsStep1_0Valid}
-                    formData={formData}
-                    setFormData={setFormData}
+                    <CurrentStepComponent
+                        onValidityChange={setIsStep1_0Valid}
+                        formData={formData}
+                        setFormData={setFormData}
                     />)}
             </div>
 
             <div className="flex justify-between mt-8 gap-4">
                 <Button onClick={handlePrev} className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44 ">
-                    <ArrowLeft size={18} className="mr-2"/>
+                    <ArrowLeft size={18} className="mr-2" />
                     Tilbake
                 </Button>
-                <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
-                disabled={currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid}>
-                    {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
-                    <ArrowRight size={18} className="ml-2"/>
-                </Button>
+                <div className="flex items-center">
+                    {isNextButtonDisabled && (
+                        <div className="flex items-center mr-4 text-red-500 text-sm">
+                            <AlertCircle size={16} className="mr-2 flex-shrink-0" /> 
+                            <span>Alle felt må fylles ut før du kan gå videre</span>
+                        </div>
+                    )}
+                    <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
+                        disabled={isNextButtonDisabled}>
+                        {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
+                        <ArrowRight size={18} className="ml-2" />
+                    </Button>
+                </div>
             </div>
         </div>
     );
