@@ -7,31 +7,45 @@ import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 import AtlasSidebar from "~/components/AtlasSidebar";
 import dynamic from "next/dynamic";
+<<<<<<< HEAD
 import { SendApplication } from "~/components/SendApplication";
 
 // Dynamically import the MapChatIntegration component with SSR disabled
 const MapChatIntegrationWithNoSSR = dynamic(
   () => import("~/components/MapChatIntegration"),
   { ssr: false } // This prevents server-side rendering
+=======
+const MapChatIntegrationWithNoSSR = dynamic(
+  () => import("~/components/MapChatIntegration"),
+  { ssr: false } 
+>>>>>>> aad3a2b81efb832a451d4c5640d0eb0d3aa25bc8
 );
 
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
+<<<<<<< HEAD
       <h1 className="flex justify-center pt-8 text-4xl text-kartAI-blue font-medium">Før du søker</h1>
       <div className="lg:w-3/4 mx-auto mt-8 mb-0">
+=======
+      
+      <div className="lg:w-4/5 mx-auto  my-4 px-4">
+>>>>>>> aad3a2b81efb832a451d4c5640d0eb0d3aa25bc8
         <MapChatIntegrationWithNoSSR/>
       </div>
 
       <SendApplication />
 
       <AtlasSidebar>
+<<<<<<< HEAD
         <></>
       </AtlasSidebar>
         
         <SjekklisteOversikt />
       
         
+=======
+>>>>>>> aad3a2b81efb832a451d4c5640d0eb0d3aa25bc8
         <Link
           href="/"
           className="fixed bottom-8 left-8 z-50 flex items-center gap-2 text-kartAI-blue transition-colors hover:text-kartAI-blue/80"
@@ -51,9 +65,23 @@ export default function AtlasPage() {
           </svg>
           Tilbake til hovedsiden
         </Link>
+<<<<<<< HEAD
         
 
       
+=======
+      </AtlasSidebar>
+      <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2 border-2 rounded-full border-kartAI-blue bg-white" 
+        >
+        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+        <span className="relative inline-block">
+          Send inn en søknad
+          <span className="absolute bottom-[-2px] left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
+        </span>
+      </Link>
+
+      <SjekklisteOversikt />
+>>>>>>> aad3a2b81efb832a451d4c5640d0eb0d3aa25bc8
     </div>
   );
 }

@@ -40,7 +40,7 @@ const Step: React.FC<StepProps> = ({ title, isCompleted, isActive, substepsCompl
           }
         </div>
         {/* Step Title */}
-      <h3 className="mt-1 text-sm font-semibold text-center whitespace-nowrap truncate max-w-[100px]">
+      <h3 className="mt-1 text-sm font-semibold text-center truncate max-w-none">
         {title}
       </h3>
       </div>
@@ -73,7 +73,6 @@ const Step: React.FC<StepProps> = ({ title, isCompleted, isActive, substepsCompl
           )}
         </div>
       </div>
-
     </div>
   );
 };
@@ -89,4 +88,3 @@ export const ProgressBar: React.FC<StepperProps> = ({ steps }) => {
     </div>
   )
 }
-

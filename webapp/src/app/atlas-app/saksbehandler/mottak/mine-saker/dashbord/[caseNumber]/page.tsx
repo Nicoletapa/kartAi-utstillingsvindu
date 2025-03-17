@@ -138,7 +138,7 @@ export default function CaseDashboard() {
   /* Dummy data for case documents component */
 
   const BASE_URL =
-    "http://localhost:3001/saksbehandler/mottak/mine-saker/dashbord/" +
+    "http://localhost:3000/saksbehandler/mottak/mine-saker/dashbord/" +
     +String(caseNumber) +
     "/";
   const documents = [
@@ -236,7 +236,7 @@ export default function CaseDashboard() {
                   title={"3D-tiltaksvisning"}
                   status={"success"}
                   feedback={"Se visualisering"}
-                  redirect={"http://localhost:3001/"}
+                  redirect={"http://localhost:3000/"}
                 />
               </div>
             </div>

@@ -5,4 +5,5 @@ export interface Detection {
   room_names?: string;
   cardinal_direction?: string;
   documentId?: number;
+  base64?: string;
 }

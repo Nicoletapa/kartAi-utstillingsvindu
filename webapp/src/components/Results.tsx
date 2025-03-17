@@ -51,21 +51,21 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
 
   return (
     <div className="mt-6">
-      <h2 className="text-xl font-semibold mb-4">Validation Summary</h2>
+      <h2 className="text-xl font-semibold mb-4">Valideringssammendrag</h2>
       
       {allDocuments.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white rounded-lg shadow">
+          <table className="min-w-full bg-white rounded-lg">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Required Drawing Type
+                  Nødvendig tegningstype
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Found In Documents
+                  Funnet i dokument(er)
                 </th>
               </tr>
             </thead>
@@ -82,11 +82,11 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
                       ) : (
                         <FaTimesCircle className="text-red-500 mr-2" />
                       )}
-                      {found ? 'Found' : 'Missing'}
+                      {found ? 'Funnet' : 'Mangler'}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {found ? documents.join(', ') : 'Not found in any document'}
+                    {found ? documents.join(', ') : 'Ikke funnet i dokumenter'}
                   </td>
                 </tr>
               ))}
@@ -95,7 +95,7 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
         </div>
       ) : (
         <div className="text-gray-500 italic">
-          No documents analyzed yet. Upload a document to see results.
+          Ingen dokumenter er lastet opp. Last opp et dokument for å se sammendraget.
         </div>
       )}
     </div>

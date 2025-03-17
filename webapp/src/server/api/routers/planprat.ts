@@ -2,8 +2,16 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import axios, { AxiosError, type AxiosResponse } from "axios";
 
+
+interface GuideButton {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 interface PlanpratResponse {
   answer: string;
+  guides?: GuideButton[];
 }
 
 const PLANPRAT_URL = process.env.PLANPRAT_URL ?? "";

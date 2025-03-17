@@ -3,26 +3,27 @@ from fastapi import FastAPI, HTTPException, Query, UploadFile
 from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.routes import planprat
+from src.utils.logging import setup_logging
+from src.api.routes import guidance
 
-from src.types import SummaryResponse, PlanPratRequest, PlanPratResponse
-from src.services.reader import Reader
-from src.services.readers.factory import create_reader
-from src.services.agent import invoke_agent, invoke_plan_agent
-from src.services.external_ai_models import query_cad_aid
-
+# Set up logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="KPRO API AI system",
-    description="Retrieves text from user and returns an answer based on building regulations.",
-    version="1.0.0",
+    title="KartAI API",
+    description="API for KartAI application providing building regulations assistance",
+    version="1.0.0"
 )
 
+# Configure CORS
 ORIGINS = [
     "http://localhost:3000",
     "http://localhost:80",
     "http://localhost",
 ]
-# Add CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGINS,
@@ -31,76 +32,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-logging.basicConfig(filename="summary-assistant.log", level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-@app.post("/summarize", response_model=SummaryResponse)
-def summarize(
-    files: list[UploadFile], include_modules: bool = Query(False)
-) -> SummaryResponse:
-    """
-    Summarize a file.
-
-    Args:
-        file (list[UploadFile]): The file to summarize.
-        include_modules (bool): Whether to include additional modules like CAD-AiD and ArkivGPT.
-    Returns:
-        ResponseSummary: The summarization response.
-
-    """
-
-    logger.info(f"Files: {files}")
-    logger.info(f"Include modules: {include_modules}")
-    logger.info(f"Number of files: {len(files)}")
-    logger.info(
-        f"First file: {files[0].filename}, content type: {files[0].content_type}"
-    )
-    try:
-        contents = [extract_text(file) for file in files]
-        logger.info(f"Contents: {contents}")
-        for content in contents:
-            if not content:
-                raise HTTPException(status_code=400, detail="File is empty")
-
-        cadaid_detections = query_cad_aid(files) if include_modules else []
-        response = invoke_agent(contents, cadaid_detections)
-        return response
-
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=str(e)
-        )
-
-
-def extract_text(file: UploadFile) -> str:
-    reader: Reader = create_reader(file)
-    return reader.read(file)
-
-
-@app.post("/plan-prat", response_model=PlanPratResponse)
-def plan_prat(question: PlanPratRequest) -> PlanPratResponse:
-    """
-        PlanPrat a query.
-
-        Args:
-            question (PlanPratRequest): The query to PlanPrat.
-        Returns:
-            PlanPratResponse: The PlanPrat response.
-    backend/src/main.py
-    """
-
-    logger.info(f"Query: {question}")
-    if not question.query:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Query is empty"
-        )
-
-    response = invoke_plan_agent(question.query)
-    return PlanPratResponse(answer=response)
-
+# Include routers
+app.include_router(planprat.router)
+app.include_router(guidance.router, prefix="/api/guidance", tags=["guidance"])
 
 @app.get("/health")
-def health_check():
-    return {"status": "ok"}
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy"}

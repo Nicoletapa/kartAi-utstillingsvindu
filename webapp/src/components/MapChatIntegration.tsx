@@ -1,9 +1,10 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import TiltaksAidMap from './TiltaksAidMap';
 import { PlanPrat } from './PlanChatAtlas';
 import type { Map } from 'leaflet';
-import type { SpatialAnalysisResult } from './TiltaksAidMap';
+import type { SpatialAnalysisResult } from '~/utils/propertyUtils';
+import { usePropertySearch } from '~/hooks/usePropertySearch';
 
 export function MapChatIntegration() {
   // Shared state between map and chat
@@ -12,31 +13,25 @@ export function MapChatIntegration() {
   const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
   const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
   
-  // Function to handle when the map is ready
-  const handleMapReady = (map: Map) => {
+  // Get user property data
+  const { userData } = usePropertySearch();
+  
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleMapReady = useCallback((map: Map) => {
+    if (mapRef.current) return; // Prevent duplicate calls
     mapRef.current = map;
     setMapReady(true);
-    console.log('Map is ready and accessible to chat');
-  };
+  }, []);
   
-  // Function to handle when a shape is drawn on the map
-  const handleShapeDrawn = (shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
+  const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
     setLastDrawnShape(shape);
-    if (analysis) {
-      setSpatialAnalysis(analysis);
-      console.log('Spatial analysis:', analysis);
-    } else {
-      setSpatialAnalysis(null);
-    }
-    console.log('Shape sent to chat:', shape);
-  };
+    setSpatialAnalysis(analysis || null);
+  }, []);
   
   return (
-    
-
-    <div className={`flex flex-col md:flex-row mb-16 max-w-[900px] mx-auto px-4 transition-all duration-300`}>
-      
-      <div className="md:w-2/5 h-1/2">
+    <div className="flex flex-col-reverse lg:flex-row h-screen max-h-[80vh] rounded-lg overflow-hidden shadow-lg border border-gray-200">
+      {/* Chat on the left side */}
+      <div className="lg:w-2/5 h-1/2 lg:h-full border-t lg:border-t-0 lg:border-r border-gray-200">
         <PlanPrat 
           mapRef={mapRef}
           lastDrawnShape={lastDrawnShape}
@@ -44,13 +39,19 @@ export function MapChatIntegration() {
           mapReady={mapReady}
         />
       </div>
-  <div className="md:w-3/5 h-1/2 z-10">
-        <TiltaksAidMap
+      
+      {/* Map on the right side */}
+      <div className="lg:w-3/5 h-1/2 lg:h-full">
+        <TiltaksAidMap 
           onMapReady={handleMapReady} 
           onShapeDrawn={handleShapeDrawn}
+          userGnr={userData?.gnr}
+          userBnr={userData?.bnr}
+          userFnr={userData?.fnr}
+          userSnr={userData?.snr}
+          autoZoom={true}
         />
       </div>
-
     </div>
   );
 }
