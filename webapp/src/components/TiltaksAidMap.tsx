@@ -308,20 +308,23 @@ const TiltaksAidMap = ({
   }, []);
 
   return (
-    <div className='flex flex-col h-full'>
-      <PropertySearchBar
+    <div className='flex flex-col w-full shadow-lg'>
+      {/* <PropertySearchBar
         searchInput={searchInput}
         onSearchInputChange={setSearchInput}
         onSearch={() => handlePropertySearch()}
         errorMessage={errorMessage}
-      />
+      /> */}
+      {errorMessage && (
+        <div className="text-red-500 mb-4 p-2 bg-red-50 rounded">{errorMessage}</div>
+      )}
 
-      <div className="flex-1">
+      <div className="h-[500px] w-full">
         <MapContainer
           center={[58.1447, 7.99828]}
           zoom={zoom}
           maxZoom={MAX_ZOOM}
-          className="h-full w-full"
+          className="h-full w-full rounded-r-lg"
         >
           <MapEvents />
           {mapReady && mapRef.current && 
