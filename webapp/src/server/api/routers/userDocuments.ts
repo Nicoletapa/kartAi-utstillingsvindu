@@ -158,7 +158,7 @@ export const userDocumentsRouter = createTRPCRouter({
     .input(z.object({
       documentId: z.number(),
       chunkIndex: z.number(),
-      chunkSize: z.number().max(1024 * 1024), // Max 1MB per chunk
+      chunkSize: z.number().max(1024 * 1024), 
     }))
     .query(async ({ ctx, input }) => {
       try {

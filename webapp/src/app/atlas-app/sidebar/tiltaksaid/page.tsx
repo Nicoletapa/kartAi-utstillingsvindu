@@ -1,15 +1,16 @@
-"use client";
+
 import React from "react";
 import Link from "next/link";
-import TiltaksAid from "~/components/TiltaksAid";
+
 import AtlasSidebar from "~/components/AtlasSidebar";
+import TiltaksAidMap from "~/components/TiltaksAidMap";
 
 export default function TiltaksAidPage() {
   return (
     <AtlasSidebar>
       <h1 className="flex justify-center pt-10 text-4xl">TiltaksAid</h1>
       <div className="mt-10 w-full max-w-5xl flex px-16">
-        <TiltaksAid />
+        <TiltaksAidMap />
       </div>
 
       <Link

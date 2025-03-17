@@ -244,3 +244,12 @@ fabric.properties
 
 # jetbrains IDEs
 .idea
+
+# Vector database files
+backend/src/chroma/
+**/chroma/
+**/chroma_db/
+
+
+
+.DS_Store

@@ -1,12 +1,10 @@
 import "~/styles/globals.css";
+import "leaflet/dist/leaflet.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-
-
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-
 import { getServerAuthSession } from "~/server/auth";
 import Providers from "../components/Providers";
 
@@ -19,18 +17,17 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
- 
 }: Readonly<{ children: React.ReactNode }>) {
-const session = await getServerAuthSession();
-  
+  const session = await getServerAuthSession();
+
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
+     
       <body className="min-h-screen">
         <Providers session={session!}>
-            <Navbar />
+          <Navbar />
           <div className="flex min-h-screen flex-col">
-            <main className="flex-1">{children}
-            </main>
+            <main className="flex-1">{children}</main>
             <Footer />
           </div>
         </Providers>
