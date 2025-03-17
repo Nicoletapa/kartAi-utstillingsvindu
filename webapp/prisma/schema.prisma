@@ -98,6 +98,7 @@ status         ApplicationStatus @default(Pabegynt)
 documents      Document[]
 responses      Response[]
 Letters        Letter[]
+application_fields application_field[]
 }
 
 enum ApplicationStatus {
@@ -151,6 +152,8 @@ updatedAt      DateTime @updatedAt
 }
 model application_field {
   application_fieldID Int @id @default(autoincrement())
+  applicationID      Int
+  application        Application @relation(fields: [applicationID], references: [applicationID])
   fieldName           String @db.Text 
   fieltdValue         String @db.Text 
   createdDate         DateTime          @db.DateTime(0)

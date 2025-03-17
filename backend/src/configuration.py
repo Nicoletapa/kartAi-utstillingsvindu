@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ARKIVGPT_URL = os.getenv("ARKIVGPT_URL", "http://localhost:80/api")
-CADAID_URL = os.getenv("CADAID_URL", "http://localhost:5001/detect/")
+ARKIVGPT_URL = os.getenv("ARKIVGPT_URL")
+CADAID_URL = os.getenv("CADAID_URL")
 
 #Gemini configuration 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -16,7 +16,7 @@ GEMINI_FULL_ENDPOINT = os.getenv("GEMINI_FULL_ENDPOINT")
 AZURE_EMBEDDING_API_KEY = os.getenv("AZURE_OPENAI_API_KEY") 
 AZURE_EMBEDDING_ENDPOINT = os.getenv("AZURE_EMBEDDING_ENDPOINT")  
 AZURE_EMBEDDING_DEPLOYMENT_NAME = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME")
-
+AZURE_EMBEDDING_DEPLOYMENT_VERSION = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_VERSION")
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")

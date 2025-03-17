@@ -1,12 +1,10 @@
 import logging
-import time
 from typing import Dict, List, Any
 
 from langchain_core.prompts import PromptTemplate
 
 from src.core.agents.base import BaseAgent
-from src.core.embeddings.document_store import DocumentStore
-from src.core.retrieval.law_retriever import LawContextRetriever
+from src.document_store import DocumentStore
 from src.core.retrieval.spatial_retriever import SpatialDocumentRetriever
 from src.core.retrieval.property_extractor import PropertyExtractor, PropertyIdentifiers
 from src.data.application_types import get_application_types_by_keyword
@@ -18,8 +16,7 @@ class PlanAgent(BaseAgent):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.law_retriever = LawContextRetriever()  # Changed from DocumentStore to LawContextRetriever
-        self.document_store = DocumentStore()  # Added document_store for document retrieval
+        self.document_store = DocumentStore()
         self.property_extractor = PropertyExtractor(llm=self.llm)
         self.spatial_retriever = SpatialDocumentRetriever()
     
@@ -30,7 +27,7 @@ class PlanAgent(BaseAgent):
         """
         query_lower = query.lower().strip().rstrip("!.,?")
         
-        # For very short queries (1-2 words), use pattern matching for efficiency
+       
         if len(query_lower.split()) <= 2:
             greeting_patterns = [
                 "hei", "hello", "hallo", "hi", "hey", "god dag", "god morgen", 
@@ -39,7 +36,6 @@ class PlanAgent(BaseAgent):
             if any(pattern in query_lower for pattern in greeting_patterns):
                 return True
         
-        # For slightly longer queries (3-5 words), use LLM classification
         if len(query_lower.split()) <= 5:
             greeting_prompt = PromptTemplate(
                 template="""
@@ -73,7 +69,6 @@ class PlanAgent(BaseAgent):
                 return "YES" in content
             except Exception as e:
                 logger.error(f"Error in greeting classification: {e}")
-                # Fall back to simple length check if LLM fails
                 return len(query_lower.split()) <= 3
         
         return False
@@ -161,7 +156,7 @@ class PlanAgent(BaseAgent):
         Returns:
             Dict containing answer and guide buttons
         """
-        start_time = time.time()
+        
         logger.info(f"Processing query: {query[:50]}...")
         
         if self._is_greeting(query):
@@ -169,12 +164,13 @@ class PlanAgent(BaseAgent):
             return self._handle_greeting(query)
         
         try:
-            # Extract property identifiers
             property_ids = self.property_extractor.extract_ids(query)
         
-            # Get relevant law context
-            context = self.law_retriever.get_context(query)  # This now correctly calls get_context on LawContextRetriever
-            self._log_token_usage(context, "Law context")
+            
+            context_response= self.document_store.query(query)
+
+            context = context_response
+            self._log_token_usage(context, "Building regulations context")
             
             
             guide_buttons = []
@@ -187,16 +183,13 @@ class PlanAgent(BaseAgent):
                 if property_context:
                     context += f"\n\n{property_context}"
                     
-            # Check if query is related to application types
             application_related = self._is_application_related(query)
             if application_related:
-                # Find relevant application types
                 relevant_keywords = self._extract_building_keywords(query)
                 application_types = []
                 for keyword in relevant_keywords:
                     application_types.extend(get_application_types_by_keyword(keyword))
                 
-                # Add application type information to context
                 if application_types:
                     app_context = self._format_application_types(application_types)
                     context += f"\n\nRelevant application types:\n{app_context}"
@@ -235,7 +228,6 @@ Context (not visible to user):
                 response_text = str(response)
             response_text = self._add_followup_suggestions(response_text, query)
             
-            # Fix: Use response_text length instead of response object
             logger.info(f"Generated response of length {len(response_text)}")
             
             return {
@@ -243,7 +235,7 @@ Context (not visible to user):
                 "guides": guide_buttons
             }
             
-        except Exception as e:  # Fix: properly indented except block
+        except Exception as e: 
             logger.error(f"Error processing query: {e}")
             return {
                 "answer": "Beklager, det oppstod en feil under behandlingen av spørringen din.",
@@ -253,7 +245,6 @@ Context (not visible to user):
     def _is_building_related(self, query: str) -> bool:
         """Check if query is related to building regulations using LLM instead of keywords"""
         
-        # For very short queries, still use a quick check to avoid unnecessary LLM calls
         if len(query.split()) <= 2:
             quick_check_keywords = ["bygge", "garasje", "tilbygg", "søknad", "avstand"]
             query_lower = query.lower()
@@ -286,25 +277,20 @@ Context (not visible to user):
         )
         
         try:
-            # Use LLM to classify if the query is building-related
             response = self.llm.invoke(building_prompt.format(query=query))
             
-            # Extract response content
             if hasattr(response, "content"):
                 content = response.content.strip().upper()
             else:
                 content = str(response).strip().upper()
             
-            # Log the classification result
             logger.debug(f"Building classification for '{query[:30]}...': {content}")
             
-            # Check if the response indicates a building-related query
             return "YES" in content
             
         except Exception as e:
             logger.error(f"Error in building classification: {e}")
             
-            # Fall back to basic keyword matching if LLM fails
             building_keywords = [
                 "bygge", "bygging", "byggeregler", "garasje", "tilbygg", "påbygg", 
                 "hus", "bolig", "enebolig", "rekkehus", "hytte", "bod", "uthus",
@@ -330,7 +316,6 @@ Context (not visible to user):
     
     def _is_application_related(self, query: str) -> bool:
         """Check if query is related to building application processes using LLM classification"""
-        # Use keyword check for very short queries to avoid unnecessary LLM calls
         if len(query.split()) <= 3:
             application_keywords = [
                 "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
@@ -377,7 +362,6 @@ Context (not visible to user):
         except Exception as e:
             logger.error(f"Error in application classification: {e}")
             
-            # Fall back to keyword matching if LLM fails
             application_keywords = [
                 "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
                 "tillatelse", "unntatt søknadsplikt", "søknadsprosess", "ansvarlig søker"
@@ -388,13 +372,11 @@ Context (not visible to user):
     
     def _extract_building_keywords(self, query: str) -> List[str]:
         """Extract relevant building keywords from the query using LLM analysis"""
-        # Define standard building keywords for fallback
         standard_keywords = [
             "garasje", "tilbygg", "påbygg", "enebolig", "hytte", "bod", 
             "uthus", "carport", "brygge", "terrasse", "veranda"
         ]
         
-        # For short queries, check if any standard keywords are present
         query_lower = query.lower()
         if len(query.split()) <= 3:
             return [keyword for keyword in standard_keywords if keyword in query_lower]
@@ -431,13 +413,10 @@ Context (not visible to user):
             if content.lower() == "none":
                 return []
             
-            # Extract building keywords from LLM response
             extracted_keywords = [kw.strip().lower() for kw in content.split('\n')]
             
-            # Filter out empty strings and normalize common variations
             extracted_keywords = [kw for kw in extracted_keywords if kw]
             
-            # If LLM returned nothing useful, fall back to basic matching
             if not extracted_keywords:
                 return [keyword for keyword in standard_keywords if keyword in query_lower]
                 
@@ -446,7 +425,6 @@ Context (not visible to user):
         except Exception as e:
             logger.error(f"Error in keyword extraction: {e}")
             
-            # Fall back to keyword matching if LLM fails
             return [keyword for keyword in standard_keywords if keyword in query_lower]
     
     def _format_application_types(self, app_types: List) -> str:

@@ -1,21 +1,23 @@
 from langchain_openai import  AzureOpenAIEmbeddings
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_google_genai import ChatGoogleGenerativeAI
-from src.configuration import TAVILY_API_KEY
+
 
 from src.configuration import (
    AZURE_EMBEDDING_API_KEY,  
     AZURE_EMBEDDING_DEPLOYMENT_NAME,
+    AZURE_EMBEDDING_DEPLOYMENT_VERSION,
     GOOGLE_API_KEY_MODEL,
     GOOGLE_API_KEY,
     GEMINI_BASE_ENDPOINT,
-    AZURE_EMBEDDING_ENDPOINT
+    AZURE_EMBEDDING_ENDPOINT,
+    TAVILY_API_KEY
 )
 
 
 llm = ChatGoogleGenerativeAI(
     model=GOOGLE_API_KEY_MODEL,
-    google_api_key=GOOGLE_API_KEY,
+    openai_api_key=GOOGLE_API_KEY,
     openai_api_base=GEMINI_BASE_ENDPOINT,
     streaming=True,
     temperature=0.3,
@@ -25,12 +27,12 @@ llm = ChatGoogleGenerativeAI(
 
 # Use separate key for embeddings
 embedder = AzureOpenAIEmbeddings(
-    azure_deployment=AZURE_EMBEDDING_DEPLOYMENT_NAME,
+    model=AZURE_EMBEDDING_DEPLOYMENT_NAME,
     api_key=AZURE_EMBEDDING_API_KEY, 
-    api_version=AZURE_EMBEDDING_DEPLOYMENT_NAME,  
+    api_version=AZURE_EMBEDDING_DEPLOYMENT_VERSION,  
     azure_endpoint=AZURE_EMBEDDING_ENDPOINT,
-    chunk_size=1,
-    model="text-embedding-3-large",
+    chunk_size=1
+    
 )
 
 web_search_tool = TavilySearchResults(
