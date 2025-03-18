@@ -23,7 +23,7 @@ const SjekklisteOversiktLink: React.FC<SjekklisteOversiktLinkProps> = ({
 
 export function SjekklisteOversikt() {
   return (
-    <div className="flex min-h-screen items-center justify-center mx-24 sm:px-6 md:px-8 mt-80 mb-24">
+    <div className="flex min-h-screen items-center justify-center mx-24 sm:px-6 md:px-8 mt-28 mb-24">
       <div className="w-full max-w-lg">
         <h3
           className="mb-5 flex justify-center text-2xl font-bold text-kartAI-blue sm:text-3xl"

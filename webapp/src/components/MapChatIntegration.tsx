@@ -29,9 +29,8 @@ export function MapChatIntegration() {
   }, []);
   
   return (
-    <div className="flex flex-col-reverse lg:flex-row h-screen max-h-[80vh] rounded-lg overflow-hidden shadow-lg border border-gray-200">
-      {/* Chat on the left side */}
-      <div className="lg:w-2/5 h-1/2 lg:h-full border-t lg:border-t-0 lg:border-r border-gray-200">
+    <div className={`flex flex-col md:flex-row mb-16 max-w-[900px] mx-auto px-4 transition-all duration-300`}>
+      <div className="md:w-2/5 h-1/2">
         <PlanPrat 
           mapRef={mapRef}
           lastDrawnShape={lastDrawnShape}
@@ -40,8 +39,7 @@ export function MapChatIntegration() {
         />
       </div>
       
-      {/* Map on the right side */}
-      <div className="lg:w-3/5 h-1/2 lg:h-full">
+      <div className="md:w-3/5 h-1/2 z-10">
         <TiltaksAidMap 
           onMapReady={handleMapReady} 
           onShapeDrawn={handleShapeDrawn}
