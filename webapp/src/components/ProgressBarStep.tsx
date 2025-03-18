@@ -1,58 +1,122 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
+import Step1_0 from "./steps/Step1_0";
+import Step2_0 from "./steps/Step2_0";
+import Step2_1 from "./steps/Step2_1";
+import Step2_2 from "./steps/Step2_2";
+import Step3_0 from "./steps/Step3_0";
+import Step3_1 from "./steps/Step3_1";
+import Step3_2 from "./steps/Step3_2";
+import Step4_0 from "./steps/Step4_0";
+import Step5_0 from "./steps/Step5_0";
+import Step6_0 from "./steps/Step6_0";
+import Step6_1 from "./steps/Step6_1";
+import Step6_2 from "./steps/Step6_2";
 
+
+type StepComponentsType = {
+    [key: number]: {
+        [key: number]: React.ComponentType<any>;
+    };
+};
+
+const stepComponents: StepComponentsType = {
+    1: {
+        0: Step1_0,
+    },
+    2: {
+        0: Step2_0,
+        1: Step2_1,
+        2: Step2_2,
+    },
+    3: {
+        0: Step3_0,
+        1: Step3_1,
+        2: Step3_2,
+    },
+    4: {
+        0: Step4_0,
+
+    },
+    5: {
+        0: Step5_0,
+    },
+    6: {
+        0: Step6_0,
+        1: Step6_1,
+        2: Step6_2,
+    },
+};
 
 export const steps = [
-        { title: "Oversikt", totalSubsteps: 3 },
-        { title: "Dokumentsjekk", totalSubsteps: 3 }, 
-        { title: "Nabovarsel", totalSubsteps: 3 }, 
-        { title: "Søknaden", totalSubsteps: 3 }, 
-        { title: "Mangel", totalSubsteps: 3 }, 
-        { title: "Kvittering", totalSubsteps: 0 } 
-    ];
+    { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
+    { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
+    { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
+    { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
+    { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
+    { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+];
 
 export default function ProgressBarStep() {
     const router = useRouter();
-    const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
     const [currentOverallStep, setCurrentOverallStep] = useState(0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
+    const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
+
+    const [formData, setFormData] = useState({
+        size: '',
+        material: '',
+        ridgeHeight: '',
+        eavesHeight: '',
+        roofAngle: '',
+        distanceToNeighbor: '',
+        description: '',
+        impactReason: '',
+    });
+
+    const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
 
     const getCurrentStepInfo = (step = currentOverallStep) => {
         let stepIndex = 0;
         let substepCount = 0;
 
         while (stepIndex < steps.length) {
-          const currentStep = steps[stepIndex]; 
+            const currentStep = steps[stepIndex];
 
-          if (!currentStep) break; 
+            if (currentStep && step < substepCount + currentStep.totalSubsteps) {
+                return {
+                    currentStep: stepIndex + 1,
+                    currentSubstep: step - substepCount,
+                };
+            }
 
-          if (substepCount + currentStep.totalSubsteps > step) {
-            return { currentStep: stepIndex + 1, currentSubstep: step - substepCount };
-          }
-
-          substepCount += currentStep.totalSubsteps;
-          stepIndex++;
+            if (currentStep) {
+                substepCount += currentStep.totalSubsteps;
+            }
+            stepIndex++;
         }
 
-        return { currentStep: steps.length, currentSubstep: 0 };
-      };
-
+        return { currentStep: 1, currentSubstep: 0 };
+    };
 
     const { currentStep, currentSubstep } = getCurrentStepInfo(currentOverallStep);
 
     const handleNext = () => {
-        if (currentOverallStep < totalSubsteps) {
+        if (currentStep === 4 && currentSubstep === 0) {
+            const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
+            if (!confirmSend) return;
+        } if (currentOverallStep < totalSubsteps - 1) {
             setCurrentOverallStep(currentOverallStep + 1);
         } else if (!lastStepCompleted) {
             setLastStepCompleted(true);
         }
     };
-
 
     const handlePrev = () => {
         if (currentOverallStep === 0) {
@@ -61,60 +125,63 @@ export default function ProgressBarStep() {
                 router.push("/atlas-app");
             }
         } else {
-            const previousStepInfo = getCurrentStepInfo(currentOverallStep - 1);
-
-            if (previousStepInfo.currentStep < steps.length) {
-                setLastStepCompleted(false);
-            }
-
             setCurrentOverallStep(currentOverallStep - 1);
         }
     };
-
 
     const stepsWithStatus = steps.map((step, index) => {
         const stepStart = steps.slice(0, index).reduce((acc, s) => acc + s.totalSubsteps, 0);
         const stepEnd = stepStart + step.totalSubsteps;
 
-        if (index === steps.length - 1) {
-            return {
-                ...step,
-                isCompleted: lastStepCompleted,
-                isActive: currentOverallStep >= stepStart,
-                substepsCompleted: 0,
-                isLastStep: true,
-                stepNumber: index + 1
-            };
-        }
+        const substepsCompleted = Math.min(step.totalSubsteps, Math.max(0, currentOverallStep - stepStart));
 
         return {
             ...step,
             isCompleted: currentOverallStep >= stepEnd,
             isActive: currentOverallStep >= stepStart && currentOverallStep < stepEnd,
-            substepsCompleted: Math.min(step.totalSubsteps, Math.max(0, currentOverallStep - stepStart)),
-            isLastStep: false,
-            stepNumber: index + 1
+            substepsCompleted,
+            isLastStep: index === steps.length - 1,
+            stepNumber: index + 1,
+            isFirstStep: index === 0,
         };
     });
 
-
-    const isLastStep = currentStep === steps.length;
+    const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
+    const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;
+    const isNextButtonDisabled = currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid;
 
     return (
-        <div className="container mx-auto py-6 px-4">
-            <div className="mb-8 sticky top-0 bg-background pt-4 pb-8 z-10">
+        <div className="container mx-auto py-6 px-4 flex flex-col">
+            <div className="mb-8 top-0 bg-background pt-4 pb-8 z-10">
                 <ProgressBar steps={stepsWithStatus} />
             </div>
 
-            <div className="space-y-8">
+            <div className="flex space-x-8 flex-1">
                 <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
+                {CurrentStepComponent && (
+                    <CurrentStepComponent
+                        onValidityChange={setIsStep1_0Valid}
+                        formData={formData}
+                        setFormData={setFormData}
+                    />)}
+            </div>
 
-                <div className="flex justify-between fixed bottom-16 left-1/2 transform -translate-x-1/2 gap-4">
-                    <Button onClick={handlePrev} className="bg-gray-500 hover:bg-gray-400">
-                        Tilbake
-                    </Button>
-                    <Button onClick={handleNext} className="bg-kartAI-blue hover:bg-blue-900">
-                        {isLastStep ? "Send inn" : "Neste"}
+            <div className="flex justify-between mt-8 gap-4">
+                <Button onClick={handlePrev} className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44 ">
+                    <ArrowLeft size={18} className="mr-2" />
+                    Tilbake
+                </Button>
+                <div className="flex items-center">
+                    {isNextButtonDisabled && (
+                        <div className="flex items-center mr-4 text-red-500 text-sm">
+                            <AlertCircle size={16} className="mr-2 flex-shrink-0" /> 
+                            <span>Alle felt må fylles ut før du kan gå videre</span>
+                        </div>
+                    )}
+                    <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
+                        disabled={isNextButtonDisabled}>
+                        {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
+                        <ArrowRight size={18} className="ml-2" />
                     </Button>
                 </div>
             </div>
