@@ -1,6 +1,6 @@
 generator client {
-provider      = "prisma-client-js"
-binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x", "linux-musl"]
 }
 
 datasource db {
@@ -52,6 +52,15 @@ accounts      Account[]
 sessions      Session[]
 documents     Document[]
 applications  Application[]
+gnr           Int?
+bnr           Int?
+fnr          Int?
+snr          Int?
+address       String?
+postalCode    String?
+postalArea    String?
+phone         String?
+
 
 }
 
@@ -77,23 +86,78 @@ CASE_WORKER
 // APPLICATION & DOCUMENTS
 ///////////////////////
 
+
 model Application {
 applicationID  Int               @id @unique(map: "applicationID_UNIQUE") @default(autoincrement())
+applicationType ApplicationType
 userID         String
 user           User              @relation(fields: [userID], references: [id])
 submissionDate DateTime          @db.DateTime(0)
-status         ApplicationStatus @default(NEW)
-address        String            @db.VarChar(256)
-municipality   String            @db.VarChar(128)
+updatedDate    DateTime          @db.DateTime(0)
+status         ApplicationStatus @default(Pabegynt)
 documents      Document[]
 responses      Response[]
+Letters        Letter[]
+application_fields application_field[]
 }
 
 enum ApplicationStatus {
-APPROVED
-NEW
-UNDER_REVIEW
-REJECTED
+Pabegynt
+Ferdig
+Sendt
+}
+
+enum ApplicationType {
+  bygge_tilbygg_mindre_enn_50kvm
+  rive_tilbygg_mindre_enn_50kvm
+  bygge_frittliggende_bygning_mindre_70kvm
+  rive_frittliggende_bygning_mindre_70kvm
+  bruksendring
+  bygge_vanlige_driftsbygninger_for_landbruket_mindre_1000m2
+  endre_vanlige_driftsbygninger_for_landbruket_mindre_1000m2
+  rive_vanlige_driftsbygninger_for_landbruket_mindre_1000m2
+  melding_om_bygning_unntatt_soknadsplikt
+  melding_om_tilbygg_unntatt_soknadsplikt
+
+}
+
+model requiredField {
+  requiredFiledID Int @id @default(autoincrement())
+  applicationType ApplicationType
+  fieldName       String
+  fieldDescription String
+}
+model Letter {
+letterID Int @id @default(autoincrement())
+application        Application @relation(fields: [applicationID], references: [applicationID])
+applicationID      Int
+recipientName      String
+createdAt         DateTime @default(now())
+fields           LetterField[]
+
+
+
+}
+model LetterField {
+letterFieldID Int @id @default(autoincrement())
+letter         Letter @relation(fields: [letterID], references: [letterID])
+letterID       Int
+filedName      String
+fieldValue     String
+source         String
+createdAt      DateTime @default(now())
+updatedAt      DateTime @updatedAt
+
+
+}
+model application_field {
+  application_fieldID Int @id @default(autoincrement())
+  applicationID      Int
+  application        Application @relation(fields: [applicationID], references: [applicationID])
+  fieldName           String @db.Text 
+  fieltdValue         String @db.Text 
+  createdDate         DateTime          @db.DateTime(0)
+  updatedDate         DateTime          @db.DateTime(0)
 }
 
 ///////////////////////

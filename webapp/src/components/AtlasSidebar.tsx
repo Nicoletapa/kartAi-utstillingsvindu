@@ -1,4 +1,3 @@
-
 import Sidebar from "./Sidebar";
 
 
@@ -10,7 +9,7 @@ const AtlasSidebar: React.FC<AtlasSidebarInterface> = ({ children }) => {
   return (
       <Sidebar>
       <div
-        className={`min-h-screen flex w-full flex-col items-center`}
+        className={`flex w-full flex-col items-center`}
       >
         {children}
       </div>

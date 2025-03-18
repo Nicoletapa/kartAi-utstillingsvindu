@@ -6,16 +6,29 @@ import { GeistSans } from "geist/font/sans";
 import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 import AtlasSidebar from "~/components/AtlasSidebar";
+import dynamic from "next/dynamic";
+import { SendAppNow } from "~/components/SendAppNow";
+const MapChatIntegrationWithNoSSR = dynamic(
+  () => import("~/components/MapChatIntegration"),
+  { ssr: false } 
+);
 
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
-      <h1 className="flex justify-center pt-10 text-4xl">Før du søker</h1>
-      <div className="mx-auto mt-36 flex h-40 w-1/3 items-center justify-center rounded-lg border-4 border-solid p-10 align-middle">
-        {" "}
-        placeholder
+      <h1 className="flex justify-center pt-8 text-4xl text-kartAI-blue font-medium">Før du søker</h1>
+      <div className="lg:w-3/4 mx-auto mt-8 mb-0">
+        <MapChatIntegrationWithNoSSR/>
       </div>
+
+      <SendAppNow />
+
       <AtlasSidebar>
+        <></>
+      </AtlasSidebar>
+        
+        <SjekklisteOversikt />
+      
         
         <Link
           href="/"
@@ -36,17 +49,9 @@ export default function AtlasPage() {
           </svg>
           Tilbake til hovedsiden
         </Link>
-        </AtlasSidebar>
-      <Link href="/atlas-app/i-soknad" className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 text-kartAI-blue px-6 py-3 group flex items-center gap-2 border-2 rounded-full border-kartAI-blue bg-white" 
-        >
-        <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-        <span className="relative inline-block">
-          Send inn en søknad
-          <span className="absolute bottom-[-2px] left-0 w-0 h-1 bg-kartAI-blue transition-all duration-300 group-hover:w-full"></span>
-        </span>
-        </Link>
+        
 
-        <SjekklisteOversikt />
+      
     </div>
   );
 }

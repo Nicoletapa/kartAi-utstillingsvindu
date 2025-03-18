@@ -21,15 +21,30 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
-      // ...other properties
-      // role: UserRole;
+      role?: string;
+      gnr?: number;
+      bnr?: number;
+      fnr?: number;
+      snr?: number;
+      address?: string;
+      postalCode?: string;
+      postalArea?: string;
+      phone?: string;
     } & DefaultSession["user"];
   }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+  // Define custom User interface with our properties
+  interface User {
+    role?: string;
+    gnr?: number;
+    bnr?: number;
+    fnr?: number;
+    snr?: number;
+    address?: string;
+    postalCode?: string;
+    postalArea?: string;
+    phone?: string;
+  }
 }
 
 /**
@@ -39,13 +54,38 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: ({ session, user }) => {
+      // Type assertion to include our custom properties
+      const typedUser = user as typeof user & {
+        role?: string;
+        gnr?: number;
+        bnr?: number;
+        fnr?: number;
+        snr?: number;
+        address?: string;
+        postalCode?: string;
+        postalArea?: string;
+        phone?: string;
+      };
+      
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: typedUser.id,
+          // Add custom fields from the database user object to the session
+          gnr: typedUser.gnr,
+          bnr: typedUser.bnr,
+          fnr: typedUser.fnr,
+          snr: typedUser.snr,
+          address: typedUser.address,
+          postalCode: typedUser.postalCode,
+          postalArea: typedUser.postalArea,
+          phone: typedUser.phone,
+          role: typedUser.role,
+        },
+      };
+    },
   },
   adapter: PrismaAdapter(db) as Adapter,
   providers: [
