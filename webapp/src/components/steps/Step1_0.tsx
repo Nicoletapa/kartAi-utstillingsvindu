@@ -60,7 +60,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ formData, setFormData, onValidityChan
   };
 
   return (
-    <div className="md:px-10">
+    <div className="justify-center flex flex-col">
       <h1 className="text-3xl font-bold justify-center flex">Hva vil du gjøre på eiendommen din?</h1>
 
       <h2 className="font-medium mt-4 inline-flex">

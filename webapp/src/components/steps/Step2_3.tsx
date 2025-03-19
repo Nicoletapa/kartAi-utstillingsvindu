@@ -1,15 +1,14 @@
 import React, { useState } from 'react'
-import { Info } from 'lucide-react'
-import Dispensasjon from '../Dispenasjon';
-
-const Step2_2 = () => {
+import { Info } from 'lucide-react';
+import AndreVedlegg from '../AndreVedlegg';
+const Step2_3 = () => {
     const [openModal, setOpenModal] = useState<boolean>(false);
-            
-    const handleOpenModal = () => setOpenModal(true);
-    const handleCloseModal = () => setOpenModal(false);
+                
+        const handleOpenModal = () => setOpenModal(true);
+        const handleCloseModal = () => setOpenModal(false);
   return (
     <div>
-      <h1 className="text-3xl font-bold justify-center flex">Søknad om Dispensasjon
+        <h1 className="text-3xl font-bold justify-center flex mb-4">Andre vedlegg
         <Info size={18} className="ml-2 hover:cursor-pointer" onClick={handleOpenModal} />
       </h1>
       {openModal && (
@@ -31,11 +30,11 @@ const Step2_2 = () => {
           </div>
         </div>
       )}
-      <Dispensasjon /> 
+       <AndreVedlegg documents={[]} onUpload={() => {}} />
     </div>
 
-    
+   
   )
 }
 
-export default Step2_2
+export default Step2_3

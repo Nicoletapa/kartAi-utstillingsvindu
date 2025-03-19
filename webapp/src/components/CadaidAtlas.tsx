@@ -6,7 +6,7 @@ import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
 import ExistingDocumentsList from './ExistingDocumentsList';
 import InvalidFilesList from './InvalidFilesList';
-import { X, Info } from 'lucide-react';
+import { X, Info, Loader2 } from 'lucide-react';
 import Image from "next/image";
 
 // Utility functions for file processing
@@ -259,9 +259,10 @@ const CadaidAtlas: React.FC = () => {
         </div>
 
         {isLoading && (
-          <div className="mb-4 flex items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-kartAI-blue"></div>
-          </div>
+          <div className="flex justify-center items-center my-2">
+          <Loader2 className="animate-spin text-gray-500" size={24} />
+          <span className="ml-2 text-gray-500 text-sm">Laster opp filer...</span>
+      </div>
         )}
         </div>
 

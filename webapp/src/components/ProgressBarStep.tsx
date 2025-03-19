@@ -10,6 +10,7 @@ import Step1_0 from "./steps/Step1_0";
 import Step2_0 from "./steps/Step2_0";
 import Step2_1 from "./steps/Step2_1";
 import Step2_2 from "./steps/Step2_2";
+import Step2_3 from "./steps/Step2_3";
 import Step3_0 from "./steps/Step3_0";
 import Step3_1 from "./steps/Step3_1";
 import Step3_2 from "./steps/Step3_2";
@@ -34,6 +35,7 @@ const stepComponents: StepComponentsType = {
         0: Step2_0,
         1: Step2_1,
         2: Step2_2,
+        3: Step2_3,
     },
     3: {
         0: Step3_0,
