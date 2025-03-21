@@ -13,12 +13,12 @@ export function MapChatIntegration() {
   const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
   const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
   
-  // Get user property data
+  
   const { userData } = usePropertySearch();
   
-  // Memoize callbacks to prevent unnecessary re-renders
+  
   const handleMapReady = useCallback((map: Map) => {
-    if (mapRef.current) return; // Prevent duplicate calls
+    if (mapRef.current) return; 
     mapRef.current = map;
     setMapReady(true);
   }, []);

@@ -7,7 +7,7 @@ import type { Map } from 'leaflet';
 import type { Feature, Geometry, GeoJsonProperties } from 'geojson'; // Add missing imports
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
-import { PropertySearchBar } from './map/PropertySearchBar';
+//import { PropertySearchBar } from './map/PropertySearchBar';
 import { 
   SpatialAnalysisResult, 
   analyzeSpatialRelationship,
@@ -273,7 +273,7 @@ const TiltaksAidMap = ({
         stableOnMapReady(map);
       }
       
-      // Auto-search on map ready
+    
       if (searchInput && !autoZoomAttempted && !autoZoomSuccessful && userGnr && userBnr) {
         setAutoZoomAttempted(true);
         handlePropertySearch(searchInput);
@@ -294,9 +294,9 @@ const TiltaksAidMap = ({
     }
   };
 
-  // Load required scripts & libraries
+  
   useEffect(() => {
-    // Load leaflet draw
+   
     const script = document.createElement('script');
     script.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js";
     script.async = true;
@@ -344,7 +344,7 @@ const TiltaksAidMap = ({
               />
             </BaseLayer>
             
-            <Overlay name="FKB Layer">
+            <Overlay checked name="FKB Layer">
               <WMSTileLayer
                 url="https://wms.geonorge.no/skwms1/wms.fkb?"
                 layers="fkb"
@@ -357,7 +357,7 @@ const TiltaksAidMap = ({
               />
             </Overlay>
 
-            <Overlay name="Matrikkelkart">
+            <Overlay checked name="Matrikkelkart">
               <WMSTileLayer
                 url="https://wms.geonorge.no/skwms1/wms.matrikkelkart?"
                 layers="teiger"

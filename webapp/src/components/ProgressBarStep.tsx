@@ -18,6 +18,7 @@ import Step5_0 from "./steps/Step5_0";
 import Step6_0 from "./steps/Step6_0";
 import Step6_1 from "./steps/Step6_1";
 import Step6_2 from "./steps/Step6_2";
+import { api } from "~/trpc/react";
 
 
 type StepComponentsType = {
@@ -62,12 +63,22 @@ export const steps = [
     { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
     { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
 ];
+interface ProgressBarStepProps {
+    applicationID?: number;
+  }
 
-export default function ProgressBarStep() {
+export default function ProgressBarStep({applicationID} : ProgressBarStepProps) {
     const router = useRouter();
     const [currentOverallStep, setCurrentOverallStep] = useState(0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
+
+    const { data: application } = api.application.getApplication.useQuery(
+        { applicationID: applicationID ?? 0 },
+        { enabled: !!applicationID }
+      );
+
+      console.log(application?.applicationType);
 
     const [formData, setFormData] = useState({
         size: '',

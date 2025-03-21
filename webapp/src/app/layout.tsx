@@ -7,6 +7,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getServerAuthSession } from "~/server/auth";
 import Providers from "../components/Providers";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "KartAI AI-modeller",
@@ -28,6 +29,8 @@ export default async function RootLayout({
           <Navbar />
           <div className="flex min-h-screen flex-col">
             <main className="flex-1">{children}</main>
+            <Toaster position="bottom-right" />
+
             <Footer />
           </div>
         </Providers>
