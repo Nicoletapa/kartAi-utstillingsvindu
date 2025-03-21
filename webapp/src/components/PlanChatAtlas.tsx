@@ -27,6 +27,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   const [shapeContext, setShapeContext] = useState<string | null>(null);
   const utils = api.useUtils();
   const mapCenterLogged = useRef(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (lastDrawnShape) {
@@ -70,6 +71,23 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       // mapRef.current.setView([latitude, longitude], zoom);
     }
   }, [mapRef, mapReady]);
+
+  useEffect(() => {
+    if (chatItems.length > 0 && chatItems[0] && chatItems[0].isUser === false) {
+      setIsTyping(true);
+      const typingTimeout = setTimeout(() => {
+        setIsTyping(false);
+      }, 0);
+      return () => clearTimeout(typingTimeout);
+    }
+  }, [chatItems]);
+
+  const handleSendMessage = () => {
+    if (!isTyping && text.trim() !== "") {
+      handleSubmit();
+      setText("");
+    }
+  }
 
  
   const containsPropertyReference = (text: string): boolean => {
@@ -191,7 +209,11 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       ]); 
       const sendText = text;
       setText("");
+
+      setIsTyping(true);
+
       const response = await queryPlanprat(sendText);
+      setIsTyping(false);
       if (!response) return;
       setChatItems((prevChatItems) => [
         { 
@@ -204,12 +226,10 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   };
 
-  const handleKeyDown = async (
-    e: KeyboardEvent<HTMLTextAreaElement>,
-  ): Promise<void> => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter") {
       e.preventDefault();
-      await handleSubmit();
+      handleSendMessage();
     }
   };
 
@@ -296,6 +316,14 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </li>
           )}
 
+          {isTyping && (
+            <li className="mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-3 text-black flex items-center space-x-1">
+              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-loadingFade"></span>
+              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_200ms]"></span>
+              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_400ms]"></span>
+            </li>
+          )}
+
           
           {chatItems.map((chatItem, index) => (
             <li
@@ -303,7 +331,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
               className={
                 chatItem.isUser
                   ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100"
-                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-blue bg-opacity-20 p-2 text-black"
+                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black"
               }
               key={index}
             >
@@ -318,6 +346,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     placeholder="Still meg et spørsmål ..."
     value={text}
     onChange={handleTextChange}
+    disabled={isTyping}
     onKeyDown={handleKeyDown}
   ></textarea>
 
@@ -325,15 +354,13 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     type="submit"
     id="planprat-input-button"
     className="absolute bottom-2 right-2 p-2 rounded bg-transparent"
-    onClick={handleSubmit}
+    onClick={handleSendMessage}
+    disabled={isTyping || text.trim() === ""}
   >
     <SendHorizonal size={24} className="text-kartAI-blue hover:text-blue-800 duration-300 transition" />
   </button>
-</div>
-
-        
+</div>  
       </div>
-
     </section>
   );
 }
