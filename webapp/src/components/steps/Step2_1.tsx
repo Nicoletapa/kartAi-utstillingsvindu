@@ -37,7 +37,7 @@ const Step2_1 = () => {
           <h1 className='font-bold'>Hva er dispensasjon?</h1>
           <p><b>Dispensasjon</b> er et unntak fra gjeldende regler eller krav som normalt må følges. Det innebærer
           at en myndighet gir tillatelse til å fravike bestemmelser i lover, forskrifter eller reguleringsplaner
-          når det freligger særlige grunner.</p>
+          når det fraligger særlige grunner.</p>
       </div>
 
       <div className='border-4 rounded-lg border-blue-800 mt-4 p-4'>

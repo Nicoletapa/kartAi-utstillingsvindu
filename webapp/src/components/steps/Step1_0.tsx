@@ -9,8 +9,11 @@ interface Step1_0Props {
     eavesHeight: string;
     roofAngle: string;
     distanceToNeighbor: string;
+    distanceFromVACables: string;
+    distanceFromPowerCables: string;
     description: string;
-    impactReason: string;
+    planCompliance: string;
+    nonComplianceReason: string;
   };
   setFormData: React.Dispatch<React.SetStateAction<{
     size: string;
@@ -19,8 +22,11 @@ interface Step1_0Props {
     eavesHeight: string;
     roofAngle: string;
     distanceToNeighbor: string;
+    distanceFromVACables: string;
+    distanceFromPowerCables: string;
     description: string;
-    impactReason: string;
+    planCompliance: string;
+    nonComplianceReason: string;
   }>>;
   onValidityChange: (isValid: boolean) => void;
 }
@@ -46,21 +52,40 @@ const Step1_0: React.FC<Step1_0Props> = ({ formData, setFormData, onValidityChan
     checkFormValidity(updatedFormData);
   };
 
+  const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const updatedFormData = { ...formData, [name]: value };
+
+    if (value === "Nei") {
+      updatedFormData.nonComplianceReason = '';
+    }
+
+    setFormData(updatedFormData);
+    checkFormValidity(updatedFormData);
+  };
+
   const checkFormValidity = (data: typeof formData) => {
     const isValid =
-      data.size.trim() !== '' &&
-      data.material.trim() !== '' &&
-      data.ridgeHeight.trim() !== '' &&
-      data.eavesHeight.trim() !== '' &&
-      data.roofAngle.trim() !== '' &&
-      data.distanceToNeighbor.trim() !== '' &&
-      data.description.trim() !== '' &&
-      data.impactReason.trim() !== '';
-    onValidityChange(isValid);
+    (data.size?.trim() ?? '') !== '' &&
+    (data.material?.trim() ?? '') !== '' &&
+    (data.ridgeHeight?.trim() ?? '') !== '' &&
+    (data.eavesHeight?.trim() ?? '') !== '' &&
+    (data.roofAngle?.trim() ?? '') !== '' &&
+    (data.distanceToNeighbor?.trim() ?? '') !== '' &&
+    (data.description?.trim() ?? '') !== '' &&
+    (data.distanceFromVACables?.trim() ?? '') !== '' &&
+    (data.distanceFromPowerCables?.trim() ?? '') !== '' &&
+    (data.planCompliance?.trim() ?? '') !== '' &&  
+    (data.planCompliance === "Ja" || data.planCompliance === "Nei") &&
+    (data.planCompliance === "Ja" || data.nonComplianceReason?.trim() !== '' || true); 
+  
+  onValidityChange(isValid);
+  
+
   };
 
   return (
-    <div className="justify-center flex flex-col">
+    <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Hva vil du gjøre på eiendommen din?</h1>
 
       <h2 className="font-medium mt-4 inline-flex">
@@ -195,24 +220,72 @@ const Step1_0: React.FC<Step1_0Props> = ({ formData, setFormData, onValidityChan
                 />
                 <span className="ml-2 text-sm">meter</span>
               </div>
+
+              <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Avstand til VA-ledninger:</label>
+                <input
+                  type="number"
+                  name="distanceFromVACables"
+                  className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none"
+                  value={formData.distanceFromVACables}
+                  onChange={handleInputChange}
+                  required
+                />
+                <span className="ml-2 text-sm">meter</span>
+              </div>
+
+              <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Avstand til strømkabler:</label>
+                <input
+                  type="number"
+                  name="distanceFromPowerCables"
+                  className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none"
+                  value={formData.distanceFromPowerCables}
+                  onChange={handleInputChange}
+                  required
+                />
+                <span className="ml-2 text-sm">meter</span>
+              </div>
             </form>
           </div>
 
           <div className="w-full md:w-4/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
-            <p>
-              Tiltaket er i samsvar med gjeldene regularingsplan og vil/vil ikke medføre vesentlige endringer for
-              nabolaget. Det vil påvirke eksisterende bebyggelse og miljø ved
-            </p>
-            <input
-              type="text"
-              name="impactReason"
-              className="text-sm w-full h-8 p-2 mb-1 border-b-2 border-gray-400 outline-none"
-              placeholder="F.eks å gi bedre parkeringsmuligheter uten å forstyrre omkringliggende strukturer"
-              value={formData.impactReason}
-              onChange={handleInputChange}
-              required
-            />
-            <span>(Begrunnelse)</span>
+            <h1 className='whitespace-nowrap'>Er tiltaket i tråd med reguleringsplanen/kommuneplan/pbl?</h1>
+            <div className='flex flex-col space-y-2 mt-2'>
+              <label className='flex items-center'>
+                <input 
+                type="radio" 
+                name="planCompliance"
+                value="Ja"
+                checked={formData.planCompliance === "Ja"}
+                onChange={handleRadioChange}
+                className='mr-2'
+                />
+              Ja
+              </label>
+              
+              <label className='flex items-center'>
+                <input 
+                type="radio" 
+                name="planCompliance"
+                value="Nei"
+                checked={formData.planCompliance === "Nei"}
+                onChange={handleRadioChange}
+                className='mr-2'
+                />
+              Nei
+              </label>
+            </div>
+
+            {formData.planCompliance === "Nei" && (
+              <div className='mt-4'>
+                <h1 className="text-md font-medium text-gray mb-2">Du må søke om dispensasjon</h1>
+                <p className='text-sm'><b>Dispensasjon</b> er et unntak fra gjeldende regler eller krav som normalt må følges. Det innebærer
+                at en myndighet gir tillatelse til å fravike bestemmelser i lover, forskrifter eller reguleringsplaner
+                når det fraligger særlige. <br /><br /> Svarene dine vil bli tatt med videre i prosessen, og du vil få 
+                muligheten til å søke om dispensasjon i de neste stegene.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -12,7 +12,7 @@ interface SjekklisteSoknadProps {
 
 export default function SjekklisteSoknad({ currentStep, currentSubstep }: SjekklisteSoknadProps) { 
   const sjekkliste: Record<number, string[]> = {
-    1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Skriv inn begrunnelsen for tiltaket"],
+    1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
     2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte","Last opp andre nødvendige vedlegg"],
     3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
     4: ["Sørg for at søknaden er korrekt. Du kan sende byggesøknaden dersom alt er til dine behov"],
