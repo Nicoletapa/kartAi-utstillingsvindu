@@ -27,6 +27,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   const [shapeContext, setShapeContext] = useState<string | null>(null);
   const utils = api.useUtils();
   const mapCenterLogged = useRef(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (lastDrawnShape) {
@@ -70,6 +71,23 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       // mapRef.current.setView([latitude, longitude], zoom);
     }
   }, [mapRef, mapReady]);
+
+  useEffect(() => {
+    if (chatItems.length > 0 && chatItems[0] && chatItems[0].isUser === false) {
+      setIsTyping(true);
+      const typingTimeout = setTimeout(() => {
+        setIsTyping(false);
+      }, 0);
+      return () => clearTimeout(typingTimeout);
+    }
+  }, [chatItems]);
+
+  const handleSendMessage = () => {
+    if (!isTyping && text.trim() !== "") {
+      handleSubmit();
+      setText("");
+    }
+  }
 
  
   const containsPropertyReference = (text: string): boolean => {
@@ -191,7 +209,11 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       ]); 
       const sendText = text;
       setText("");
+
+      setIsTyping(true);
+
       const response = await queryPlanprat(sendText);
+      setIsTyping(false);
       if (!response) return;
       setChatItems((prevChatItems) => [
         { 
@@ -204,12 +226,10 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   };
 
-  const handleKeyDown = async (
-    e: KeyboardEvent<HTMLTextAreaElement>,
-  ): Promise<void> => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter") {
       e.preventDefault();
-      await handleSubmit();
+      handleSendMessage();
     }
   };
 
@@ -284,53 +304,23 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         <h1>PlanChat</h1>
         <p className="text-sm font-medium">Din adresse: [placeholder]</p>
       </div>
-      
-
-      {/* Map context indicator with spatial information */}
-      {/* {mapReady && (
-        <div className="bg-green-100 p-2 text-sm">
-          <span className="font-semibold">Map connected.</span>
-          {shapeContext && (
-            <div className="mt-1">
-              <span className="italic">{shapeContext}</span>
-            </div>
-          )}
-          {spatialAnalysis && (
-            <div className={`mt-2 p-2 rounded-md ${
-              spatialAnalysis.isWithinProperty 
-                ? 'bg-green-100 border-l-4 border-green-500' 
-                : 'bg-red-100 border-l-4 border-red-500'
-            }`}>
-              <div className="font-bold mb-1">
-                {spatialAnalysis.isWithinProperty 
-                  ? '✅ Drawing is within property boundaries' 
-                  : '❌ Drawing is outside property boundaries'}
-              </div>
-              
-              {!spatialAnalysis.isWithinProperty && spatialAnalysis.distanceToProperty && (
-                <div>
-                  Distance to property: <span className="font-semibold">{spatialAnalysis.distanceToProperty.toFixed(2)} meters</span>
-                </div>
-              )}
-              
-              {spatialAnalysis.nearestPropertyId && (
-                <div>
-                  Property ID: <span className="font-semibold">{spatialAnalysis.nearestPropertyId}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )} */}
 
       <div id="planprat-input-output" className="relative w-full p-2">
         <ul
           id="planprat-output"
-          className="flex w-full flex-1 h-80 max-h-[80vh] flex-col-reverse overflow-y-auto p-2"
+          className="flex w-full flex-1 h-80 max-h-[80vh] flex-col-reverse overflow-y-auto scrollbar-hide"
         >
           {error && (
             <li className="m-2 mr-6 self-start rounded-lg bg-red-100 p-2 text-red-700 border border-red-500">
               {error}
+            </li>
+          )}
+
+          {isTyping && (
+            <li className="mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-3 text-black flex items-center space-x-1">
+              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-loadingFade"></span>
+              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_200ms]"></span>
+              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_400ms]"></span>
             </li>
           )}
 
@@ -340,8 +330,8 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
               data-cy="chat-output"
               className={
                 chatItem.isUser
-                  ? "m-2 ml-6 self-end rounded-lg p-2 text-black bg-gray-100"
-                  : "m-2 mr-6 self-start rounded-lg bg-kartAI-blue bg-opacity-20 p-2 text-black"
+                  ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100"
+                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black"
               }
               key={index}
             >
@@ -349,33 +339,28 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </li>
           ))}
         </ul>
-        <div className="flex items-center gap-2 mt-2 mb-2">
-          <textarea
-          id="planprat-input"
-          className="mt-2 w-full min-h-20 rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner"
-          placeholder="Still meg et spørsmål ..."
-          value={text}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-        ></textarea>
-        <button
-          type="submit"
-          id="planprat-input-button"
-          className="self-end right-8 rounded"
-          onClick={handleSubmit}
-        >
-          <SendHorizonal size={24} className="text-kartAI-blue"/>
+        <div className="relative w-full mt-2 mb-2">
+  <textarea
+    id="planprat-input"
+    className="w-full min-h-20 rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner resize-none"
+    placeholder="Still meg et spørsmål ..."
+    value={text}
+    onChange={handleTextChange}
+    disabled={isTyping}
+    onKeyDown={handleKeyDown}
+  ></textarea>
 
-
-
-
-
-
-        </button>
-        </div>
-        
+  <button
+    type="submit"
+    id="planprat-input-button"
+    className="absolute bottom-2 right-2 p-2 rounded bg-transparent"
+    onClick={handleSendMessage}
+    disabled={isTyping || text.trim() === ""}
+  >
+    <SendHorizonal size={24} className="text-kartAI-blue hover:text-blue-800 duration-300 transition" />
+  </button>
+</div>  
       </div>
-
     </section>
   );
 }
