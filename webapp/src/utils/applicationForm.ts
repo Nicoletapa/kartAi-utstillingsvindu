@@ -48,12 +48,15 @@ const DistancesSmaProsjekterSchema = z.object({
   cultural_heritage_site: z.string().optional()
 });
 
+
+//============ Fjerne etterhvert =================
 const AttachmentsSchema = z.object({
   plans_and_drawings: z.array(z.string()).optional(),
   neighbor_notification: z.array(z.string()).optional(),
   dispensation_documentation: z.string().optional(),
   other_attachments: z.string().optional()
 });
+
 
 const RequirementsSchema = z.object({
   situational_map: z.string().optional(),

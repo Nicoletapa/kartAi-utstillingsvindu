@@ -6,6 +6,7 @@ import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
+import Step_applicant_details from "./steps/Step_applicant_details";
 import Step1_0 from "./steps/Step1_0";
 import Step2_0 from "./steps/Step2_0";
 import Step2_1 from "./steps/Step2_1";
@@ -29,7 +30,11 @@ type StepComponentsType = {
 };
 
 const stepComponents: StepComponentsType = {
+    0: {
+        0: Step_applicant_details,
+    },
     1: {
+        
         0: Step1_0,
     },
     2: {
@@ -57,6 +62,7 @@ const stepComponents: StepComponentsType = {
 };
 
 export const steps = [
+    {title: "Søker og eiendom", totalSubsteps: Object.keys(stepComponents[0] || {}).length},
     { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
     { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
     { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
@@ -72,7 +78,11 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
     const router = useRouter();
     const [currentOverallStep, setCurrentOverallStep] = useState(0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
-    const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
+    
+    // Add state variables for each step's validity
+    const [isStep0_0Valid, setIsStep0_0Valid] = useState(false); // For Step_applicant_details
+    const [isStep1_0Valid, setIsStep1_0Valid] = useState(false); // For Step1_0
+    
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
 
     // Fetch application data
@@ -105,15 +115,25 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
             fieldsMap[field.fieldName] = field.fieldValue;
         });
         
-        // Check validity of form data
-        const isValid = 
+        // Check validity of Step1_0 form data
+        const isStep1Valid = 
             fieldsMap['description']?.trim() !== '' &&
             fieldsMap['area_purpose']?.trim() !== '' &&
             fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
             fieldsMap['distances.mønehøyde']?.trim() !== '' &&
             fieldsMap['distances.gesimshøyde']?.trim() !== '';
             
-        setIsStep1_0Valid(isValid);
+        setIsStep1_0Valid(isStep1Valid);
+        
+        // Check validity of Step_applicant_details form data
+        const isStep0Valid = 
+            !!fieldsMap['applicant.name']?.trim() &&
+            !!fieldsMap['applicant.email']?.trim() &&
+            !!fieldsMap['property.address']?.trim() &&
+            !!fieldsMap['property.property_number']?.trim() &&
+            !!fieldsMap['property.usage_number']?.trim();
+            
+        setIsStep0_0Valid(isStep0Valid);
     }, [application]);
 
     // Handle next button click
@@ -202,10 +222,23 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
     });
 
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
-    const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;
+    
+const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] || null;
+    
+    // Update to check all step validations
     const isNextButtonDisabled = 
-        (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || 
+        (currentStep === 1 && currentSubstep === 0 && !isStep0_0Valid) || // Check Step_applicant_details
+        (currentStep === 2 && currentSubstep === 0 && !isStep1_0Valid) || // Check Step1_0
         submitApplication.isLoading;
+
+    // Function to get the correct validator function for the current step
+    const getValidatorForCurrentStep = () => {
+        if (currentStep === 1 && currentSubstep === 0) return setIsStep0_0Valid;
+        if (currentStep === 2 && currentSubstep === 0) return setIsStep1_0Valid;
+        
+        // Default validator function - allows progression if no specific validation is required
+        return () => true;
+    };
 
     return (
         <div className="container mx-auto py-6 px-4 flex flex-col">
@@ -221,7 +254,7 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
                     </div>
                 ) : CurrentStepComponent && (
                     <CurrentStepComponent
-                        onValidityChange={setIsStep1_0Valid}
+                        onValidityChange={getValidatorForCurrentStep()}
                         applicationID={applicationID}
                     />
                 )}
@@ -243,7 +276,7 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
                             <span>
                                 {submitApplication.isLoading 
                                     ? 'Vennligst vent...'
-                                    : 'Alle felt må fylles ut før du kan gå videre'}
+                                    : 'Alle påkrevde felt må fylles ut før du kan gå videre'}
                             </span>
                         </div>
                     )}
