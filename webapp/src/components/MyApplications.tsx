@@ -1,50 +1,47 @@
 "use client"
 
-import { useState } from "react";
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { ApplicationType } from "@prisma/client";
 import { Trash2 } from "lucide-react";
-import {toast} from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 
-
-
-const applicationTypeDisplayNames = APPLICATION_TYPE_DISPLAY_NAMES;
-
 const MyApplications = () => {
-    const [deletingId, setDeletingId] = useState<number | null>(null);
-    const router = useRouter();
-    
-
-  const { data: applications, isLoading, error, refetch} = api.application.getAllApplications.useQuery();
-
+  const router = useRouter();
   
+  // Data fetching
+  const { 
+    data: applications, 
+    isLoading, 
+    error, 
+    refetch
+  } = api.application.getAllApplications.useQuery();
+  
+  // Delete mutation
+  const deleteApplication = api.application.deleteApplication.useMutation({
+    onSuccess: () => {
+      toast.success("Application deleted successfully");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Error: ${error.message}`);
+    }
+  });
+  
+  // Navigation handler
   const handleCreateNewApplication = () => {
     router.push('/atlas-app/SoknadTest/new');
   };
-
-  const deleteApplication = api.application.deleteApplication.useMutation({
-    onSuccess: () => {
-        toast.success("Application deleted successfully");
-        refetch();
-    },
-    onError: (error )=> {
-        toast.error(`Error : ${error.message}`);
-        setDeletingId(null);
-
-    },
-    onSettled: () => {
-        setDeletingId(null);
+  
+  // Delete handler with confirmation
+  const handleDeleteApplication = (applicationID: number) => {
+    if (confirm("Are you sure you want to delete this application? This cannot be undone.")) {
+      deleteApplication.mutate({ applicationID });
     }
-  });
-  const handleDeleteApplication = (applicationID: number ) => {
-    if(confirm ("Are you sure you want to delete this application? this cannot be undone.")){
-        setDeletingId(applicationID);
-        deleteApplication.mutate({applicationID});
-    }
-  }
+  };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="p-4">
@@ -56,6 +53,7 @@ const MyApplications = () => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="p-4">
@@ -67,6 +65,28 @@ const MyApplications = () => {
     );
   }
 
+  // Format date helper function
+  const formatDate = (dateString: Date) => {
+    return new Date(dateString).toLocaleDateString('nb-NO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Status to badge style mapping
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Sendt':
+        return 'bg-green-100 text-green-800';
+      case 'Ferdig_behandlet':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  // Main UI
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
@@ -86,23 +106,19 @@ const MyApplications = () => {
             <div key={application.applicationID} className="border rounded-md p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between">
                 <h2 className="text-lg font-semibold">
-                  {applicationTypeDisplayNames[application.applicationType as ApplicationType]}
+                  {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}
                 </h2>
-                <span className={`px-2 py-1 rounded text-sm ${
-                  application.status === 'Sendt' ? 'bg-green-100 text-green-800' : 
-                  application.status === 'Ferdig' ? 'bg-blue-100 text-blue-800' : 
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
+                <span className={`px-2 py-1 rounded text-sm ${getStatusBadgeStyle(application.status)}`}>
                   {application.status}
                 </span>
               </div>
               
               <div className="mt-2 text-sm text-gray-500">
-                <p>Submitted: {new Date(application.submissionDate).toLocaleDateString()}</p>
-                <p>Last updated: {new Date(application.updatedDate).toLocaleDateString()}</p>
+                <p>Submitted: {formatDate(application.submissionDate)}</p>
+                <p>Last updated: {formatDate(application.updatedDate)}</p>
               </div>
               
-              <div className="mt-3">
+              <div className="mt-3 flex justify-between">
                 <a 
                   href={`/atlas-app/i-soknad/${application.applicationID}`} 
                   className="text-blue-600 hover:underline text-sm"
@@ -111,20 +127,22 @@ const MyApplications = () => {
                 </a>
 
                 <button
-                onClick={() => handleDeleteApplication(application.applicationID)}
-                disabled={deletingId === application.applicationID}
-                className={`text-red-500 hover:text-red-700 p-1 rounded transition-colors ${
-                  deletingId === application.applicationID ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                title="Delete application"
-              >
-                {deletingId === application.applicationID ? (
-                  <div className="w-4 h-4 border-t-2 border-red-500 rounded-full animate-spin"></div>
-                ) : (
-                  <Trash2 size={16} />
-                )}
-              </button>
-                </div>
+                  onClick={() => handleDeleteApplication(application.applicationID)}
+                  disabled={deleteApplication.isPending && deleteApplication.variables?.applicationID === application.applicationID}
+                  className={`text-red-500 hover:text-red-700 p-1 rounded transition-colors ${
+                    deleteApplication.isPending && deleteApplication.variables?.applicationID === application.applicationID 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : ''
+                  }`}
+                  title="Delete application"
+                >
+                  {deleteApplication.isPending && deleteApplication.variables?.applicationID === application.applicationID ? (
+                    <div className="w-4 h-4 border-t-2 border-red-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                </button>
+              </div>
             </div>
           ))}
         </div>

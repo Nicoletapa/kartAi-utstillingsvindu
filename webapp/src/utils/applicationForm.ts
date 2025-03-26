@@ -761,6 +761,8 @@ export {
   type FormBruksendring,
   type SimplifiedUser,
   type DistancesDetails,
+  type PropertyDetails,
+  type ApplicantDetails,
   createApplicationFormSmaProsjekter, 
   createApplicationFormBruksendring,
   generateFieldsFromSchema,

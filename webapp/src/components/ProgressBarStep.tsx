@@ -23,9 +23,15 @@ import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { ApplicationType } from "@prisma/client";
 
+interface StepComponentType {
+    applicationID?: number;
+    onValidityChange: (isValid: boolean) => void;
+}
+
+
 type StepComponentsType = {
     [key: number]: {
-        [key: number]: React.ComponentType<any>;
+        [key: number]: React.ComponentType<StepComponentType>;
     };
 };
 
@@ -84,9 +90,10 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false); // For Step1_0
     
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
+    
 
     // Fetch application data
-    const { data: application, isLoading: isLoadingApplication } = api.application.getApplication.useQuery(
+    const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
         { enabled: !!applicationID }
     );
@@ -193,6 +200,17 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
 
     const { currentStep, currentSubstep } = getCurrentStepInfo(currentOverallStep);
 
+    useEffect(() => {
+        // Force reload application data when navigating to Step_applicant_details
+        if (currentStep === 1 && currentSubstep === 0) {
+            console.log("Navigated to Step_applicant_details, forcing reload");
+            
+            // Fetch application data again
+            // This will trigger the application data loading effect in Step_applicant_details
+            void refetchApplication();
+        }
+    }, [currentStep, currentSubstep]);
+
     const handlePrev = () => {
         if (currentOverallStep === 0) {
             const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
@@ -229,7 +247,7 @@ const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] |
     const isNextButtonDisabled = 
         (currentStep === 1 && currentSubstep === 0 && !isStep0_0Valid) || // Check Step_applicant_details
         (currentStep === 2 && currentSubstep === 0 && !isStep1_0Valid) || // Check Step1_0
-        submitApplication.isLoading;
+        submitApplication.isPending;
 
     // Function to get the correct validator function for the current step
     const getValidatorForCurrentStep = () => {
@@ -264,7 +282,7 @@ const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] |
                 <Button 
                     onClick={handlePrev} 
                     className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
-                    disabled={submitApplication.isLoading}
+                    disabled={submitApplication.isPending}
                 >
                     <ArrowLeft size={18} className="mr-2" />
                     Tilbake
@@ -274,7 +292,7 @@ const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] |
                         <div className="flex items-center mr-4 text-red-500 text-sm">
                             <AlertCircle size={16} className="mr-2 flex-shrink-0" /> 
                             <span>
-                                {submitApplication.isLoading 
+                                {submitApplication.isPending
                                     ? 'Vennligst vent...'
                                     : 'Alle påkrevde felt må fylles ut før du kan gå videre'}
                             </span>
@@ -282,10 +300,11 @@ const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] |
                     )}
                     <Button 
                         onClick={handleNext} 
-                        disabled={isNextButtonDisabled}
+                       // disabled={isNextButtonDisabled}
+
                         className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
                     >
-                        {submitApplication.isLoading ? (
+                        {submitApplication.isPending ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
                         ) : null}
                         {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}

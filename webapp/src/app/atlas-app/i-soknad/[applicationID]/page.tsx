@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import ProgressBarStep from '~/components/ProgressBarStep';
+import { FormProvider } from "~/context/FormContext";
 
 export default function ApplicationDetailPage() {
   // Get the applicationID from the URL parameters
@@ -54,7 +55,9 @@ export default function ApplicationDetailPage() {
       </h1>
       
       {/* Pass the applicationID to the ProgressBarStep component */}
-      <ProgressBarStep applicationID={applicationID} />
+      <FormProvider>
+        <ProgressBarStep applicationID={applicationID} />
+      </FormProvider>
     </div>
   );
 }

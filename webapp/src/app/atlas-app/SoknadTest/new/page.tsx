@@ -9,15 +9,15 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
 export default function NewApplicationPage() {
-  const [applicationType, setApplicationType] = useState<ApplicationType | undefined>();
-  const [subTypeId, setSubTypeId] = useState<string | undefined>();
+  const [applicationID, setApplicationID] = useState<number | undefined>();
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  // Handle type selection from ApplicationTemplate
-  const handleTypeSelect = (type: ApplicationType, subType: string) => {
-    setApplicationType(type);
-    setSubTypeId(subType);
+  // Handle application creation result from ApplicationTemplate
+  const handleTypeSelect = (type: ApplicationType, subType: string, newApplicationID: string) => {
+    // Convert to number if needed (depends on your API return type)
+    const appId = typeof newApplicationID === 'string' ? parseInt(newApplicationID, 10) : newApplicationID;
+    setApplicationID(appId);
   };
   
   // Check authentication
@@ -41,8 +41,8 @@ export default function NewApplicationPage() {
     return null; // Will redirect in useEffect
   }
   
-  // Show application type selection if not yet chosen
-  if (!applicationType || !subTypeId) {
+  // Show application type selection if application not yet created
+  if (!applicationID) {
     return (
       <ApplicationTemplate 
         isNewApplication={true}
@@ -51,6 +51,6 @@ export default function NewApplicationPage() {
     );
   }
   
-  // Otherwise show the first step of the form
-  return <ProgressBarStep applicationType={applicationType} subTypeId={subTypeId} />;
+  // Otherwise show the first step of the form with the applicationID
+  return <ProgressBarStep applicationID={applicationID} />;
 }

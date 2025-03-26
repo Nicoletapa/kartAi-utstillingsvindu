@@ -2,23 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
-
-// Default empty structures for form data
-const getDefaultApplicantDetails = () => ({
-  name: '',
-  email: '',
-  phone: '',
-});
-
-const getDefaultPropertyDetails = () => ({
-  address: '',
-  property_number: '', // gnr
-  usage_number: '',    // bnr
-  lease_number: '',    // fnr
-  section_number: '',  // snr
-  postal_code: '',     // postal code
-  municipality: '',    // postal area/municipality
-});
+import { useFormContext } from "~/context/FormContext";
+import type { FormDataType } from "~/context/FormContext";
 
 interface StepApplicantDetailsProps {
   applicationID?: number;
@@ -27,132 +12,120 @@ interface StepApplicantDetailsProps {
 
 const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({ 
   applicationID, 
-  onValidityChange 
+  onValidityChange
 }) => {
-  // Get user session
-  const { data: session } = useSession();
-
-  // Form data state
-  const [formData, setFormData] = useState({
-    applicant: getDefaultApplicantDetails(),
-    property: getDefaultPropertyDetails(),
-  });
+  // Get the shared form data from context
+  const { applicantFormData, updateApplicantFormData } = useFormContext();
   
+  // Initialize state
+  const [formData, setFormDataInternal] = useState<FormDataType>(applicantFormData);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasSaved, setHasSaved] = useState(false);
-
-  // Setup TRPC mutations
-  const updateApplication = api.application.updateApplication.useMutation({
-    onSuccess: () => console.log("Application updated successfully"),
-    onError: (error) => console.error("Failed to update application:", error)
-  });
   
-  const addApplicationField = api.application.addApplicationField.useMutation({
-    onSuccess: (data) => console.log("Field saved successfully:", data.fieldName),
-    onError: (error) => console.error("Failed to save field:", error)
-  });
+  // Get user session
+  const { data: session } = useSession();
+  
+  // Update form data handler (properly typed)
+  const setFormData = (newData: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
+    const updatedData = typeof newData === 'function' ? newData(formData) : newData;
+    setFormDataInternal(updatedData);
+    updateApplicantFormData(updatedData);
+  };
 
-  // Fetch application data
+  // Update local state when context changes
+  useEffect(() => {
+    setFormDataInternal(applicantFormData);
+  }, [applicantFormData]);
+
+  // Setup TRPC queries and mutations
   const { data: application, isLoading: isLoadingApplication } = api.application.getApplication.useQuery(
     { applicationID: applicationID ?? 0 },
     { enabled: !!applicationID }
   );
   
-  // Fetch user details from the database
   const { data: userDetails, isLoading: isLoadingUserDetails } = api.user.getUserDetails.useQuery(
     undefined,
     { enabled: !!session }
   );
   
-  // Load user details if available
+  const updateApplication = api.application.updateApplication.useMutation();
+  const addApplicationField = api.application.addApplicationField.useMutation();
+
+  // Check form validity
+  const checkFormValidity = (data: FormDataType = formData) => {
+    const safeString = (value: string | undefined | null): string => 
+      (value === undefined || value === null) ? '' : String(value).trim();
+    
+    const isValid = 
+      !!safeString(data.applicant.name) && 
+      !!safeString(data.applicant.email) &&
+      !!safeString(data.property.address) &&
+      !!safeString(data.property.property_number) &&
+      !!safeString(data.property.usage_number);
+  
+    onValidityChange(isValid);
+    return isValid;
+  };
+  
+  // Load user details if no application data exists
   useEffect(() => {
-    if (!userDetails || isDirty || hasSaved) return;
+    // Skip if no user details, form is dirty, or we have name/address data
+    if (!userDetails || isDirty || formData.applicant.name || formData.property.address) return;
     
-    console.log("Loading user details:", userDetails);
-    
-    // Only prefill if we don't have values from the application
-    if (formData.applicant.name || formData.property.address) return;
-    
-    setFormData(prev => ({
-      ...prev,
+    const updatedFormData: FormDataType = {
       applicant: {
-        name: userDetails.name ,
-        email: userDetails.email || prev.applicant.email,
-        phone: userDetails.phone || prev.applicant.phone,
+        name: userDetails.name ?? formData.applicant.name,
+        email: userDetails.email ?? formData.applicant.email,
+        phone: userDetails.phone ?? formData.applicant.phone,
       },
       property: {
-        address: userDetails.address || prev.property.address,
-        property_number: userDetails.gnr || prev.property.property_number,
-        usage_number: userDetails.bnr || prev.property.usage_number,
-        lease_number: prev.property.lease_number, // Not in user details
-        section_number: prev.property.section_number, // Not in user details
-        postal_code: userDetails.postalCode || prev.property.postal_code,
-        municipality: userDetails.postalArea || prev.property.municipality,
-      }
-    }));
-    
-    // Check form validity with the updated user data
-    const updatedData = {
-      applicant: {
-        name: userDetails.name || formData.applicant.name,
-        email: userDetails.email || formData.applicant.email,
-        phone: userDetails.phone || formData.applicant.phone,
-      },
-      property: {
-        address: userDetails.address || formData.property.address,
-        property_number: userDetails.gnr || formData.property.property_number,
-        usage_number: userDetails.bnr || formData.property.usage_number,
+        address: userDetails.address ?? formData.property.address,
+        property_number: userDetails.gnr?.toString() ?? formData.property.property_number,
+        usage_number: userDetails.bnr?.toString() ?? formData.property.usage_number,
         lease_number: formData.property.lease_number,
         section_number: formData.property.section_number,
-        postal_code: userDetails.postalCode || formData.property.postal_code,
-        municipality: userDetails.postalArea || formData.property.municipality,
+        postal_code: userDetails.postalCode ?? formData.property.postal_code,
+        municipality: userDetails.postalArea ?? formData.property.municipality,
       }
     };
     
-    checkFormValidity(updatedData);
-  }, [userDetails, isDirty, hasSaved]);
-  
+    setFormData(updatedFormData);
+    checkFormValidity(updatedFormData);
+  }, [userDetails, isDirty]);
+
   // Load data from application
   useEffect(() => {
-    if (!application || !application.application_fields) return;
+    if (!application?.application_fields || 
+        formData.applicant.name || 
+        formData.property.address || 
+        formData.property.property_number) {
+      return;
+    }
     
-    console.log("Loading application data in Step_applicant_details");
-    
-    // Create a map of field names to values
     const fieldsMap: Record<string, string> = {};
     application.application_fields.forEach(field => {
-        fieldsMap[field.fieldName] = field.fieldValue;
+      fieldsMap[field.fieldName] = field.fieldValue;
     });
     
-    // Update applicant data
-    const applicantData = {
-      name: fieldsMap['applicant.name'] || '',
-      email: fieldsMap['applicant.email'] || '',
-      phone: fieldsMap['applicant.phone'] || '',
+    const newFormData: FormDataType = {
+      applicant: {
+        name: fieldsMap['applicant.name'] || '',
+        email: fieldsMap['applicant.email'] || '',
+        phone: fieldsMap['applicant.phone'] || '',
+      },
+      property: {
+        address: fieldsMap['property.address'] || '',
+        property_number: fieldsMap['property.property_number'] || '',
+        usage_number: fieldsMap['property.usage_number'] || '',
+        lease_number: fieldsMap['property.lease_number'] || '',
+        section_number: fieldsMap['property.section_number'] || '',
+        postal_code: fieldsMap['property.postal_code'] || '',
+        municipality: fieldsMap['property.municipality'] || '',
+      }
     };
     
-    // Update property data
-    const propertyData = {
-      address: fieldsMap['property.address'] || '',
-      property_number: fieldsMap['property.property_number'] || '',
-      usage_number: fieldsMap['property.usage_number'] || '',
-      lease_number: fieldsMap['property.lease_number'] || '',
-      section_number: fieldsMap['property.section_number'] || '',
-      postal_code: fieldsMap['property.postal_code'] || '',
-      municipality: fieldsMap['property.municipality'] || '',
-    };
-    
-    setFormData({
-      applicant: applicantData,
-      property: propertyData
-    });
-    
-    // Check validity
-    checkFormValidity({
-      applicant: applicantData,
-      property: propertyData
-    });
+    setFormData(newFormData);
+    checkFormValidity(newFormData);
   }, [application]);
 
   // Handle input changes
@@ -168,64 +141,24 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     }));
     
     setIsDirty(true);
-    
-    // Check validity with updated data
-    const updatedData = {
-      ...formData,
-      [section]: {
-        ...formData[section],
-        [name]: value
-      }
-    };
-    
-    checkFormValidity(updatedData);
   };
 
-  // Check form validity
-  const checkFormValidity = (data = formData) => {
-    // Minimum required fields for validity
-    const safeString = (value: any): string => {
-        if (value === undefined || value === null) return '';
-        return String(value).trim();
-      };
-    
-    const isValid = 
-    !!safeString(data.applicant.name) && 
-    !!safeString(data.applicant.email) &&
-    !!safeString(data.property.address) &&
-    !!safeString(data.property.property_number) &&
-    !!safeString(data.property.usage_number);
-  
-    
-    onValidityChange(isValid);
-    return isValid;
-  };
-
-  // Auto-save changes when fields are modified
+  // Auto-save changes
   useEffect(() => {
-    // Skip initial render
     if (!isDirty) return;
     
     const saveTimeout = setTimeout(() => {
-      saveChangesToDatabase()
-        .then(() => {
-          setHasSaved(true);
-          // Show toast only occasionally
-          if (Math.random() < 0.2) { // 20% chance
-            toast.success("Endringer lagret", {
-              duration: 2000,
-              position: "bottom-right"
-            });
-          }
-        })
-        .catch((error) => {
-          // Always show errors
-          toast.error(`Feil ved lagring: ${error.message}`, {
-            duration: 3000,
+      saveChangesToDatabase().then(() => {
+        if (Math.random() < 0.2) { // 20% chance to show toast
+          toast.success("Endringer lagret", {
+            duration: 2000,
             position: "bottom-right"
           });
-        });
-    }, 1000); // Wait 1 second after typing stops
+        }
+      }).catch(error => {
+        toast.error(`Feil ved lagring: ${error.message}`);
+      });
+    }, 1000);
     
     return () => clearTimeout(saveTimeout);
   }, [formData, isDirty]);
@@ -237,35 +170,70 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     try {
       setIsSaving(true);
       
-      // Update the application's updatedDate
+      // Update application timestamp
       await updateApplication.mutateAsync({
         applicationID,
         updatedDate: new Date(),
       });
 
-      // Helper function to save a field
-      const saveField = async (name: string, value: string) => {
-        await addApplicationField.mutateAsync({
+      // Save all fields in parallel for better performance
+      const fieldPromises = [
+        // Applicant fields
+        addApplicationField.mutateAsync({
           applicationID,
-          fieldName: name,
-          fieldValue: value,
-        });
-      };
-
-      // Save applicant fields
-      await saveField('applicant.name', formData.applicant.name || '');
-      await saveField('applicant.email', formData.applicant.email || '');
-      await saveField('applicant.phone', formData.applicant.phone || '');
+          fieldName: 'applicant.name',
+          fieldValue: formData.applicant.name || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'applicant.email',
+          fieldValue: formData.applicant.email || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'applicant.phone',
+          fieldValue: formData.applicant.phone || '',
+        }),
+        
+        // Property fields
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.address',
+          fieldValue: formData.property.address || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.property_number',
+          fieldValue: formData.property.property_number || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.usage_number',
+          fieldValue: formData.property.usage_number || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.lease_number',
+          fieldValue: formData.property.lease_number || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.section_number',
+          fieldValue: formData.property.section_number || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.postal_code',
+          fieldValue: formData.property.postal_code || '',
+        }),
+        addApplicationField.mutateAsync({
+          applicationID,
+          fieldName: 'property.municipality',
+          fieldValue: formData.property.municipality || '',
+        }),
+      ];
       
-      // Save property fields
-      await saveField('property.address', formData.property.address || '');
-      await saveField('property.property_number', formData.property.property_number || '');
-      await saveField('property.usage_number', formData.property.usage_number || '');
-      await saveField('property.lease_number', formData.property.lease_number || '');
-      await saveField('property.section_number', formData.property.section_number || '');
-      await saveField('property.postal_code', formData.property.postal_code || '');
-      await saveField('property.municipality', formData.property.municipality || '');
-      
+      await Promise.all(fieldPromises);
       setIsDirty(false);
       return true;
     } catch (error) {
@@ -286,6 +254,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     );
   }
 
+  // Form UI remains the same
   return (
     <div className="md:px-10">
       <h1 className="text-3xl font-bold mb-8">Søker- og eiendomsopplysninger</h1>
