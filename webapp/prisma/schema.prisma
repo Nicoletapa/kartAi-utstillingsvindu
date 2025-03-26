@@ -78,6 +78,7 @@ model Application {
   submissionDate     DateTime            @db.DateTime(0)
   status             ApplicationStatus   @default(Pabegynt)
   applicationType    ApplicationType
+  subTypeId        String?
   updatedDate        DateTime            @db.DateTime(0)
   user               User                @relation(fields: [userID], references: [id])
   documents          Document[]
@@ -192,11 +193,7 @@ model DocumentValidation {
   @@unique([documentID, drawingType])
 }
 
-model ApplicationTemplate {
-  templateID      Int                                 @id @default(autoincrement())
-  applicationType ApplicationType @unique
-  fields          Json
-}
+
 
 enum UserRole {
   USER
@@ -205,17 +202,20 @@ enum UserRole {
 
 enum ApplicationStatus {
   Pabegynt
-  Ferdig
   Sendt
+  Motatt
+  Under_Behandling
+  Horing
+  Vedtakfattes
+  Endelig_Avgjorelse
+  Ferdig_behandlet 
 }
 
 enum ApplicationType {
   sma_byggeprosjekter
-  sma_byggeprosjekter_med_dispensasjon
   bruksendring
-  bruksendring_med_dispensasjon
-  melding_om_bygning_tilbygg_unntatt_soknadsplikt
-  melding_om_bygning_tilbygg_unntatt_soknadsplikt_med_dispensasjon
+
+  
 }
 
 

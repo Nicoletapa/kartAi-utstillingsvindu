@@ -1,7 +1,7 @@
-import { ApplicationType } from "@prisma/client";
+
 import { z } from "zod";
 
-
+// =============== TYPES ===============
 type SimplifiedUser = {
     name?: string | null;
     email?: string | null;
@@ -16,8 +16,7 @@ type SimplifiedUser = {
     municipality?: string | null;
 };
 
-
-
+// =============== SCHEMAS ===============
 const PropertyDetailsSchema = z.object({
   address: z.string().optional(),
   property_number: z.string().optional(),
@@ -32,68 +31,104 @@ const ApplicantDetailsSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(), 
- 
 });
 
+const DistancesSmaProsjekterSchema = z.object({
+  neighbor_boundary: z.string().optional(),
+  road_center: z.string().optional(),
+  nearest_building: z.string().optional(),
+  distance_train_tracks: z.string().optional(),
+  distance_water_sewer_pipes: z.string().optional(),
+  distance_high_voltage_lines: z.string().optional(),
+  distance_va: z.string().optional(),
+  mønehøyde: z.string().optional(),
+  gesimshøyde: z.string().optional(),
+  in_flood_risk_area: z.string().optional(),
+  protected_species_present: z.string().optional(),
+  cultural_heritage_site: z.string().optional()
+});
+
+const AttachmentsSchema = z.object({
+  plans_and_drawings: z.array(z.string()).optional(),
+  neighbor_notification: z.array(z.string()).optional(),
+  dispensation_documentation: z.string().optional(),
+  other_attachments: z.string().optional()
+});
+
+const RequirementsSchema = z.object({
+  situational_map: z.string().optional(),
+  allowed_utilization: z.string().optional(),      // Tillatt grad av utnytting (%)
+  property_net_area: z.string().optional(),        // Tomtens nettoareal (m²)
+  current_area: z.string().optional(),             // Areal av bygninger, konstruksjoner og parkering i dag (m²)
+  future_area: z.string().optional(),              // Areal av bygninger, konstruksjoner og parkering etterpå (m²)
+  utilization_after_project: z.string().optional() // Grad av utnytting etter prosjekt (%)
+});
+
+const Permissions = z.enum([
+  "Dispensasjon", 
+  "Tillatelse",
+  "Ingen av delene"
+]);
+
+const AccessChanges = z.object({
+  new_driveway: z.string().optional(),
+  road_type: z.string().optional()
+});
+
+const DistancesBruksEndringSchema = z.object({
+  neighbor_boundary_meters: z.string().optional(),
+  mønehøyde: z.string().optional(),
+  gesimshøyde: z.string().optional(),
+  takvinkel: z.string().optional(),
+  high_voltage: z.enum(["Yes", "No"]).optional(),
+  flood_landslide_risk: z.enum(["Yes", "No"]).optional(),
+  protected_building: z.enum(["Yes", "No"]).optional()
+}).optional();
+
+// Define a separate attachments schema for Bruksendring application
+const BruksendringAttachmentsSchema = z.object({
+  situation_map: z.string().optional(),
+  floor_plan: z.string().optional(),
+  section_drawing: z.string().optional(),
+  facade_drawings: z.string().optional(),
+  neighbor_notification: z.object({
+    notified: z.string().optional(),
+    comments: z.string().optional()
+  }).optional(),
+  dispensation_documentation: z.string().optional()
+});
+
+type BruksendringAttachmentsDetails = z.infer<typeof BruksendringAttachmentsSchema>;
+type DistancesBruksEndringDetails = z.infer<typeof DistancesBruksEndringSchema>;
 
 type PropertyDetails = z.infer<typeof PropertyDetailsSchema>;
 type ApplicantDetails = z.infer<typeof ApplicantDetailsSchema>;
-
+type DistancesDetails  = z.infer<typeof DistancesSmaProsjekterSchema>;
+type AttachmentsDetails = z.infer<typeof AttachmentsSchema>;
+type RequirementsDetails = z.infer<typeof RequirementsSchema>;
+type PermissionsDetails = z.infer<typeof Permissions>;
+type AccessChangesDetails = z.infer<typeof AccessChanges>;
 
 const FormSchemaSmaProsjekter = z.object({
   title: z.string().optional(),
   fields: z.object({
     property_details: PropertyDetailsSchema,
     applicant_details: ApplicantDetailsSchema,
-    application_types: z.array(z.object({
-      name: z.string().optional(),
-      description: z.string().optional()
-    })).optional(),
-    permissions: z.array(z.string()).optional(),
-    requirements: z.object({
-      situational_map: z.string().optional()
-    }).optional(),
-    distances: z.object({
-      neighbor_boundary: z.string().optional(),
-      road_center: z.string().optional(),
-      nearest_building: z.string().optional()
-    }).optional(),
-    environmental_conflicts: z.object({
-      near_tram_train_tracks: z.string().optional(),
-      near_water_sewer_pipes: z.string().optional(),
-      near_high_voltage_lines: z.string().optional(),
-      near_coast_river: z.string().optional(),
-      in_flood_risk_area: z.string().optional(),
-      protected_species_present: z.string().optional(),
-      cultural_heritage_site: z.string().optional()
-    }).optional(),
-    access_changes: z.object({
-      new_driveway: z.string().optional(),
-      road_type: z.string().optional()
-    }).optional(),
-    attachments: z.object({
-      plans_and_drawings: z.array(z.string()).optional(),
-      neighbor_notification: z.array(z.string()).optional(),
-      other_attachments: z.string().optional()
-    }).optional(),
+    description: z.string().optional(),
+    area_purpose: z.string().optional(),
+    distances: DistancesSmaProsjekterSchema,
+    requirements: RequirementsSchema,
+    permissions: z.array(Permissions).optional(),
+    access_changes: AccessChanges,
+    attachments: AttachmentsSchema,
   }).optional()
 });
-
 
 const FormSchemaBruksendring = z.object({
   title: z.string().optional(),
   fields: z.object({
     property_details: PropertyDetailsSchema,
     applicant_details: ApplicantDetailsSchema,
-    form_type: z.string().optional(),
-    description: z.string().optional(),
-    conditions: z.array(z.string()).optional(),
-    modifications: z.object({
-      interior_staircase: z.enum(["Yes", "No"]).optional(),
-      load_bearing_wall: z.enum(["Yes", "No"]).optional(),
-      window_door_exterior: z.enum(["Yes", "No"]).optional(),
-      other_physical_changes: z.enum(["Yes", "No"]).optional()
-    }).optional(),
     change_description: z.string().optional(),
     dispensation: z.object({
       needs_dispensation: z.enum([
@@ -102,30 +137,15 @@ const FormSchemaBruksendring = z.object({
         "No, I don't need it"
       ]).optional()
     }).optional(),
-    distances: z.object({
-      neighbor_boundary_meters: z.string().optional()
+    modifications: z.object({
+      interior_staircase: z.enum(["Yes", "No"]).optional(),
+      load_bearing_wall: z.enum(["Yes", "No"]).optional(),
+      window_door_exterior: z.enum(["Yes", "No"]).optional(),
+      other_physical_changes: z.enum(["Yes", "No"]).optional()
     }).optional(),
-    conflicts: z.object({
-      high_voltage: z.enum(["Yes", "No"]).optional(),
-      flood_landslide_risk: z.enum(["Yes", "No"]).optional(),
-      protected_building: z.enum(["Yes", "No"]).optional()
-    }).optional(),
-    access: z.object({
-      new_or_changed: z.enum(["Yes", "No"]).optional(),
-      road_type: z.enum(["National road", "County road", "Municipal road", "Private road"]).optional()
-    }).optional(),
-    attachments: z.object({
-      situation_map: z.enum(["Yes", "No"]).optional(),
-      floor_plan: z.enum(["Yes", "No"]).optional(),
-      section_drawing: z.enum(["Yes", "No"]).optional(),
-      facade_drawings: z.enum(["Yes", "No"]).optional(),
-      neighbor_notification: z.object({
-        notified: z.enum(["Yes", "No"]).optional(),
-        comments: z.string().optional()
-      }).optional(),
-      dispensation_documentation: z.enum(["Yes", "No"]).optional()
-    }).optional(),
-   
+    distances: DistancesBruksEndringSchema,
+    access: AccessChanges,
+    attachments: BruksendringAttachmentsSchema
   }).optional()
 });
 
@@ -133,9 +153,7 @@ const FormSchemaBruksendring = z.object({
 type Form = z.infer<typeof FormSchemaSmaProsjekter>;
 type FormBruksendring = z.infer<typeof FormSchemaBruksendring>;
 
-
-
-
+// =============== DEFAULT VALUES ===============
 function getDefaultPropertyDetails(): PropertyDetails {
   return {
     address: '',
@@ -153,7 +171,75 @@ function getDefaultApplicantDetails(): ApplicantDetails {
     name: '',
     phone: '',
     email: '',
-    
+  };
+}
+
+function getDefaultDistancesSmaProsjekter(): DistancesDetails {
+  return {
+    neighbor_boundary: '',
+    road_center: '',
+    nearest_building: '',
+    distance_train_tracks: '',
+    distance_water_sewer_pipes: '',
+    distance_high_voltage_lines: '',
+    distance_va: '',
+    mønehøyde: '',
+    gesimshøyde: '',
+    in_flood_risk_area: '',
+    protected_species_present: '',
+    cultural_heritage_site: ''
+  };
+}
+
+function getDefaultRequirements(): RequirementsDetails {
+  return {
+    situational_map: '',
+    allowed_utilization: '',
+    property_net_area: '',
+    current_area: '',
+    future_area: '',
+    utilization_after_project: ''
+  };
+}
+
+function getDefaultAttachments(): AttachmentsDetails {
+  return {
+    plans_and_drawings: [],
+    neighbor_notification: [],
+    dispensation_documentation: '',
+    other_attachments: ''
+  };
+}
+function getDefaultAccessChanges(): AccessChangesDetails {
+  return {
+    new_driveway: '',
+    road_type: ''
+  };
+}
+
+function getDefaultBruksendringAttachments(): BruksendringAttachmentsDetails {
+  return {
+    situation_map: "No",
+    floor_plan: "No",
+    section_drawing: "No",
+    facade_drawings: "No",
+    neighbor_notification: {
+      notified: "No",
+      comments: ""
+    },
+    dispensation_documentation: "No"
+  };
+}
+
+function getDefaultDistancesBruksendring(): DistancesBruksEndringDetails {
+  return {
+    neighbor_boundary_meters: '',
+    mønehøyde: '',
+    gesimshøyde: '',
+    takvinkel: '',
+    high_voltage: "No",
+    flood_landslide_risk: "No",
+    protected_building: "No"
   };
 }
 
@@ -166,207 +252,331 @@ function mergeUserDataWithDefaults(sessionUser: SimplifiedUser): ApplicantDetail
     name: sessionUser.name || defaults.name,
     email: sessionUser.email || defaults.email,
     phone: sessionUser.phone || defaults.phone,
-   
   };
 }
 
 function mergePropertyDataWithDefaults(sessionUser: SimplifiedUser): PropertyDetails {
-    const defaults = getDefaultPropertyDetails();
-    
-    if (!sessionUser) return defaults;
-    
-    return {
-      address: sessionUser.address || defaults.address,
-      property_number: sessionUser.property_number || defaults.property_number,
-      usage_number: sessionUser.usage_number || defaults.usage_number,
-      postal_code: sessionUser.postal_code || defaults.postal_code,
-      municipality: sessionUser.municipality || defaults.municipality,
-      lease_number: sessionUser.lease_number || defaults.lease_number,
-      section_number: sessionUser.section_number || defaults.section_number
-    };
-  }
+  const defaults = getDefaultPropertyDetails();
+  
+  if (!sessionUser) return defaults;
+  
+  return {
+    address: sessionUser.address || defaults.address,
+    property_number: sessionUser.property_number || defaults.property_number,
+    usage_number: sessionUser.usage_number || defaults.usage_number,
+    postal_code: sessionUser.postal_code || defaults.postal_code,
+    municipality: sessionUser.municipality || defaults.municipality,
+    lease_number: sessionUser.lease_number || defaults.lease_number,
+    section_number: sessionUser.section_number || defaults.section_number
+  };
+}
 
-
-function createApplicationFormSmaProsjekter(title: string, user?:SimplifiedUser) {
+// Base form values that are common to all types
+function getBaseFormValues(title: string, user?: SimplifiedUser) {
   const applicantDetails = user ? mergeUserDataWithDefaults(user) : getDefaultApplicantDetails();
   const propertyDetails = user ? mergePropertyDataWithDefaults(user) : getDefaultPropertyDetails();
-
   
   return {
     title,
     fields: {
-      application_types: [{ name: '', description: '' }],
-      permissions: [],
-      requirements: { situational_map: '' },
       property_details: propertyDetails,
       applicant_details: applicantDetails,
-      municipal_plans: [],
-      construction_size: { calculation_methods: [] },
-      distances: {
-        neighbor_boundary: '',
-        road_center: '',
-        nearest_building: ''
-      },
-      environmental_conflicts: {
-        near_tram_train_tracks: '',
-        near_water_sewer_pipes: '',
-        near_high_voltage_lines: '',
-        near_coast_river: '',
-        in_flood_risk_area: '',
-        protected_species_present: '',
-        cultural_heritage_site: ''
-      },
-      access_changes: {
-        new_driveway: '',
-        road_type: ''
-      },
-      attachments: {
-        plans_and_drawings: [],
-        neighbor_notification: [],
-        other_attachments: ''
-      }
+    }
+  };
+}
+
+// Updated create functions to use the base form values
+function createApplicationFormSmaProsjekter(title: string, user?:SimplifiedUser) {
+  const baseForm = getBaseFormValues(title, user);
+  
+  return {
+    ...baseForm,
+    fields: {
+      ...baseForm.fields,
+      description: '',
+      area_purpose: '',
+      permissions: [],
+      requirements: getDefaultRequirements(),
+      distances: getDefaultDistancesSmaProsjekter(),
+      access_changes: getDefaultAccessChanges(),
+      attachments: getDefaultAttachments()
     }
   } as Form;
 }
 
-
-
 function createApplicationFormBruksendring(title: string, user?: SimplifiedUser) {
-  const applicantDetails = user ? mergeUserDataWithDefaults(user) : getDefaultApplicantDetails();
-  const propertyDetails = user ? mergePropertyDataWithDefaults(user) : getDefaultPropertyDetails();
-
+  const baseForm = getBaseFormValues(title, user);
   
   return {
-    title,
+    ...baseForm,
     fields: {
-      form_type: "Application for Change of Use",
-      description: "This form is used to change rooms in the residence from additional parts to main parts or vice versa.",
-      conditions: ["Cannot be used if the changes require a responsible applicant."],
+      ...baseForm.fields,
+      change_description: '',
+      dispensation: {
+        needs_dispensation: "No, I don't need it"
+      },
       modifications: {
         interior_staircase: "No",
         load_bearing_wall: "No",
         window_door_exterior: "No",
         other_physical_changes: "No"
       },
-      change_description: "",
-      dispensation: {
-        needs_dispensation: "No, I don't need it"
-      },
-      property_details: propertyDetails,
-      applicant_details: applicantDetails,
-      distances: {
-        neighbor_boundary_meters: ""
-      },
-      conflicts: {
-        high_voltage: "No",
-        flood_landslide_risk: "No",
-        protected_building: "No"
-      },
-      access: {
-        new_or_changed: "No",
-        road_type: "Municipal road"
-      },
-      attachments: {
-        situation_map: "No",
-        floor_plan: "No",
-        section_drawing: "No",
-        facade_drawings: "No",
-        neighbor_notification: {
-          notified: "No",
-          comments: ""
-        },
-        dispensation_documentation: "No"
-      },
-      
+      distances: getDefaultDistancesBruksendring(),
+      access: getDefaultAccessChanges(),
+      attachments: getDefaultBruksendringAttachments()
     }
   } as FormBruksendring;
 }
 
-
-
-
+// =============== FIELD GENERATORS ===============
 function generatePropertyFields(prefix: string): Array<{title: string; type: string; name: string}> {
-    const fieldPrefix = `fields.${prefix}`;
-    
-    return [
-      {
-        title: "Address",
-        type: "text",
-        name: `${fieldPrefix}.address`
-      },
-      {
-        title: "Property Number",
-        type: "text",
-        name: `${fieldPrefix}.property_number`
-      },
-      {
-        title: "Usage Number",
-        type: "text",
-        name: `${fieldPrefix}.usage_number`
-      },
-      {
-        title: "Postal Code and Place",
-        type: "text",
-        name: `${fieldPrefix}.postal_code`
-      },
-      {
-        title: "Municipality",
-        type: "text",
-        name: `${fieldPrefix}.municipality`
-      },
-      {
-        title: "Lease Number",
-        type: "text",
-        name: `${fieldPrefix}.lease_number`
-      },
-      {
-        title: "Section Number",
-        type: "text",
-        name: `${fieldPrefix}.section_number`
-      }
-    ];
-  }
+  const fieldPrefix = `fields.${prefix}`;
   
+  return [
+    {
+      title: "Address",
+      type: "text",
+      name: `${fieldPrefix}.address`
+    },
+    {
+      title: "Property Number",
+      type: "text",
+      name: `${fieldPrefix}.property_number`
+    },
+    {
+      title: "Usage Number",
+      type: "text",
+      name: `${fieldPrefix}.usage_number`
+    },
+    {
+      title: "Postal Code and Place",
+      type: "text",
+      name: `${fieldPrefix}.postal_code`
+    },
+    {
+      title: "Municipality",
+      type: "text",
+      name: `${fieldPrefix}.municipality`
+    },
+    {
+      title: "Lease Number",
+      type: "text",
+      name: `${fieldPrefix}.lease_number`
+    },
+    {
+      title: "Section Number",
+      type: "text",
+      name: `${fieldPrefix}.section_number`
+    }
+  ];
+}
+
+function generateApplicantFields(prefix: string): Array<{title: string; type: string; name: string}> {
+  const fieldPrefix = `fields.${prefix}`;
   
-  function generateApplicantFields(prefix: string): Array<{title: string; type: string; name: string}> {
-    const fieldPrefix = `fields.${prefix}`;
-    
-    return [
-      {
-        title: "Full Name",
-        type: "text",
-        name: `${fieldPrefix}.name`
-      },
-      {
-        title: "Phone",
-        type: "tel",
-        name: `${fieldPrefix}.phone`
-      },
-      {
-        title: "Email",
-        type: "email",
-        name: `${fieldPrefix}.email`
-      },
-      
-    ];
-  }
+  return [
+    {
+      title: "Full Name",
+      type: "text",
+      name: `${fieldPrefix}.name`
+    },
+    {
+      title: "Phone",
+      type: "tel",
+      name: `${fieldPrefix}.phone`
+    },
+    {
+      title: "Email",
+      type: "email",
+      name: `${fieldPrefix}.email`
+    },
+  ];
+}
 
-
-
-function generateFieldsFromSchema() {
+// Common base fields that appear in all form types
+function getBaseFormFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
-  // Application Types section
+  // Property Details - common to all forms
+  fields = fields.concat(generatePropertyFields("property_details"));
+   
+  // Applicant Details - common to all forms  
+  fields = fields.concat(generateApplicantFields("applicant_details"));
+  
+  // Basic attachment fields - common to all forms
   fields.push({
-    title: "Type of Project",
-    type: "select",
-    name: "fields.application_types.0.name"
+    title: "Situation Map",
+    type: "radio",
+    name: "fields.attachments.situation_map"
   });
   
+  return fields;
+}
+
+// Update field generators for each section
+function generateDistanceFields(prefix: string): Array<{title: string; type: string; name: string}> {
+  const fieldPrefix = `fields.${prefix}`;
+  
+  return [
+    {
+      title: "Distance to Neighbor Boundary (meters)",
+      type: "text",
+      name: `${fieldPrefix}.neighbor_boundary`
+    },
+    {
+      title: "Distance to Road Center (meters)",
+      type: "text",
+      name: `${fieldPrefix}.road_center`
+    },
+    {
+      title: "Distance to Nearest Building (meters)",
+      type: "text",
+      name: `${fieldPrefix}.nearest_building`
+    },
+    {
+      title: "Distance to Train/Tram Tracks",
+      type: "text",
+      name: `${fieldPrefix}.distance_train_tracks`
+    },
+    {
+      title: "Distance to Water/Sewer Pipes",
+      type: "text",
+      name: `${fieldPrefix}.distance_water_sewer_pipes`
+    },
+    {
+      title: "Distance to High Voltage Lines",
+      type: "text",
+      name: `${fieldPrefix}.distance_high_voltage_lines`
+    },
+    {
+      title: "Distance to VA",
+      type: "text",
+      name: `${fieldPrefix}.distance_va`
+    },
+    {
+      title: "Mønehøyde",
+      type: "text",
+      name: `${fieldPrefix}.mønehøyde`
+    },
+    {
+      title: "Gesimshøyde",
+      type: "text",
+      name: `${fieldPrefix}.gesimshøyde`
+    },
+    {
+      title: "In Flood Risk Area",
+      type: "radio",
+      name: `${fieldPrefix}.in_flood_risk_area`
+    },
+    {
+      title: "Protected Species Present",
+      type: "radio",
+      name: `${fieldPrefix}.protected_species_present`
+    },
+    {
+      title: "Cultural Heritage Site",
+      type: "radio",
+      name: `${fieldPrefix}.cultural_heritage_site`
+    }
+  ];
+}
+
+function generateRequirementsFields(prefix: string): Array<{title: string; type: string; name: string}> {
+  const fieldPrefix = `fields.${prefix}`;
+  
+  return [
+    {
+      title: "Situational Map",
+      type: "text",
+      name: `${fieldPrefix}.situational_map`
+    },
+    {
+      title: "Tillatt grad av utnytting (%)",
+      type: "text",
+      name: `${fieldPrefix}.allowed_utilization`
+    },
+    {
+      title: "Tomtens nettoareal (m²)",
+      type: "text",
+      name: `${fieldPrefix}.property_net_area`
+    },
+    {
+      title: "Areal av bygninger, konstruksjoner og parkering i dag (m²)",
+      type: "text",
+      name: `${fieldPrefix}.current_area`
+    },
+    {
+      title: "Areal av bygninger, konstruksjoner og parkering etterpå (m²)",
+      type: "text",
+      name: `${fieldPrefix}.future_area`
+    },
+    {
+      title: "Grad av utnytting etter prosjekt (%)",
+      type: "text",
+      name: `${fieldPrefix}.utilization_after_project`
+    }
+  ];
+}
+
+function generateAccessChangesFields(prefix: string): Array<{title: string; type: string; name: string}> {
+  const fieldPrefix = `fields.${prefix}`;
+  
+  return [
+    {
+      title: "New Driveway Required",
+      type: "radio",
+      name: `${fieldPrefix}.new_driveway`
+    },
+    {
+      title: "Road Type",
+      type: "select",
+      name: `${fieldPrefix}.road_type`
+    }
+  ];
+}
+
+function generateAttachmentsFields(prefix: string): Array<{title: string; type: string; name: string}> {
+  const fieldPrefix = `fields.${prefix}`;
+  
+  return [
+    {
+      title: "Plans and Drawings",
+      type: "select",
+      name: `${fieldPrefix}.plans_and_drawings.0`
+    },
+    {
+      title: "Neighbor Notification",
+      type: "select",
+      name: `${fieldPrefix}.neighbor_notification.0`
+    },
+    {
+      title: "Dispensation Documentation",
+      type: "text",
+      name: `${fieldPrefix}.dispensation_documentation`
+    },
+    {
+      title: "Other Attachments",
+      type: "text",
+      name: `${fieldPrefix}.other_attachments`
+    }
+  ];
+}
+
+// Small Projects specific fields - updated to use modular field generators
+function getSmallProjectsFields(): Array<{title: string; type: string; name: string}> {
+  let fields: Array<{title: string; type: string; name: string}> = [];
+  
+  // Basic project details
   fields.push({
     title: "Project Description",
     type: "textarea",
-    name: "fields.application_types.0.description"
+    name: "fields.description"
+  });
+  
+  fields.push({
+    title: "Area Purpose",
+    type: "select",
+    name: "fields.area_purpose"
   });
   
   // Permissions section
@@ -376,146 +586,23 @@ function generateFieldsFromSchema() {
     name: "fields.permissions.0"
   });
   
-  // Requirements section
-  fields.push({
-    title: "Situational Map",
-    type: "text",
-    name: "fields.requirements.situational_map"
-  });
+  // Add requirements section fields
+  fields = fields.concat(generateRequirementsFields("requirements"));
   
-
-
-
+  // Add distances section fields
+  fields = fields.concat(generateDistanceFields("distances"));
   
-  // Applicant Details section
-  fields = fields.concat(generatePropertyFields("property_details"));
+  // Add access changes fields
+  fields = fields.concat(generateAccessChangesFields("access_changes"));
   
-  
-
-  // Municipal Plans section
-  fields = fields.concat(generateApplicantFields("applicant_details"));
-
-  
-  fields.push({
-    title: "Municipal Plan Type",
-    type: "select",
-    name: "fields.municipal_plans.0"
-  });
-  
-  // Construction Size section
-  fields.push({
-    title: "Calculation Method",
-    type: "select",
-    name: "fields.construction_size.calculation_methods.0"
-  });
-  
-  // Distances section
-  fields.push({
-    title: "Distance to Neighbor Boundary (meters)",
-    type: "text",
-    name: "fields.distances.neighbor_boundary"
-  });
-  
-  fields.push({
-    title: "Distance to Road Center (meters)",
-    type: "text",
-    name: "fields.distances.road_center"
-  });
-  
-  fields.push({
-    title: "Distance to Nearest Building (meters)",
-    type: "text",
-    name: "fields.distances.nearest_building"
-  });
-  
-  // Environmental Conflicts section
-  fields.push({
-    title: "Near Train/Tram Tracks",
-    type: "radio",
-    name: "fields.environmental_conflicts.near_tram_train_tracks"
-  });
-  
-  fields.push({
-    title: "Near Water/Sewer Pipes",
-    type: "radio",
-    name: "fields.environmental_conflicts.near_water_sewer_pipes"
-  });
-  
-  fields.push({
-    title: "Near High Voltage Lines",
-    type: "radio",
-    name: "fields.environmental_conflicts.near_high_voltage_lines"
-  });
-  
-  fields.push({
-    title: "Near Coast/River",
-    type: "radio",
-    name: "fields.environmental_conflicts.near_coast_river"
-  });
-  
-  fields.push({
-    title: "In Flood Risk Area",
-    type: "radio",
-    name: "fields.environmental_conflicts.in_flood_risk_area"
-  });
-  
-  fields.push({
-    title: "Protected Species Present",
-    type: "radio",
-    name: "fields.environmental_conflicts.protected_species_present"
-  });
-  
-  fields.push({
-    title: "Cultural Heritage Site",
-    type: "radio",
-    name: "fields.environmental_conflicts.cultural_heritage_site"
-  });
-  
-  // Access Changes section
-  fields.push({
-    title: "New Driveway Required",
-    type: "radio",
-    name: "fields.access_changes.new_driveway"
-  });
-  
-  fields.push({
-    title: "Road Type",
-    type: "select",
-    name: "fields.access_changes.road_type"
-  });
-  
-  // Attachments section
-  fields.push({
-    title: "Plans and Drawings",
-    type: "select",
-    name: "fields.attachments.plans_and_drawings.0"
-  });
-  
-  fields.push({
-    title: "Neighbor Notification",
-    type: "select",
-    name: "fields.attachments.neighbor_notification.0"
-  });
-  
-  fields.push({
-    title: "Dispensation Requests",
-    type: "select",
-    name: "fields.attachments.dispensation_requests.0"
-  });
-  
-  fields.push({
-    title: "Other Attachments",
-    type: "text",
-    name: "fields.attachments.other_attachments"
-  });
-  
- 
+  // Add attachments fields
+  fields = fields.concat(generateAttachmentsFields("attachments"));
   
   return fields;
 }
 
-// Generate field definitions for Bruksendring
-function generateFieldsFromSchemaBruksendring() {
+// Change of Use specific fields - updated to match schema
+function getChangeOfUseFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
   // Basic information
@@ -525,7 +612,14 @@ function generateFieldsFromSchemaBruksendring() {
     name: "fields.change_description"
   });
   
-  // Modifications checkboxes
+  // Dispensation section
+  fields.push({
+    title: "Need Dispensation",
+    type: "select",
+    name: "fields.dispensation.needs_dispensation"
+  });
+  
+  // Modifications section
   fields.push({
     title: "Interior Staircase",
     type: "radio",
@@ -550,60 +644,53 @@ function generateFieldsFromSchemaBruksendring() {
     name: "fields.modifications.other_physical_changes"
   });
   
-  // Dispensation
-  fields.push({
-    title: "Need Dispensation",
-    type: "select",
-    name: "fields.dispensation.needs_dispensation"
-  });
-
-  
-  // Applicant details
-  fields = fields.concat(generatePropertyFields("property_details"));
-  fields = fields.concat(generateApplicantFields("applicant_details"));
-  
-
-  // Distances
-  
+  // Distances for Bruksendring
   fields.push({
     title: "Distance to Neighbor Boundary (meters)",
     type: "text",
     name: "fields.distances.neighbor_boundary_meters"
   });
   
-  // Conflicts
+  fields.push({
+    title: "Mønehøyde",
+    type: "text",
+    name: "fields.distances.mønehøyde"
+  });
+  
+  fields.push({
+    title: "Gesimshøyde",
+    type: "text",
+    name: "fields.distances.gesimshøyde"
+  });
+  
+  fields.push({
+    title: "Takvinkel",
+    type: "text",
+    name: "fields.distances.takvinkel"
+  });
+  
   fields.push({
     title: "Near High Voltage Lines",
     type: "radio",
-    name: "fields.conflicts.high_voltage"
+    name: "fields.distances.high_voltage"
   });
   
   fields.push({
     title: "In Flood/Landslide Risk Area",
     type: "radio",
-    name: "fields.conflicts.flood_landslide_risk"
+    name: "fields.distances.flood_landslide_risk"
   });
   
   fields.push({
     title: "Protected Building",
     type: "radio",
-    name: "fields.conflicts.protected_building"
+    name: "fields.distances.protected_building"
   });
   
-  // Access
-  fields.push({
-    title: "New or Changed Access",
-    type: "radio",
-    name: "fields.access.new_or_changed"
-  });
+  // Access section - reuse the same field generator with a different prefix
+  fields = fields.concat(generateAccessChangesFields("access"));
   
-  fields.push({
-    title: "Road Type",
-    type: "select",
-    name: "fields.access.road_type"
-  });
-  
-  // Attachments
+  // Attachments specific to change of use
   fields.push({
     title: "Situation Map",
     type: "radio",
@@ -646,44 +733,22 @@ function generateFieldsFromSchemaBruksendring() {
     name: "fields.attachments.dispensation_documentation"
   });
   
- 
-  
   return fields;
 }
 
-
-function getSchemaForApplicationType(applicationType: ApplicationType, user?: SimplifiedUser) {
-  switch (applicationType) {
-    case ApplicationType.bruksendring:
-    case ApplicationType.bruksendring_med_dispensasjon:
-      return {
-        schema: FormSchemaBruksendring,
-        defaultValues: createApplicationFormBruksendring("Application for Change of Use", user)
-      };
-    
-    case ApplicationType.sma_byggeprosjekter:
-    case ApplicationType.sma_byggeprosjekter_med_dispensasjon:
-    default:
-      return {
-        schema: FormSchemaSmaProsjekter,
-        defaultValues: createApplicationFormSmaProsjekter("Application for Small Building Projects", user)
-      };
-  }
+// Generate fields using the improved modular approach
+function generateFieldsFromSchema() {
+  return [...getBaseFormFields(), ...getSmallProjectsFields()];
 }
 
-// Get fields for application type
-function getFieldsForApplicationType(applicationType: ApplicationType) {
-  switch (applicationType) {
-    case ApplicationType.bruksendring:
-    case ApplicationType.bruksendring_med_dispensasjon:
-      return generateFieldsFromSchemaBruksendring();
-    
-    case ApplicationType.sma_byggeprosjekter:
-    case ApplicationType.sma_byggeprosjekter_med_dispensasjon:
-    default:
-      return generateFieldsFromSchema();
-  }
+function generateFieldsFromSchemaBruksendring() {
+  return [...getBaseFormFields(), ...getChangeOfUseFields()];
 }
+
+
+
+
+
 
 // Export types and functions
 export { 
@@ -691,11 +756,11 @@ export {
   FormSchemaBruksendring,
   type Form, 
   type FormBruksendring,
+  type SimplifiedUser,
+  type DistancesDetails,
   createApplicationFormSmaProsjekter, 
   createApplicationFormBruksendring,
   generateFieldsFromSchema,
   generateFieldsFromSchemaBruksendring,
-  getSchemaForApplicationType,
-  getFieldsForApplicationType
+  getDefaultDistancesSmaProsjekter
 };
-

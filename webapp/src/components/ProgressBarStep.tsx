@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
@@ -19,7 +19,8 @@ import Step6_0 from "./steps/Step6_0";
 import Step6_1 from "./steps/Step6_1";
 import Step6_2 from "./steps/Step6_2";
 import { api } from "~/trpc/react";
-
+import { toast } from "react-hot-toast";
+import { ApplicationType } from "@prisma/client";
 
 type StepComponentsType = {
     [key: number]: {
@@ -65,32 +66,86 @@ export const steps = [
 ];
 interface ProgressBarStepProps {
     applicationID?: number;
-  }
+}
 
-export default function ProgressBarStep({applicationID} : ProgressBarStepProps) {
+export default function ProgressBarStep({ applicationID }: ProgressBarStepProps) {
     const router = useRouter();
     const [currentOverallStep, setCurrentOverallStep] = useState(0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
+    const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
 
-    const { data: application } = api.application.getApplication.useQuery(
+    // Fetch application data
+    const { data: application, isLoading: isLoadingApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
         { enabled: !!applicationID }
-      );
+    );
 
-      console.log(application?.applicationType);
-
-    const [formData, setFormData] = useState({
-        size: '',
-        material: '',
-        ridgeHeight: '',
-        eavesHeight: '',
-        roofAngle: '',
-        distanceToNeighbor: '',
-        description: '',
-        impactReason: '',
+    // Submit application mutation
+    const submitApplication = api.application.submitApplication.useMutation({
+        onSuccess: () => {
+            toast.success("Application submitted successfully");
+            router.push("/atlas-app");
+        },
+        onError: (error) => {
+            toast.error(`Error submitting application: ${error.message}`);
+        }
     });
 
+    // Load data from application if it exists
+    useEffect(() => {
+        if (!application) return;
+        
+        // Update application type
+        setAppType(application.applicationType);
+        
+        // Create a map of field names to values
+        const fieldsMap: Record<string, string> = {};
+        application.application_fields.forEach(field => {
+            fieldsMap[field.fieldName] = field.fieldValue;
+        });
+        
+        // Check validity of form data
+        const isValid = 
+            fieldsMap['description']?.trim() !== '' &&
+            fieldsMap['area_purpose']?.trim() !== '' &&
+            fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
+            fieldsMap['distances.mønehøyde']?.trim() !== '' &&
+            fieldsMap['distances.gesimshøyde']?.trim() !== '';
+            
+        setIsStep1_0Valid(isValid);
+    }, [application]);
+
+    // Handle next button click
+    const handleNext = async () => {
+        // We should always have an applicationID now
+        if (!applicationID) {
+            console.error("No applicationID found, this shouldn't happen");
+            return;
+        }
+        
+        // Handle submission
+        if (currentStep === 4 && currentSubstep === 0) {
+            const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
+            if (!confirmSend) return;
+            
+            try {
+                await submitApplication.mutateAsync({ applicationID });
+            } catch (error) {
+                console.error("Error submitting application:", error);
+            }
+            return;
+        }
+        
+        // Move to next step
+        if (currentOverallStep < totalSubsteps - 1) {
+            setCurrentOverallStep(currentOverallStep + 1);
+        } else if (!lastStepCompleted) {
+            setLastStepCompleted(true);
+        }
+    };
+
+    // Rest of your component remains the same
     const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
 
     const getCurrentStepInfo = (step = currentOverallStep) => {
@@ -117,17 +172,6 @@ export default function ProgressBarStep({applicationID} : ProgressBarStepProps) 
     };
 
     const { currentStep, currentSubstep } = getCurrentStepInfo(currentOverallStep);
-
-    const handleNext = () => {
-        if (currentStep === 4 && currentSubstep === 0) {
-            const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
-            if (!confirmSend) return;
-        } if (currentOverallStep < totalSubsteps - 1) {
-            setCurrentOverallStep(currentOverallStep + 1);
-        } else if (!lastStepCompleted) {
-            setLastStepCompleted(true);
-        }
-    };
 
     const handlePrev = () => {
         if (currentOverallStep === 0) {
@@ -159,7 +203,9 @@ export default function ProgressBarStep({applicationID} : ProgressBarStepProps) 
 
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep] || null;
-    const isNextButtonDisabled = currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid;
+    const isNextButtonDisabled = 
+        (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || 
+        submitApplication.isLoading;
 
     return (
         <div className="container mx-auto py-6 px-4 flex flex-col">
@@ -169,16 +215,24 @@ export default function ProgressBarStep({applicationID} : ProgressBarStepProps) 
 
             <div className="flex space-x-8 flex-1">
                 <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
-                {CurrentStepComponent && (
+                {isLoadingApplication ? (
+                    <div className="w-full flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                ) : CurrentStepComponent && (
                     <CurrentStepComponent
                         onValidityChange={setIsStep1_0Valid}
-                        formData={formData}
-                        setFormData={setFormData}
-                    />)}
+                        applicationID={applicationID}
+                    />
+                )}
             </div>
 
             <div className="flex justify-between mt-8 gap-4">
-                <Button onClick={handlePrev} className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44 ">
+                <Button 
+                    onClick={handlePrev} 
+                    className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
+                    disabled={submitApplication.isLoading}
+                >
                     <ArrowLeft size={18} className="mr-2" />
                     Tilbake
                 </Button>
@@ -186,11 +240,21 @@ export default function ProgressBarStep({applicationID} : ProgressBarStepProps) 
                     {isNextButtonDisabled && (
                         <div className="flex items-center mr-4 text-red-500 text-sm">
                             <AlertCircle size={16} className="mr-2 flex-shrink-0" /> 
-                            <span>Alle felt må fylles ut før du kan gå videre</span>
+                            <span>
+                                {submitApplication.isLoading 
+                                    ? 'Vennligst vent...'
+                                    : 'Alle felt må fylles ut før du kan gå videre'}
+                            </span>
                         </div>
                     )}
-                    <Button onClick={handleNext} className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
-                        disabled={isNextButtonDisabled}>
+                    <Button 
+                        onClick={handleNext} 
+                        disabled={isNextButtonDisabled}
+                        className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
+                    >
+                        {submitApplication.isLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
+                        ) : null}
                         {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
                         <ArrowRight size={18} className="ml-2" />
                     </Button>

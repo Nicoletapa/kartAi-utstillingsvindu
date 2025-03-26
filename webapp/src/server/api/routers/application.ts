@@ -1,4 +1,4 @@
-import {   ApplicationStatus, ApplicationType } from "@prisma/client";
+import { ApplicationStatus, ApplicationType } from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
 
@@ -9,9 +9,11 @@ export const applicationRouter = createTRPCRouter({
     .input(
       z.object({
         applicationType: z.nativeEnum(ApplicationType),
+        subTypeId: z.string(),
         submissionDate: z.date(),
-        updatedDate: z.date(),
-        status: z.nativeEnum(ApplicationStatus).default("Pabegynt"),
+        updatedDate: z.date().optional(),
+        status: z.nativeEnum(ApplicationStatus).optional().default("Pabegynt"),
+
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -36,12 +38,13 @@ export const applicationRouter = createTRPCRouter({
       const res = await db.application.create({
         data: {
           applicationType: input.applicationType,
-          submissionDate: input.submissionDate,
-          updatedDate: input.updatedDate,
-          status: input.status,
-          user: {
-            connect: {
-              id: userId,
+        subTypeId: input.subTypeId,
+        updatedDate: input.updatedDate || new Date(),
+        submissionDate: input.submissionDate, // Ensure this is passed through
+        status: input.status || "Pabegynt",
+        user: {
+          connect: {
+            id: ctx.session.user.id,
             },
           }
         }
@@ -204,19 +207,42 @@ export const applicationRouter = createTRPCRouter({
         throw new Error("Not authorized to update this application");
       }
       
-      const res = await db.application_field.create({
-        data: {
+      // Check if field already exists
+      const existingField = await db.application_field.findFirst({
+        where: {
           applicationID: input.applicationID,
           fieldName: input.fieldName,
-          fieldValue: input.fieldValue, 
-          createdDate: new Date(),
-          updatedDate: new Date(),
-        },
+        }
       });
+      
+      let res;
+      
+      if (existingField) {
+        // Update existing field
+        res = await db.application_field.update({
+          where: {
+            application_fieldID: existingField.application_fieldID
+          },
+          data: {
+            fieldValue: input.fieldValue,
+            updatedDate: new Date(),
+          },
+        });
+      } else {
+        // Create new field
+        res = await db.application_field.create({
+          data: {
+            applicationID: input.applicationID,
+            fieldName: input.fieldName,
+            fieldValue: input.fieldValue, 
+            createdDate: new Date(),
+            updatedDate: new Date(),
+          },
+        });
+      }
 
       return res;
     }),
-
 
     
   // Submit application (change status to Sendt)

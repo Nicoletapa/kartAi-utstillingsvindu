@@ -2,7 +2,7 @@
 
 import { ApplicationTemplate } from "~/components/ApplicationTemplate";
 import { ApplicationType } from "@prisma/client";
-import { useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { useEffect, useState } from "react";
@@ -15,7 +15,6 @@ type TestSoknadProps = {
 
 export default function TestSoknad({ applicationID, isNew = false }: TestSoknadProps) {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<ApplicationType | null>(null);
@@ -27,7 +26,7 @@ export default function TestSoknad({ applicationID, isNew = false }: TestSoknadP
   const createApplication = api.application.createApplication.useMutation({
     onSuccess: (data) => {
       // Navigate to the application page with the created ID
-      router.push(`/atlas-app/SoknadTest/${data.applicationID}?type=${data.applicationType}`);
+      router.push(`/atlas-app/i-soknad/${data.applicationID}?type=${data.applicationType}`);
     },
     onError: (error) => {
       toast.error(`Failed to create application: ${error.message}`);

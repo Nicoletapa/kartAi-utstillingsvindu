@@ -1,9 +1,36 @@
 import { ApplicationType } from "@prisma/client";
 
+// Main application type display names
 export const APPLICATION_TYPE_DISPLAY_NAMES: Record<string, string> = {
   [ApplicationType.sma_byggeprosjekter]: "Små byggeprosjekter",
-  [ApplicationType.sma_byggeprosjekter_med_dispensasjon]: "Små byggeprosjekter med dispensasjon",
   [ApplicationType.bruksendring]: "Bruksendring",
-  [ApplicationType.bruksendring_med_dispensasjon]: "Bruksendring med dispensasjon",
-  
+};
+
+// Subtypes for each main application type
+export interface SubType {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export const APPLICATION_SUBTYPES: Record<ApplicationType, SubType[]> = {
+  [ApplicationType.sma_byggeprosjekter]: [
+    {
+      id: "bygge",
+      name: "Bygge",
+      description: "For nye byggverk, tilbygg eller påbygg"
+    },
+    {
+      id: "rive",
+      name: "Rive",
+      description: "For riving av eksisterende byggverk"
+    }
+  ],
+  [ApplicationType.bruksendring]: [
+    {
+      id: "bruksendring",
+      name: "Bruksendring",
+      description: "For endring av bruksformål for eksisterende bygninger"
+    }
+  ]
 };
