@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
 
-const Step2_1 = () => {
+const BruksendreStep2_1 = () => {
     const [openModal, setOpenModal] = useState<boolean>(false);
         
     const handleOpenModal = () => setOpenModal(true);
@@ -52,4 +52,4 @@ const Step2_1 = () => {
   )
 }
 
-export default Step2_1
+export default BruksendreStep2_1

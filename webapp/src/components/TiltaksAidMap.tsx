@@ -308,13 +308,7 @@ const TiltaksAidMap = ({
   }, []);
 
   return (
-    <div className='flex flex-col w-full shadow-lg'>
-      {/* <PropertySearchBar
-        searchInput={searchInput}
-        onSearchInputChange={setSearchInput}
-        onSearch={() => handlePropertySearch()}
-        errorMessage={errorMessage}
-      /> */}
+    <div className='flex flex-col w-full'>
       {errorMessage && (
         <div className="text-red-500 mb-4 p-2 bg-red-50 rounded">{errorMessage}</div>
       )}

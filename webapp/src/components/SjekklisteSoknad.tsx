@@ -1,14 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Check } from "lucide-react";
-import { steps } from "./ProgressBarStep";
 import { cn } from "~/lib/utils";
+import {
+  Step1_0, Step2_0, Step2_1, Step2_2,
+  Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0,
+  Step6_0, Step6_1, Step6_2,
+} from "./steps";
+import {
+  BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
+  BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, BruksendreStep4_1, BruksendreStep5_0,
+  BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
+} from "./bruksendreSteps";
 
 interface SjekklisteSoknadProps {
   currentStep: number;
   currentSubstep: number;
 }
+
+type StepComponentsType = {
+  [key: number]: {
+      [key: number]: React.ComponentType<any>;
+  };
+};
+
+
 
 export default function SjekklisteSoknad({ currentStep, currentSubstep }: SjekklisteSoknadProps) { 
   const sjekkliste: Record<number, string[]> = {
@@ -19,13 +37,87 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep }: Sjekkl
     5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
     6: ["Final submission"] 
   };
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const isByggeorRive = pathname === "/atlas-app/i-soknad/bygge-eller-rive";
+  const isBruksendre = pathname === "/atlas-app/i-soknad/bruksendring";
+
+
+const stepComponents: StepComponentsType = isByggeorRive ? {
+  1: {
+      0: Step1_0,
+  },
+  2: {
+      0: Step2_0,
+      1: Step2_1,
+      2: Step2_2,
+  },
+  3: {
+      0: Step3_0,
+      1: Step3_1,
+      2: Step3_2,
+  },
+  4: {
+      0: Step4_0,
+      1: Step4_1,
+  },
+  5: {
+      0: Step5_0,
+  },
+  6: {
+      0: Step6_0,
+      1: Step6_1,
+      2: Step6_2,
+  },
+} : {
+  1: {
+      0: BruksendreStep1_1,
+  },
+  2: {
+      0: BruksendreStep2_0,
+      1: BruksendreStep2_1,
+      2: BruksendreStep2_2,
+  },
+  3: {
+      0: BruksendreStep3_0,
+      1: BruksendreStep3_1,
+      2: BruksendreStep3_2,
+  },
+  4: {
+      0: BruksendreStep4_0,
+      1: BruksendreStep4_1,
+  },
+  5: {
+      0: BruksendreStep5_0,
+  },
+  6: {
+      0: BruksendreStep6_0,
+      1: BruksendreStep6_1,
+      2: BruksendreStep6_2,
+  },
+}
+
+const steps = [
+  { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
+  { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
+  { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
+  { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
+  { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
+  { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+];
+
+if (!isByggeorRive && !isBruksendre) {
+  router.push("/404");
+  return null;
+}
 
   const currentTasks = sjekkliste[currentStep] ?? [];
 
   const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
   return (
-    <div className="rounded-lg shadow-md border-2 p-4 min-w-72 h-full max-w-80  bg-gray-100">
+    <div className="rounded-lg shadow-md border-2 p-4 min-w-72 h-full max-w-80 bg-gray-100">
       <h2 className="text-lg font-semibold">
         Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
       </h2>

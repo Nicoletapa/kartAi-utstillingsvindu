@@ -39,7 +39,7 @@ export function MapChatIntegration() {
         />
       </div>
       
-      <div className="md:w-3/5 h-1/2 z-10">
+      <div className="md:w-3/5 h-1/2 z-10 shadow-lg">
         <TiltaksAidMap 
           onMapReady={handleMapReady} 
           onShapeDrawn={handleShapeDrawn}
