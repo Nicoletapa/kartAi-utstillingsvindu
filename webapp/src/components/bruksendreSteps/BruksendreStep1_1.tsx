@@ -258,7 +258,9 @@ const isValid = basicFieldsValid && drivewayValid;
 
           </div>
 
-<h2 className="font-medium mt-4 inline-flex">
+     
+      <div className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
+      <h2 className="font-medium inline-flex mb-2">
         Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
         <div className="relative flex">
           <Info
@@ -277,8 +279,7 @@ const isValid = basicFieldsValid && drivewayValid;
             </div>
           )}
         </div>
-      </h2>      
-      <div className='border-2 border-gray-400 rounded-lg mt-2 p-4'>
+      </h2> 
 <div className='gap-4 flex'>
               <label className='items-center'>
                 <input 

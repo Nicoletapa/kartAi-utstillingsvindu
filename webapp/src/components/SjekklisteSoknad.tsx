@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cn } from "~/lib/utils";
 import {
-  Step1_0, Step2_0, Step2_1, Step2_2,
+  Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
   Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0,
   Step6_0, Step6_1, Step6_2,
 } from "./steps";
@@ -47,6 +47,7 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep }: Sjekkl
 const stepComponents: StepComponentsType = isByggeorRive ? {
   1: {
       0: Step1_0,
+      1: Step1_1,
   },
   2: {
       0: Step2_0,

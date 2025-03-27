@@ -7,7 +7,7 @@ import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
 import {
-    Step1_0, Step2_0, Step2_1, Step2_2,
+    Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
     Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0,
     Step6_0, Step6_1, Step6_2,
 } from "./steps";
@@ -49,6 +49,7 @@ export default function ProgressBarStep() {
     const stepComponents: StepComponentsType = isByggeorRive ? {
         1: {
             0: Step1_0,
+            1: Step1_1,
         },
         2: {
             0: Step2_0,

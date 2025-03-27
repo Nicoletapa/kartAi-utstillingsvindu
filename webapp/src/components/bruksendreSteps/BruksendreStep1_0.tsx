@@ -84,7 +84,8 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({ formData, setForm
   return (
     <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Hva vil du gjøre på eiendommen din?</h1>
-      <h2 className="font-medium inline-flex mt-4">
+      <div className='w-full min-h-28 mt-4 p-4 border-2 border-gray-400 rounded-lg space-y-4'>
+      <h2 className="font-medium inline-flex">
         Kryss av for endringene du vil gjøre:
         <div className="relative flex">
           <Info
@@ -104,7 +105,7 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({ formData, setForm
           )}
         </div>
       </h2>
-      <div className='w-full min-h-28 mt-2 p-4 border-2 border-gray-400 rounded-lg space-y-4'>
+
         <div className='flex justify-between items-center mr-4'>
           <span>Skal du sette inn innvendig trapp?</span>
           <div className='flex gap-4'> 
@@ -221,8 +222,9 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({ formData, setForm
           </div>
         </div>
       </div>
-      
-      <h2 className="font-medium mt-4 inline-flex">
+
+      <div className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
+<h2 className="font-medium inline-flex">
         Beskrivelse
         <div className="relative flex">
           <Info
@@ -245,15 +247,18 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({ formData, setForm
     
       <textarea
         name="description"
-        className="w-full min-h-28 mt-2 p-4 text-md border-2 border-gray-400 rounded-lg"
+        className="w-full min-h-28 mt-2 p-4 text-md border-2 border-gray-300 rounded-lg"
         placeholder="Skriv her ..."
         value={formData.description}
         onChange={handleInputChange}
         required
       />
+      </div>
+      
             
-      <h2 className='font-medium mt-4'>Trenger du dispensasjon eller andre tilltatelser?</h2>
-      <div className='w-full h-fit mt-2 p-4 border-2 border-gray-400 rounded-lg'>
+      <div className='w-full h-fit mt-4 p-4 border-2 border-gray-400 rounded-lg'>
+              <h2 className='font-medium mb-2'>Trenger du dispensasjon eller andre tilltatelser?</h2>
+
         <div className='gap-4 flex flex-wrap'>
           <label className='items-center gap-x-2 flex whitespace-nowrap mr-4'>
             <input 
