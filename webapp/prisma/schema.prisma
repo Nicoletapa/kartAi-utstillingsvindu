@@ -4,221 +4,218 @@ generator client {
 }
 
 datasource db {
-provider = "mysql"
-url      = env("DATABASE_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
-///////////////////////
-// USER MANAGEMENT
-///////////////////////
-
 model Account {
-id                String  @id @default(cuid())
-userId            String
-type              String
-provider          String
-providerAccountId String
-refresh_token     String? @db.Text
-access_token      String? @db.Text
-expires_at        Int?
-token_type        String?
-scope             String?
-id_token          String? @db.Text
-session_state     String?
-user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-@@unique([provider, providerAccountId])
+  @@unique([provider, providerAccountId])
+  @@index([userId], map: "Account_userId_fkey")
 }
 
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
-  expires     DateTime
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken String?  
+  expires      DateTime
+  accessToken  String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Session_userId_fkey")
 }
 
 model User {
-id            String         @id @default(cuid())
-name          String?
-email         String?       @unique
-emailVerified DateTime?
-image         String?
-createdAt     DateTime      @default(now())
-updatedAt     DateTime      @updatedAt
-role          UserRole      @default(USER)
-accounts      Account[]
-sessions      Session[]
-documents     Document[]
-applications  Application[]
-gnr           Int?
-bnr           Int?
-fnr          Int?
-snr          Int?
-address       String?
-postalCode    String?
-postalArea    String?
-phone         String?
-
-
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  role          UserRole      @default(USER)
+  address       String?
+  bnr           Int?
+  fnr           Int?
+  gnr           Int?
+  phone         String?
+  postalArea    String?
+  postalCode    String?
+  snr           Int?
+  image         String?
+  accounts      Account[]
+  applications  Application[]
+  documents     Document[]
+  sessions      Session[]
 }
 
 model VerificationRequest {
-id         String   @id @default(cuid())
-identifier String
-token      String   @unique
-expires    DateTime
-createdAt  DateTime @default(now())
-updatedAt  DateTime @updatedAt
+  id         String   @id @default(cuid())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-@@unique([identifier, token])
+  @@unique([identifier, token])
 }
-
-enum UserRole {
-USER
-CASE_WORKER
-}
-
-
-
-///////////////////////
-// APPLICATION & DOCUMENTS
-///////////////////////
-
 
 model Application {
-applicationID  Int               @id @unique(map: "applicationID_UNIQUE") @default(autoincrement())
-applicationType ApplicationType
-userID         String
-user           User              @relation(fields: [userID], references: [id])
-submissionDate DateTime          @db.DateTime(0)
-updatedDate    DateTime          @db.DateTime(0)
-status         ApplicationStatus @default(Pabegynt)
-documents      Document[]
-responses      Response[]
-Letters        Letter[]
-application_fields application_field[]
-}
+  applicationID      Int                 @id @unique(map: "applicationID_UNIQUE") @default(autoincrement())
+  userID             String
+  submissionDate     DateTime            @db.DateTime(0)
+  status             ApplicationStatus   @default(Pabegynt)
+  applicationType    ApplicationType
+  subTypeId        String?
+  updatedDate        DateTime            @db.DateTime(0)
+  user               User                @relation(fields: [userID], references: [id])
+  documents          Document[]
+  Letters            Letter[]
+  responses          Response[]
+  application_fields application_field[]
 
-enum ApplicationStatus {
-Pabegynt
-Ferdig
-Sendt
-}
-
-enum ApplicationType {
-  bygge_tilbygg_mindre_enn_50kvm
-  rive_tilbygg_mindre_enn_50kvm
-  bygge_frittliggende_bygning_mindre_70kvm
-  rive_frittliggende_bygning_mindre_70kvm
-  bruksendring
-  bygge_vanlige_driftsbygninger_for_landbruket_mindre_1000m2
-  endre_vanlige_driftsbygninger_for_landbruket_mindre_1000m2
-  rive_vanlige_driftsbygninger_for_landbruket_mindre_1000m2
-  melding_om_bygning_unntatt_soknadsplikt
-  melding_om_tilbygg_unntatt_soknadsplikt
-
+  @@index([userID], map: "Application_userID_fkey")
 }
 
 model requiredField {
-  requiredFiledID Int @id @default(autoincrement())
-  applicationType ApplicationType
-  fieldName       String
+  requiredFiledID  Int             @id @default(autoincrement())
+  applicationType  ApplicationType
+  fieldName        String
   fieldDescription String
 }
+
 model Letter {
-letterID Int @id @default(autoincrement())
-application        Application @relation(fields: [applicationID], references: [applicationID])
-applicationID      Int
-recipientName      String
-createdAt         DateTime @default(now())
-fields           LetterField[]
+  letterID      Int           @id @default(autoincrement())
+  applicationID Int
+  recipientName String
+  createdAt     DateTime      @default(now())
+  application   Application   @relation(fields: [applicationID], references: [applicationID])
+  fields        LetterField[]
 
-
-
+  @@index([applicationID], map: "Letter_applicationID_fkey")
 }
+
 model LetterField {
-letterFieldID Int @id @default(autoincrement())
-letter         Letter @relation(fields: [letterID], references: [letterID])
-letterID       Int
-filedName      String
-fieldValue     String
-source         String
-createdAt      DateTime @default(now())
-updatedAt      DateTime @updatedAt
+  letterFieldID Int      @id @default(autoincrement())
+  letterID      Int
+  filedName     String
+  fieldValue    String
+  source        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  letter        Letter   @relation(fields: [letterID], references: [letterID])
 
-
+  @@index([letterID], map: "LetterField_letterID_fkey")
 }
+
 model application_field {
-  application_fieldID Int @id @default(autoincrement())
-  applicationID      Int
-  application        Application @relation(fields: [applicationID], references: [applicationID])
-  fieldName           String @db.Text 
-  fieltdValue         String @db.Text 
-  createdDate         DateTime          @db.DateTime(0)
-  updatedDate         DateTime          @db.DateTime(0)
-}
+  application_fieldID Int         @id @default(autoincrement())
+  fieldName           String      @db.Text
+  createdDate         DateTime    @db.DateTime(0)
+  updatedDate         DateTime    @db.DateTime(0)
+  applicationID       Int
+  fieldValue          String      @db.Text
+  application         Application @relation(fields: [applicationID], references: [applicationID])
 
-///////////////////////
-// DOCUMENT STORAGE
-///////////////////////
+  @@index([applicationID], map: "application_field_applicationID_fkey")
+}
 
 model Document {
-  documentID    Int            @id @default(autoincrement())
+  documentID    Int                  @id @default(autoincrement())
   fileName      String
   document      Bytes
   applicationID Int?
-  application   Application?   @relation(fields: [applicationID], references: [applicationID])
-  modelID       Int           
-  model         Model       @relation(fields: [modelID], references: [modelID])
+  modelID       Int
   userID        String
-  user          User          @relation(fields: [userID], references: [id])
-  createdAt     DateTime      @default(now()) 
-  validations   DocumentValidation[] 
+  createdAt     DateTime             @default(now())
+  application   Application?         @relation(fields: [applicationID], references: [applicationID])
+  model         Model                @relation(fields: [modelID], references: [modelID])
+  user          User                 @relation(fields: [userID], references: [id])
+  validations   DocumentValidation[]
+
+  @@index([applicationID], map: "Document_applicationID_fkey")
+  @@index([modelID], map: "Document_modelID_fkey")
+  @@index([userID], map: "Document_userID_fkey")
 }
 
-
-
-
-///////////////////////
-// AI MODEL RESPONSE HANDLING
-///////////////////////
-
 model Response {
-responseID    Int          @id @unique(map: "responseID_UNIQUE") @default(autoincrement())
-response      String
-modelID       Int
-model         Model        @relation(fields: [modelID], references: [modelID])
-applicationID Int
-application   Application  @relation(fields: [applicationID], references: [applicationID])
-errors        ModelError[]
+  responseID    Int          @id @unique(map: "responseID_UNIQUE") @default(autoincrement())
+  response      String
+  modelID       Int
+  applicationID Int
+  errors        ModelError[]
+  application   Application  @relation(fields: [applicationID], references: [applicationID])
+  model         Model        @relation(fields: [modelID], references: [modelID])
+
+  @@index([applicationID], map: "Response_applicationID_fkey")
+  @@index([modelID], map: "Response_modelID_fkey")
 }
 
 model ModelError {
-errorID    Int      @id @unique(map: "errorID_UNIQUE") @default(autoincrement())
-error      String
-modelID    Int
-model      Model    @relation(fields: [modelID], references: [modelID])
-responseID Int
-response   Response @relation(fields: [responseID], references: [responseID])
+  errorID    Int      @id @unique(map: "errorID_UNIQUE") @default(autoincrement())
+  error      String
+  modelID    Int
+  responseID Int
+  model      Model    @relation(fields: [modelID], references: [modelID])
+  response   Response @relation(fields: [responseID], references: [responseID])
+
+  @@index([modelID], map: "ModelError_modelID_fkey")
+  @@index([responseID], map: "ModelError_responseID_fkey")
 }
 
 model Model {
-modelID     Int          @id @unique(map: "modelID_UNIQUE") @default(autoincrement())
-modelName   String       @unique
-modelErrors ModelError[]
-responses   Response[]
-  documents   Document[] 
-  
+  modelID     Int          @id @unique(map: "modelID_UNIQUE") @default(autoincrement())
+  modelName   String       @unique
+  documents   Document[]
+  modelErrors ModelError[]
+  responses   Response[]
 }
 
 model DocumentValidation {
   id          Int      @id @default(autoincrement())
   documentID  Int
-  document    Document @relation(fields: [documentID], references: [documentID], onDelete: Cascade)
   drawingType String
   createdAt   DateTime @default(now())
+  document    Document @relation(fields: [documentID], references: [documentID], onDelete: Cascade)
 
   @@unique([documentID, drawingType])
 }
+
+
+
+enum UserRole {
+  USER
+  CASE_WORKER
+}
+
+enum ApplicationStatus {
+  Pabegynt
+  Sendt
+  Motatt
+  Under_Behandling
+  Horing
+  Vedtakfattes
+  Endelig_Avgjorelse
+  Ferdig_behandlet 
+}
+
+enum ApplicationType {
+  sma_byggeprosjekter
+  bruksendring
+
+  
+}
+
+

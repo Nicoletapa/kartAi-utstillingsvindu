@@ -5,17 +5,16 @@ import Image from 'next/image'; // Add Next.js Image component
 import { Upload } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
-
-// Component for displaying and managing uploaded documents
 interface ExistingDocumentsListProps {
   documents: {
     documentID: number;
     fileName: string;
-    document?: string;  // Base64 document data for preview
+    document?: string;  
+    applicationID:number | null;
   }[];
   onDelete?: (documentId: number) => void;
   onUpload: (files: File[]) => void;
-  onImageClick?: (imageSrc: string) => void; // Callback for full-size image display
+  onImageClick?: (imageSrc: string) => void;
 }
 
 const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents, onDelete, onUpload, onImageClick }) => {
@@ -42,54 +41,66 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
     setDocumentImages(newImages);
   }, [documents]);
 
-  const handleDelete = async (documentId: number) => {
+  const handleDelete = async (documentId: number, applicationID: number |null) => {
     const confirmed = window.confirm('Er du sikker på at du vil slette dette dokumentet?');
     if (confirmed) {
-      await deleteDocument.mutateAsync({ documentId });
+      await deleteDocument.mutateAsync({ 
+        documentId,       
+        applicationID: applicationID ?? undefined  
+      });
     }
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
+      console.log("Files dropped:", acceptedFiles.length);
       onUpload(acceptedFiles);
     }
   }, [onUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop, accept: {
+    onDrop, 
+    accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.tiff', '.bmp'],
       'application/pdf': ['.pdf'],
       'application/dwg': ['.dwg'],
       'application/dxf': ['.dxf'],
-    }, multiple: true,
-    
+    }, 
+    multiple: true,
+    noDragEventsBubbling: true,
   });
 
   return (
     <>
-    <div {... getRootProps()} className={`h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border-2 border-dashed mb-4 transition-colors ${isDragActive ? 'bg-gray-300 border-gray-400' : 'bg-gray-100 hover:bg-gray-100'}`}>
-        <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-          <input
-            {... getInputProps()}
-            type="file"
-            className="hidden"
-            onChange={(e) => onUpload(Array.from(e.target.files ?? []))}
-            multiple
-            accept=".pdf,.dwg,.dxf,.png,.jpg,.jpeg,.tiff,.bmp"
-          />
-          <span className="text-sm text-gray-500 inline-flex">
-            {isDragActive ? 'Slipp filene her' : 'Dra og slipp filer eller klikk for å laste opp'}
-            <Upload size={18} className="text-gray-500 ml-2" />
-          </span>
-        </label>
-      </div>
+    <div 
+      {...getRootProps()} 
+      className={`h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border-2 border-dashed mb-4 transition-colors ${
+        isDragActive ? 'bg-gray-300 border-gray-400' : 'bg-gray-100 hover:bg-gray-100'
+      }`}
+    >
+      <label 
+        className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <input
+          {...getInputProps()}
+          type="file"
+          className="hidden"
+          multiple
+          accept=".pdf,.dwg,.dxf,.png,.jpg,.jpeg,.tiff,.bmp"
+        />
+        <span className="text-sm text-gray-500 inline-flex">
+          {isDragActive ? 'Slipp filene her' : 'Dra og slipp filer eller klikk for å laste opp'}
+          <Upload size={18} className="text-gray-500 ml-2" />
+        </span>
+      </label>
+    </div>
     <div className="grid grid-cols-2 gap-4">
       {documents.length > 0 ? (
        documents.map((doc) => (
         <div key={doc.documentID} className="relative group">
           <div className="bg-gray-100 rounded-lg overflow-hidden cursor-pointer" onClick={() => onImageClick && documentImages[doc.documentID] ? onImageClick(`data:image/png;base64,${documentImages[doc.documentID]}`) : null}>
             {documentImages[doc.documentID] && typeof documentImages[doc.documentID] === 'string' ? (
-              // Check if the image data is a base64 string and add the data URL prefix if needed
               <Image
                 src={ `data:image/png;base64,${documentImages[doc.documentID]}`}
                 alt={doc.fileName}
@@ -109,7 +120,7 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
           <p className="mt-1 text-sm text-gray-500 truncate mb-4">{doc.fileName}</p>
           {onDelete && (
             <button
-              onClick={() => handleDelete(doc.documentID)}
+              onClick={() => handleDelete(doc.documentID, doc.applicationID)}
               className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               aria-label="Delete document"
             >

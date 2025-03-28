@@ -4,6 +4,7 @@ import { api } from "~/trpc/react";
 import type { Map } from 'leaflet';
 import type { SpatialAnalysisResult } from './TiltaksAidMap';
 import { SendHorizonal } from 'lucide-react';
+import { useSession} from "next-auth/react"
 
 interface PlanPratProps {
   mapRef?: React.MutableRefObject<Map | null>;
@@ -19,6 +20,7 @@ interface GuideButton {
 
 
 export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = false }: PlanPratProps) {
+  const { data: session } = useSession();
   const [error, setError] = useState("");
   const [text, setText] = useState<string>("");
   const [chatItems, setChatItems] = useState<
@@ -302,7 +304,10 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     <section className="rounded-l-lg shadow-lg min-h-[500px]">
       <div className="w-full bg-kartAI-blue pb-3 pt-1 text-center text-white rounded-tl-lg">
         <h1>PlanChat</h1>
-        <p className="text-sm font-medium">Din adresse: [placeholder]</p>
+        
+        {session && session.user && (
+          <p className="text-sm font-medium">Din adresse: {session.user.address}</p>
+        )}
       </div>
 
       <div id="planprat-input-output" className="relative w-full p-2">

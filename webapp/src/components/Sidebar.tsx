@@ -28,12 +28,13 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         { text: "Før du søker", href: "/atlas-app", icon: <Info size={20} /> },
         { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <ListChecks size={20} /> },
         { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
+        { text: "Søknader", href: "/atlas-app/sidebar/soknader", icon: <FileStack size={20} /> },
         { text: "Saksbehandler", href: "/atlas-app/saksbehandler/mottak/mine-saker", icon: <FileStack size={20} /> },
     ];
 
     const subMenuItems = [
         { text: "CADAiD", href: "/atlas-app/sidebar/cadaid", icon: <FileCheck size={20} /> },
-        { text: "3D-Modellering", href: "/atlas-app/sidebar/3d-situasjon", icon: <Boxes size={20} /> },
+        
         { text: "TiltaksAID", href: "/atlas-app/sidebar/tiltaksaid", icon: <MousePointerClick size={20} /> },
 
     ];
