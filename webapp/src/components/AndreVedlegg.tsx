@@ -1,16 +1,28 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, FileImage, Trash2, Loader2, X } from 'lucide-react';
+import { Upload, FileText, FileImage, Trash2, Loader2, X, Info } from 'lucide-react';
 
 interface AndreVedleggProps {
     documents: any[];
     onUpload: (files: File[]) => void;
+    formData?: {
+        andreVedlegg: string;
+      };
+      setFormData?: React.Dispatch<React.SetStateAction<{
+        andreVedlegg: string;
+        }>>;
 }
 
-const AndreVedlegg: React.FC<AndreVedleggProps> = ({ onUpload }) => {
+const AndreVedlegg: React.FC<AndreVedleggProps> = ({   formData: externalFormData, 
+    setFormData: externalSetFormData, onUpload }) => {
     const [uploadedFiles, setUploadedFiles] = useState<{ file: File; preview: string | null }[]>([]);
     const [loading, setLoading] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [hoveredBox, setHoveredBox] = useState<string | null>(null);
+    const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+    const [internalFormData, setInternalFormData] = useState({ andreVedlegg: "" });
+
+    const formData = externalFormData || internalFormData;
 
     const onDrop = useCallback(
         async (acceptedFiles: File[]) => {
@@ -45,6 +57,30 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({ onUpload }) => {
         setPreviewImage(null);
     };
 
+    const handleMouseEnter = (box: string) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        setHoveredBox(box);
+    };
+
+    const handleMouseLeave = () => {
+        const id = setTimeout(() => setHoveredBox(null), 300);
+        setTimeoutId(id);
+    };
+
+    const updateFormData = (newData: typeof formData) => {
+        if (typeof externalSetFormData === 'function') {
+            externalSetFormData(newData);
+        } else {
+            setInternalFormData(newData);
+        }
+    };
+
+       const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            const { name, value } = e.target;
+            const updatedFormData = { ...formData, [name]: value };
+            updateFormData(updatedFormData);
+        };
+
     React.useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
@@ -67,7 +103,8 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({ onUpload }) => {
     });
 
     return (
-        <div className="flex min-h-96 p-6 flex-col md:flex-row" data-cy="main-container">
+        <div className='justify-center flex flex-col w-full'>
+<div className="flex min-h-96 p-6 flex-col md:flex-row" data-cy="main-container">
             <div className="w-full md:w-2/3" data-cy="left-column">
                 <div
                     {...getRootProps()}
@@ -148,24 +185,65 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({ onUpload }) => {
             </div>
 
             <div className="w-full md:ml-16" data-cy="right-column">
-                <div>
-                    <h1 className="text-xl font-medium">Sørg for at:</h1>
-                    <ul className="text-sm list-disc ml-6 mt-2 space-y-1 text-gray-700">
-                        <li>Alle tegninger er i <b>målestokk</b> og <b>målsatte</b></li>
-                        <li>Plantegningene må oppgi <b>hvor store</b> rommene er og <b>hva</b> de brukes til</li>
-                        <li>Fasadetegninger må vise <b>alle sider</b> av bygningen, og terrenget rundt bygningen både <b>før og etter</b> endringen</li>
-                        <li>Situasjonskartet skal inneholde det du skal <b>bygge eller endre</b>, med <b>mål</b> på korteste avstand og fram til:</li>
-                        <ul className="list-disc ml-6 space-y-1">
-                            <li>Nærmeste bygg på egen eiendom</li>
-                            <li>Nærmeste nabobygning</li>
-                            <li>Nabogrense</li>
-                            <li>Midten av gang-, sykkel- eller bilvei</li>
+                <p className='space-y-1'>Her finner du sammendraget over alle dine dokumenter i byggesøknaden. Hvis du mangler
+                    dokumenter eller har tilleggsdokumenter, vennligst last de opp her.
+                </p>
+                <h1 className='font-medium mt-2'>Liste over dokumenter som du burde ha på plass:</h1>
+                <ul className='list-disc ml-7 text-sm space-y-1'>
+                    <li className='italic'><span className='font-medium not-italic'>Situasjonskart</span> hvor jeg har tegnet inn det jeg skal bygge/rive, og relevante avstander</li>
+                    <li className='italic'><span className='font-medium not-italic'>Plantegning</span> før og etter</li>
+                    <li className='italic'><span className='font-medium not-italic'>Snittegning</span> før og etter</li>
+                    <li className='italic'><span className='font-medium not-italic'>Fasadetegninger</span> før og etter</li>
+                    <li><span className='font-medium'>Nabovarsel</span>
+                        <ul className='list-disc ml-7 space-y-1'>
+                            <li>Et eksemplar av komplett nabovarsel med alle vedlegg</li>
+                            <li>Dokumentasjon på at alle naboer er varslet (f.eks. kvitteringer)</li>
+                            <li>Eventuelle merknader fra naboer</li>
+                            <li>Dine kommentarer fra naboens merknader</li>
                         </ul>
-                        <li>Snittegninger må vise <b>snittet</b> på bygningen både på <b>langs og på tvers</b>. Dersom boligen har flere etasjer, må <b>høyden</b> på disse oppgis</li>
-                    </ul>
-                </div>
+                    </li>
+                    <li><span className='font-medium'>Dispensasjon</span>  hvis aktuelt
+                        <ul className='list-disc ml-7 space-y-1'>
+                            <li>Søknader om dispensasjon eller innvilget dispensasjon (spesifiser i feltet under)</li>
+                            <li>Uttalelser/vedtak fra annen myndighet (spesifiser i feltet under)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            
+        </div>
+        <div className='border-2 border-gray-400 rounded-lg p-4'>
+        <h2 className="font-medium inline-flex">
+                            Andre vedlegg
+                            <div className="relative flex">
+                                <Info
+                                    size={14}
+                                    className="ml-1 hover:cursor-pointer"
+                                    onMouseEnter={() => handleMouseEnter('andreVedlegg')}
+                                    onMouseLeave={handleMouseLeave}
+                                />
+                                {hoveredBox === 'andreVedlegg' && (
+                                    <div
+                                        className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
+                                        onMouseEnter={() => handleMouseEnter('andreVedlegg')}
+                                        onMouseLeave={handleMouseLeave}
+                                    >
+                                        Spesifiser om du har lagt til dispensasjon eller andre relevante vedlegg.
+                                    </div>
+                                )}
+                            </div>
+                        </h2>            
+                        <textarea
+                            name="andreVedlegg"
+                            className="w-full min-h-20 mt-2 p-4 text-md border-2 border-gray-300 rounded-lg"
+                            placeholder="Skriv her ..."
+                            value={formData?.andreVedlegg || ""}
+                            onChange={handleInputChange}
+                            required
+                        />
             </div>
         </div>
+        
     );
 };
 

@@ -9,6 +9,7 @@ export { default as Step3_2 } from "./Step3_2";
 export { default as Step4_0 } from "./Step4_0";
 export { default as Step4_1 } from "./Step4_1";
 export { default as Step5_0 } from "./Step5_0";
+export { default as Step5_1 } from "./Step5_1";
 export { default as Step6_0 } from "./Step6_0";
 export { default as Step6_1 } from "./Step6_1";
 export { default as Step6_2 } from "./Step6_2";

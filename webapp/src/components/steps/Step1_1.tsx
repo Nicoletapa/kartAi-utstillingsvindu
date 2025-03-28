@@ -204,7 +204,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="size"
-                  className="required text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 24'
+                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.size}
                   onChange={handleInputChange}
                   required
@@ -217,7 +218,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="ridgeHeight"
-                  className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                   placeholder='F.eks. 4.5'
+                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.ridgeHeight}
                   onChange={handleInputChange}
                   required
@@ -230,7 +232,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="eavesHeight"
-                  className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 3.5'
+                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.eavesHeight}
                   onChange={handleInputChange}
                   required
@@ -243,7 +246,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="distanceFromVACables"
-                  className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                   placeholder='F.eks. 4'
+                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.distanceFromVACables}
                   onChange={handleInputChange}
                   required
@@ -256,7 +260,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="distanceFromPowerCables"
-                  className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 3'
+                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.distanceFromPowerCables}
                   onChange={handleInputChange}
                   required
@@ -269,7 +274,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="distanceFromRoad"
-                  className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 5'
+                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.distanceFromRoad}
                   onChange={handleInputChange}
                   required
@@ -282,7 +288,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="distanceFromTracks"
-                  className="text-sm w-12 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 30'
+                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.distanceFromTracks}
                   onChange={handleInputChange}
                   required
@@ -318,7 +325,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="neighboringBorder"
-                  className="required text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 4'
+                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.neighboringBorder}
                   onChange={handleInputChange}
                   required
@@ -330,7 +338,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="middleOfRoad"
-                  className="required text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 6'
+                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.middleOfRoad}
                   onChange={handleInputChange}
                   required
@@ -342,7 +351,8 @@ const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChan
                 <input
                   type="number"
                   name="closestToNeighbor"
-                  className="required text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none mb-2"
+                  placeholder='F.eks. 5'
+                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
                   value={formData.closestToNeighbor}
                   onChange={handleInputChange}
                   required

@@ -8,13 +8,13 @@ import { useRouter, usePathname } from "next/navigation";
 import SjekklisteSoknad from "./SjekklisteSoknad";
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
-    Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0,
+    Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0, Step5_1,
     Step6_0, Step6_1, Step6_2,
 } from "./steps";
 import {
     BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
     BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, BruksendreStep4_1, BruksendreStep5_0,
-    BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
+    BruksendreStep5_1, BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
 } from "./bruksendreSteps";
 
 
@@ -67,6 +67,7 @@ export default function ProgressBarStep() {
         },
         5: {
             0: Step5_0,
+            1: Step5_1,
         },
         6: {
             0: Step6_0,
@@ -94,6 +95,7 @@ export default function ProgressBarStep() {
         },
         5: {
             0: BruksendreStep5_0,
+            1: BruksendreStep5_1,
         },
         6: {
             0: BruksendreStep6_0,
@@ -194,7 +196,9 @@ export default function ProgressBarStep() {
 
             <div className="flex space-x-8 flex-1">
                 
-                <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
+            {currentStep <= 5 && (
+    <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
+)}
                 {CurrentStepComponent && (
                     <CurrentStepComponent
                         onValidityChange={setIsStep1_0Valid}

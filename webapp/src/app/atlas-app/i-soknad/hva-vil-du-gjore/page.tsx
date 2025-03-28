@@ -1,21 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { ArrowLeft, ArrowRight, Info, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useDropzone } from "react-dropzone";
 import { Button } from "../../../../components/ui/button";
 
 interface PageProps {
     onUpload: (files: File[]) => void;
   formData?: {
     description: string;
-    areaPurpose: string;
   };
   setFormData?: React.Dispatch<React.SetStateAction<{
     description: string;
-    areaPurpose: string;
   }>>;
   onValidityChange?: (isValid: boolean) => void;
 }
@@ -27,7 +23,7 @@ const Page: React.FC<PageProps> = ({
     }) => {
 
     const router = useRouter();
-    const [internalFormData, setInternalFormData] = useState({ description: "", areaPurpose: "" });
+    const [internalFormData, setInternalFormData] = useState({ description: "" });
     const [selectedOption, setSelectedOption] = useState("");
     const [selectedCheckboxes, setSelectedCheckboxes] = useState<string[]>([]);
     const [hoveredBox, setHoveredBox] = useState<string | null>(null);
@@ -49,7 +45,7 @@ const Page: React.FC<PageProps> = ({
     
                 setTimeout(() => {
                     onUpload(acceptedFiles);
-                    checkFormValidity(formData, selectedOption, [...uploadedFiles, ...newFiles].map(f => f.file)); 
+                    checkFormValidity(formData, selectedOption); 
                 }, 2000);
             }
         },
@@ -59,21 +55,10 @@ const Page: React.FC<PageProps> = ({
     const handleDelete = (index: number) => {
         setUploadedFiles((prev) => {
             const newFiles = prev.filter((_, i) => i !== index);
-            checkFormValidity(formData, selectedOption, newFiles.map(f => f.file));
+            checkFormValidity(formData, selectedOption);
             return newFiles;
         });
     };
-    
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: {
-            'image/*': ['.png', '.jpg', '.jpeg', '.tiff', '.bmp'],
-            'application/pdf': ['.pdf'],
-            'application/dwg': ['.dwg'],
-            'application/dxf': ['.dxf'],
-        },
-        multiple: true,
-    });
 
     const updateFormData = (newData: typeof formData) => {
         if (typeof externalSetFormData === 'function') {
@@ -128,7 +113,7 @@ const Page: React.FC<PageProps> = ({
         const { name, value } = e.target;
         const updatedFormData = { ...formData, [name]: value };
         updateFormData(updatedFormData);
-        checkFormValidity(updatedFormData, selectedOption, uploadedFiles.map(f => f.file));
+        checkFormValidity(updatedFormData, selectedOption);
     };
 
     const handleCheckboxChange = (checkboxValue: string) => {
@@ -144,14 +129,13 @@ const Page: React.FC<PageProps> = ({
     const handleOptionChange = (value: string) => {
         setSelectedOption(value);
         setSelectedCheckboxes([]);
-        checkFormValidity(formData, value, uploadedFiles.map(f => f.file));
+        checkFormValidity(formData, value);
     };
 
-    const checkFormValidity = (data: typeof formData, option: string, files: File[]) => {
+    const checkFormValidity = (data: typeof formData, option: string) => {
         const descriptionText = data?.description || '';
-        const isFileUploaded = files.length > 0;
         const isCheckboxValid = (option === "Bygge" || option === "Rive") ? selectedCheckboxes.length > 0 : true;
-        const isValid = descriptionText.trim() !== '' && option !== '' && isFileUploaded && isCheckboxValid;
+        const isValid = descriptionText.trim() !== '' && option !== '' && isCheckboxValid;
         
         setIsFormValid(isValid);
         
@@ -161,8 +145,8 @@ const Page: React.FC<PageProps> = ({
     };
     
     useEffect(() => {
-        checkFormValidity(formData, selectedOption, uploadedFiles.map(f => f.file));
-    }, [formData, selectedOption, uploadedFiles, selectedCheckboxes]);
+        checkFormValidity(formData, selectedOption);
+    }, [formData, selectedOption, selectedCheckboxes]);
 
     const getNextPageUrl = () => {
         if (selectedOption === "Bruksendring") {
@@ -254,7 +238,7 @@ const Page: React.FC<PageProps> = ({
             </div>
 
             <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 w-full">
-                <h1 className="font-medium inline-flex">Arealformål
+                <h1 className="font-medium inline-flex">Tegninger
                     <div className="relative flex">
                         <Info
                             size={14}
@@ -296,39 +280,7 @@ const Page: React.FC<PageProps> = ({
                     </div>
                 )}
 
-                <div
-                    {...getRootProps()}
-                    className={`h-12 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed mb-4 transition-colors ${
-                        isDragActive ? "bg-gray-300 border-gray-400" : "bg-gray-100 hover:bg-gray-200"
-                    }`}
-                >
-                    <input {...getInputProps()} className="hidden" multiple />
-                    <span className="text-sm text-gray-500 flex items-center">
-                        {isDragActive ? "Slipp filene her" : "Dra og slipp filer eller klikk for å laste opp"}
-                        <Upload size={18} className="text-gray-500 ml-2" />
-                    </span>
-                </div>
-
-                <div className="mt-2">
-                    {uploadedFiles.length > 0 && (
-                        <ul className="list-disc pl-5 text-sm text-gray-600">
-                            {uploadedFiles.map((fileObj, index) => (
-                                <li key={index} className="flex justify-between items-center">
-                                    {fileObj.name}
-                                    <button
-                                        className="text-red-500 text-xs ml-2"
-                                        onClick={() => handleDelete(index)}
-                                    >
-                                        Slett
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-                {uploadedFiles.length === 0 && (
-                    <p className="text-red-500 text-sm mt-1">Vennligst last opp en fil</p>
-                )}
+                <p>[SITUASJONSKART]</p>
             </div>
 
             <div className="mt-5 w-full flex justify-center mb-4 gap-4">

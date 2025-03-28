@@ -7,12 +7,10 @@ import { cn } from "~/lib/utils";
 import {
   Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
   Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0,
-  Step6_0, Step6_1, Step6_2,
 } from "./steps";
 import {
   BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, BruksendreStep4_1, BruksendreStep5_0,
-  BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
 } from "./bruksendreSteps";
 
 interface SjekklisteSoknadProps {
@@ -35,7 +33,6 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep }: Sjekkl
     3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
     4: ["Sørg for at søknaden er korrekt. Du kan sende byggesøknaden dersom alt er til dine behov"],
     5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
-    6: ["Final submission"] 
   };
   const pathname = usePathname();
   const router = useRouter();
@@ -66,11 +63,7 @@ const stepComponents: StepComponentsType = isByggeorRive ? {
   5: {
       0: Step5_0,
   },
-  6: {
-      0: Step6_0,
-      1: Step6_1,
-      2: Step6_2,
-  },
+
 } : {
   1: {
       0: BruksendreStep1_1,
@@ -92,11 +85,6 @@ const stepComponents: StepComponentsType = isByggeorRive ? {
   5: {
       0: BruksendreStep5_0,
   },
-  6: {
-      0: BruksendreStep6_0,
-      1: BruksendreStep6_1,
-      2: BruksendreStep6_2,
-  },
 }
 
 const steps = [
@@ -113,12 +101,12 @@ if (!isByggeorRive && !isBruksendre) {
   return null;
 }
 
-  const currentTasks = sjekkliste[currentStep] ?? [];
+const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
 
   const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
   return (
-    <div className="rounded-lg shadow-md border-2 p-4 min-w-72 h-full max-w-80 bg-gray-100">
+    <div className="rounded-lg shadow-md p-4 min-w-72 h-full max-w-80 bg-blue-100 border-2 border-blue-200">
       <h2 className="text-lg font-semibold">
         Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
       </h2>
