@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Results from "./Results";
 import type { Detection } from "~/types/detection";
 import { api } from "~/trpc/react";
@@ -8,6 +8,16 @@ import ExistingDocumentsList from './ExistingDocumentsList';
 import InvalidFilesList from './InvalidFilesList';
 import { X, Info } from 'lucide-react';
 import Image from "next/image";
+import { skipToken } from "@tanstack/react-query";
+
+interface CadaidAtlasProps {
+  applicationID?: number;
+}
+
+interface FileDetection {
+  drawing_type: string[];
+  file_name: string;
+}
 
 // Utility functions for file processing
 const processFile = async (file: File, detections: Detection[]) => {
@@ -32,66 +42,76 @@ const processFile = async (file: File, detections: Detection[]) => {
 
 // API call to ML model for drawing type detection
 async function fetchDetection(formData: FormData): Promise<Detection[]> {
-  const response = await fetch("http://127.0.0.1:5001/detect", {
-    method: "POST",
-    body: formData,
-  });
-  
-  if (!response.ok) {
-    throw new Error("Kunne ikke laste opp filer");
+  try {
+    const response = await fetch("http://127.0.0.1:5001/detect", {
+      method: "POST",
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      console.error("ML API Error:", await response.text());
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    return response.json() as Promise<Detection[]>;
+  } catch (error) {
+    console.error("Fetch detection error:", error);
+    throw error;
   }
-  
-  return response.json() as Promise<Detection[]>;
 }
 
-const CadaidAtlas: React.FC = () => {
-  // State management for UI feedback and file processing
+const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
+  console.log("CadaidAtlas received applicationID:", applicationID);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<Detection[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [invalidFiles, setInvalidFiles] = useState<{ file: File; base64: string }[]>([]);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState<boolean>(false);
 
-  const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => setOpenModal(false);
-  
+  const handleOpenModal = useCallback(() => setOpenModal(true), []);
+  const handleCloseModal = useCallback(() => setOpenModal(false), []);
+  const handleImageClick = useCallback((imageSrc: string) => {
+    setFullSizeImage(imageSrc);
+  }, []);
+  const closeFullSizeImage = useCallback(() => {
+    setFullSizeImage(null);
+  }, []);
+
   // Authentication and API utilities
   const { data: session } = useSession();
   const utils = api.useUtils();
 
-  const handleImageClick = (imageSrc: string) => {
-    setFullSizeImage(imageSrc);
-  };
-
-  const closeFullSizeImage = () => {
-    setFullSizeImage(null);
-  };
-
-  type FileDetection = {
-    drawing_type: string[];
-    file_name: string;
-  };
-
   // Query for fetching user's existing documents
-  const documentsQuery = api.userDocuments.getUserDocuments.useQuery(undefined, {
-    staleTime: 1000,
-  });
+  const documentsQuery = api.userDocuments.getUserDocuments.useQuery(
+    applicationID !== undefined ? { applicationID } : skipToken, 
+    { staleTime: 1000 * 60 }
+  );
 
-  // Mutation for saving new document detections
   
   const saveResultsMutation = api.userDocuments.saveDetectionResults.useMutation({
     onSuccess: () => {
-      void utils.userDocuments.getUserDocuments.invalidate();
+      void utils.userDocuments.getUserDocuments.invalidate({
+        applicationID: applicationID
+      });
       setResults([]);
+      setSuccessMessage("Dokumenter ble lastet opp");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (error) => {
+      console.error("Error saving detection results:", error);
+      setErrorMessage(`Failed to save document: ${error.message}`);
     }
   });
 
   // Mutation for checking if file already exists
-  const checkExistingFile = api.userDocuments.checkFileExists.useMutation();
+  const checkExistingFile = api.userDocuments.replaceExistingFile.useMutation();
 
   // Handlers for file processing
-  const handleFileRemove = (index: number) => {
+  const handleFileRemove = useCallback((index: number) => {
     const fileToRemove = invalidFiles[index]?.file.name;
     if (fileToRemove) {
       setInvalidFiles(prev => prev.filter((_, i) => i !== index));
@@ -102,7 +122,7 @@ const CadaidAtlas: React.FC = () => {
         return errors.length > 0 ? errors.join('\n') : null;
       });
     }
-  };
+  }, [invalidFiles]);
 
   // Handle successful file detection
   const handleValidFile = async (file: File, fileDetections: FileDetection[], base64: string) => {
@@ -111,13 +131,20 @@ const CadaidAtlas: React.FC = () => {
       fileType: file.type,
       detectionResults: fileDetections,
       document: base64,
+      applicationID: applicationID,
     });
 
     if (!result.success) {
       setInvalidFiles(prev => [...prev, { file, base64 }]);
+      
+      // Check if message property exists before using it
+      const errorMsg = 'message' in result 
+        ? result.message 
+        : 'Kunne ikke lagre dokumentet';
+        
       setErrorMessage(prev => 
-        prev ? `${prev}\n${result.message}: ${file.name}` 
-             : `${result.message}: ${file.name}`
+        prev ? `${prev}\n${errorMsg}: ${file.name}` 
+             : `${errorMsg}: ${file.name}`
       );
     }
   };
@@ -133,13 +160,27 @@ const CadaidAtlas: React.FC = () => {
 
   // Main file upload handler
   const handleFileUpload = async (uploadedFiles: File[]) => {
-      if (!session?.user?.id) {
-        setErrorMessage("Du må være logget inn for å laste opp dokumenter");
-        return;
-      }
-  
-      if (uploadedFiles.length === 0) return;
+    // If already processing files, don't start another process
+    if (isProcessing || isLoading) {
+      console.log("Already processing files, ignoring duplicate call");
+      return;
+    }
+    
+    console.log(`handleFileUpload called with ${uploadedFiles.length} files`);
+    
+    if (!session?.user?.id) {
+      setErrorMessage("Du må være logget inn for å laste opp dokumenter");
+      return;
+    }
+    if (!applicationID) {
+      setErrorMessage("Kunne ikke laste opp dokumenter");
+      return;
+    }
+    
+    if (uploadedFiles.length === 0) return;
 
+    // Set processing flag to prevent duplicate calls
+    setIsProcessing(true);
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -148,7 +189,7 @@ const CadaidAtlas: React.FC = () => {
         uploadedFiles.map(async (file) => {
           const existingFile = await checkExistingFile.mutateAsync({
             fileName: file.name,
-            userID: session.user.id
+            applicationID: applicationID,
           });
 
           if (existingFile.exists) {
@@ -177,7 +218,9 @@ const CadaidAtlas: React.FC = () => {
         validFiles.map(async (file) => {
           try {
             const { base64, fileDetections } = await processFile(file, detections);
+            console.log("File detections for", file.name, ":", fileDetections);
             
+            // Check if ANY drawing types are found (not necessarily valid ones)
             if (fileDetections.some(d => d.drawing_type.length > 0)) {
               await handleValidFile(file, fileDetections, base64);
             } else {
@@ -196,6 +239,10 @@ const CadaidAtlas: React.FC = () => {
       setErrorMessage("Kunne ikke laste opp dokumenter");
     } finally {
       setIsLoading(false);
+      // Reset processing flag after a small delay to prevent any race conditions
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 100);
     }
   };
 
@@ -205,14 +252,17 @@ const CadaidAtlas: React.FC = () => {
     },
   });
 
-  const handleDocumentDelete = async (documentId: number) => {
+  const handleDocumentDelete = useCallback(async (documentId: number) => {
     try {
-      await deleteDocumentMutation.mutateAsync({ documentId });
+      await deleteDocumentMutation.mutateAsync({ 
+        documentId,
+        applicationID
+      });
     } catch (error) {
       console.error('Error deleting document:', error);
       setErrorMessage('Kunne ikke slette dokumentet');
     }
-  };
+  }, [deleteDocumentMutation, applicationID]);
 
   return (
     <div className="flex min-h-screen p-6 flex-col md:flex-row" data-cy="main-container">
@@ -291,6 +341,12 @@ const CadaidAtlas: React.FC = () => {
         {errorMessage && (
           <div className="mb-4 rounded mt-2 bg-red-100 p-2 text-red-700" role="alert">
             {errorMessage}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 rounded mt-2 bg-green-100 p-2 text-green-700" role="alert">
+            {successMessage}
           </div>
         )}
 

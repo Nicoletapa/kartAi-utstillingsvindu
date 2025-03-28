@@ -8,6 +8,7 @@ export const userDocumentsRouter = createTRPCRouter({
   deleteDocument: protectedProcedure
     .input(z.object({
       documentId: z.number(),
+      applicationID:z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -18,10 +19,10 @@ export const userDocumentsRouter = createTRPCRouter({
           },
         });
 
-        // Then delete the document
         await ctx.db.document.delete({
           where: {
             documentID: input.documentId,
+            applicationID:input.applicationID,
             userID: ctx.session.user.id,
           },
         });
@@ -36,45 +37,58 @@ export const userDocumentsRouter = createTRPCRouter({
       }
     }),
 
-  checkFileExists: protectedProcedure
+  replaceExistingFile: protectedProcedure
     .input(z.object({
+      applicationID: z.number().optional(),
       fileName: z.string(),
-      userID: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const existingDoc = await ctx.db.document.findFirst({
-        where: {
-          fileName: input.fileName,
-          userID: ctx.session.user.id,
-        },
-      });
+      try {
+        return await ctx.db.$transaction(async (tx) => {
+          const existingDoc = await tx.document.findFirst({
+            where: {
+              applicationID: input.applicationID,
+              fileName: input.fileName,
+              userID: ctx.session.user.id,
+            },
+          });
 
+          if (existingDoc) {
+            await tx.documentValidation.deleteMany({
+              where: {
+                documentID: existingDoc.documentID,
+              },
+            });
 
-      if (existingDoc) {
-        // First delete all validations
-        await ctx.db.documentValidation.deleteMany({
-          where: {
-            documentID: existingDoc.documentID,
-          },
+            await tx.document.delete({
+              where: {
+                documentID: existingDoc.documentID,
+                userID: ctx.session.user.id,
+                applicationID: input.applicationID,
+              },
+            });
+          }
+
+          return { exists: !!existingDoc };
         });
-
-        // Then delete the document
-        await ctx.db.document.delete({
-          where: {
-            documentID: existingDoc.documentID,
-            userID: ctx.session.user.id,
-          },
+      } catch (error) {
+        throw new TRPCError({
+          code: 'PARSE_ERROR',
+          message: 'Failed to check or replace existing file',
+          cause: error,
         });
       }
-
-      return { exists: !!existingDoc };
     }),
 
   getUserDocuments: protectedProcedure
-    .query(async ({ ctx }) => {
+  .input(z.object({
+    applicationID :z.number(),
+  }))
+    .query(async ({ ctx, input }) => {
       try {
         const documents = await ctx.db.document.findMany({
           where: {
+            applicationID:input.applicationID,
             userID: ctx.session.user.id,
           },
           select: {
@@ -83,7 +97,7 @@ export const userDocumentsRouter = createTRPCRouter({
             applicationID: true,
             userID: true,
             createdAt: true,
-            document: true, // Include document data
+            document: true,
             model: {              
               select: {
                 modelName: true,  
@@ -153,9 +167,9 @@ export const userDocumentsRouter = createTRPCRouter({
       }
     }),
 
-  // Add a new procedure for chunked document retrieval
   getDocumentChunk: protectedProcedure
     .input(z.object({
+      applicationID: z.number().optional(),
       documentId: z.number(),
       chunkIndex: z.number(),
       chunkSize: z.number().max(1024 * 1024), 
@@ -196,8 +210,10 @@ export const userDocumentsRouter = createTRPCRouter({
         });
       }
     }),
+
   saveDetectionResults: protectedProcedure
     .input(z.object({
+      applicationID:z.number().optional(),
       fileName: z.string(),
       fileType: z.string(),
       detectionResults: z.array(z.object({
@@ -211,76 +227,82 @@ export const userDocumentsRouter = createTRPCRouter({
         const hasValidDrawingTypes = input.detectionResults.some(result => {
           const types = Array.isArray(result.drawing_type) ? result.drawing_type : [result.drawing_type];
           return types.some(type => requiredDrawingTypes.includes(type));
-        })
-        if(!hasValidDrawingTypes) {
+        });
+        
+        if (!hasValidDrawingTypes) {
           return {
-            success:false,
-            message:'No valid drawing types found',
+            success: false,
+            message: 'No valid drawing types found',
             invalidDocument: true
           };
         }
-        const model = await ctx.db.model.findFirst({
-          where: {
-            modelName: 'CADAiD'
+
+        return await ctx.db.$transaction(async (tx) => {
+          const model = await tx.model.findFirst({
+            where: {
+              modelName: 'CADAiD'
+            }
+          });
+          
+          if (!model) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "CADAiD model not found in the system",
+            });
           }
+
+          const base64Data = input.document.includes('base64,') 
+            ? input.document.split('base64,')[1] 
+            : input.document;
+
+          if (!base64Data) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Invalid document data",
+            });
+          }
+
+          const documentBuffer = Buffer.from(base64Data, 'base64');
+
+          const newDocument = await tx.document.create({
+            data: {
+              fileName: input.fileName,
+              document: documentBuffer,
+              modelID: model.modelID,
+              userID: ctx.session.user.id,
+              applicationID: input.applicationID
+            },
+          });
+
+          if (input.detectionResults && input.detectionResults.length > 0) {
+            await Promise.all(input.detectionResults.map(result => {
+              const drawingTypes = Array.isArray(result.drawing_type) 
+                ? result.drawing_type 
+                : [result.drawing_type];
+
+              return Promise.all(drawingTypes.map(type =>
+                tx.documentValidation.create({
+                  data: {
+                    documentID: newDocument.documentID,
+                    drawingType: type,
+                  }
+                })
+              ));
+            }));
+          }
+
+          return { success: true };
         });
-        
-        if (!model) {
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('Save detection error:', error);
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "CADAiD model not found in the system",
+            message: `Failed to save detection results: ${error.message}`,
+            cause: error,
           });
         }
-
-        const base64Data = input.document.includes('base64,') 
-          ? input.document.split('base64,')[1] 
-          : input.document;
-
-        if (!base64Data) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid document data",
-          });
-        }
-
-        const documentBuffer = Buffer.from(base64Data, 'base64');
-
-        // Create document entry
-        const newDocument = await ctx.db.document.create({
-          data: {
-            fileName: input.fileName,
-            document: documentBuffer,
-            modelID: model.modelID,
-            userID: ctx.session.user.id,
-          },
-        });
-
-        // Handle detection results
-        if (input.detectionResults && input.detectionResults.length > 0) {
-          await Promise.all(input.detectionResults.map(result => {
-            const drawingTypes = Array.isArray(result.drawing_type) 
-              ? result.drawing_type 
-              : [result.drawing_type];
-
-            return Promise.all(drawingTypes.map(type =>
-              ctx.db.documentValidation.create({
-                data: {
-                  documentID: newDocument.documentID,
-                  drawingType: type,
-                }
-              })
-            ));
-          }));
-        }
-
-        return { success: true };
-      } catch (error) {
-        console.error('Save detection error:', error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to save detection results",
-          cause: error,
-        });
+        throw error;
       }
     }),
 });

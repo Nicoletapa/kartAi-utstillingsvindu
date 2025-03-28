@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "~/server/db";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 
 export const applicationRouter = createTRPCRouter({
   createApplication: protectedProcedure
@@ -93,31 +94,49 @@ export const applicationRouter = createTRPCRouter({
     }),
     
   getApplication: protectedProcedure
-    .input(z.object({ applicationID: z.number() }))
+    .input(z.object({
+      applicationID: z.number(),
+    }))
     .query(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      
-      const res = await db.application.findUnique({
-        where: { 
-          applicationID: input.applicationID,
-          userID: userId 
-        },
-        include: {
-          documents: true,
-          application_fields: true,
-          Letters: true,
-          responses: {
-            include: {
-              errors: true
-            }
-          }
-        }
-      });
+      try {
+        const application = await ctx.db.application.findFirst({
+          where: {
+            applicationID: input.applicationID,
+            userID: ctx.session.user.id,
+          },
+          select: {
+            applicationID: true,
+            applicationType: true,
+            subTypeId: true,
+            status: true,
+            submissionDate: true,
+            updatedDate: true,
+            application_fields:true,
+            
+          },
+        });
 
-      if (!res) {
-        throw new Error("Application not found or not authorized");
+        if (!application) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Application not found or access denied',
+          });
+        }
+
+        // Convert dates to ISO strings to avoid serialization issues
+        return {
+          ...application,
+          submissionDate: application.submissionDate.toISOString(),
+          updatedDate: application.updatedDate.toISOString(),
+        };
+      } catch (error) {
+        console.error("getApplication error:", error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch application details',
+          cause: error,
+        });
       }
-      return res;
     }),
     
   getAllApplications: protectedProcedure.query(async ({ ctx }) => {
@@ -126,10 +145,7 @@ export const applicationRouter = createTRPCRouter({
     const res = await db.application.findMany({
       where: { userID: userId },
       orderBy: { updatedDate: 'desc' },
-      include: {
-        application_fields: true,
-        documents: true,
-      }
+      
     });
 
     return res;
