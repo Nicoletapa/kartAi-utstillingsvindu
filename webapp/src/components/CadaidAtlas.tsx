@@ -1,5 +1,7 @@
 "use client";
+
 import React, { useState, useCallback } from "react";
+
 import Results from "./Results";
 import type { Detection } from "~/types/detection";
 import { api } from "~/trpc/react";
@@ -71,6 +73,7 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
   const [invalidFiles, setInvalidFiles] = useState<{ file: File; base64: string }[]>([]);
   const [fullSizeImage, setFullSizeImage] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState<boolean>(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
 
   const handleOpenModal = useCallback(() => setOpenModal(true), []);
   const handleCloseModal = useCallback(() => setOpenModal(false), []);
@@ -264,6 +267,17 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
     }
   }, [deleteDocumentMutation, applicationID]);
 
+  useEffect(() => {
+    if (fullSizeImage?.startsWith('data:image/')) {
+      const blob = fetch(fullSizeImage)
+        .then(res => res.blob())
+        .then(blob => URL.createObjectURL(blob));
+      blob.then(setImageSrc);
+  } else {
+    setImageSrc(fullSizeImage);
+  }
+}, [fullSizeImage]);
+
   return (
     <div className="flex min-h-screen p-6 flex-col md:flex-row" data-cy="main-container">
       <div className="w-full md:w-2/3" data-cy="left-column">
@@ -358,7 +372,7 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
         
         
 
-        {fullSizeImage && (
+        {imageSrc && (
           <div 
             className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 px-8 
             transition-opacity duration-100 ease-in-out" 
@@ -368,11 +382,13 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
               className="relative transform transition-all duration-100 ease-in-out opacity-0 animate-fadeIn" 
               onClick={(e) => e.stopPropagation()}
             >
-              <Image 
-                src={fullSizeImage} 
-                alt="Full Size" 
-                className="max-w-full max-h-full"
-              />
+            <Image
+              src={imageSrc}
+              alt="Full Size"
+              className="max-w-full max-h-full"
+              width={500}
+              height={500}
+            />
               <X 
                 className="cursor-pointer absolute top-[-36px] right-[-36px] text-white rounded-full p-2 
                 hover:bg-white/10 transition-colors duration-200" 
