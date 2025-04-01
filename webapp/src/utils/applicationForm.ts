@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 // =============== TYPES ===============
@@ -75,10 +74,12 @@ const Permissions = z.enum([
 
 const AccessChanges = z.object({
   new_driveway: z.string().optional(),
-  road_type: z.string().optional()
+  road_type: z.string().optional(),
+
 });
 
 const DistancesBruksEndringSchema = z.object({
+  
   neighbor_boundary_meters: z.string().optional(),
   mønehøyde: z.string().optional(),
   gesimshøyde: z.string().optional(),
@@ -112,11 +113,14 @@ type RequirementsDetails = z.infer<typeof RequirementsSchema>;
 type PermissionsDetails = z.infer<typeof Permissions>;
 type AccessChangesDetails = z.infer<typeof AccessChanges>;
 
+const baseSchema = z.object({
+  property_details: PropertyDetailsSchema,
+  applicant_details: ApplicantDetailsSchema,
+});
+
 const FormSchemaSmaProsjekter = z.object({
   title: z.string().optional(),
-  fields: z.object({
-    property_details: PropertyDetailsSchema,
-    applicant_details: ApplicantDetailsSchema,
+  fields: baseSchema.extend({
     description: z.string().optional(),
     area_purpose: z.string().optional(),
     distances: DistancesSmaProsjekterSchema,
@@ -129,9 +133,7 @@ const FormSchemaSmaProsjekter = z.object({
 
 const FormSchemaBruksendring = z.object({
   title: z.string().optional(),
-  fields: z.object({
-    property_details: PropertyDetailsSchema,
-    applicant_details: ApplicantDetailsSchema,
+  fields: baseSchema.extend({
     change_description: z.string().optional(),
     dispensation: z.object({
       needs_dispensation: z.enum([
@@ -332,81 +334,37 @@ function createApplicationFormBruksendring(title: string, user?: SimplifiedUser)
 }
 
 // =============== FIELD GENERATORS ===============
-function generatePropertyFields(prefix: string): Array<{title: string; type: string; name: string}> {
+// Instead of individual field generators, create a generic one:
+function generateFields(prefix: string, fields: Array<{key: string, title: string, type: string}>): Array<{title: string, type: string, name: string}> {
   const fieldPrefix = `fields.${prefix}`;
   
-  return [
-    {
-      title: "Address",
-      type: "text",
-      name: `${fieldPrefix}.address`
-    },
-    {
-      title: "Property Number",
-      type: "text",
-      name: `${fieldPrefix}.property_number`
-    },
-    {
-      title: "Usage Number",
-      type: "text",
-      name: `${fieldPrefix}.usage_number`
-    },
-    {
-      title: "Postal Code and Place",
-      type: "text",
-      name: `${fieldPrefix}.postal_code`
-    },
-    {
-      title: "Municipality",
-      type: "text",
-      name: `${fieldPrefix}.municipality`
-    },
-    {
-      title: "Lease Number",
-      type: "text",
-      name: `${fieldPrefix}.lease_number`
-    },
-    {
-      title: "Section Number",
-      type: "text",
-      name: `${fieldPrefix}.section_number`
-    }
-  ];
-}
-
-function generateApplicantFields(prefix: string): Array<{title: string; type: string; name: string}> {
-  const fieldPrefix = `fields.${prefix}`;
-  
-  return [
-    {
-      title: "Full Name",
-      type: "text",
-      name: `${fieldPrefix}.name`
-    },
-    {
-      title: "Phone",
-      type: "tel",
-      name: `${fieldPrefix}.phone`
-    },
-    {
-      title: "Email",
-      type: "email",
-      name: `${fieldPrefix}.email`
-    },
-  ];
+  return fields.map(field => ({
+    title: field.title,
+    type: field.type,
+    name: `${fieldPrefix}.${field.key}`
+  }));
 }
 
 // Common base fields that appear in all form types
 function getBaseFormFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
-  // Property Details - common to all forms
-  fields = fields.concat(generatePropertyFields("property_details"));
+  fields = fields.concat(generateFields("property_details", [
+    { key: "address", title: "Address", type: "text" },
+    { key: "property_number", title: "Property Number", type: "text" },
+    { key: "usage_number", title: "Usage Number", type: "text" },
+    { key: "postal_code", title: "Postal Code and Place", type: "text" },
+    { key: "municipality", title: "Municipality", type: "text" },
+    { key: "lease_number", title: "Lease Number", type: "text" },
+    { key: "section_number", title: "Section Number", type: "text" }
+  ]));
    
-  // Applicant Details - common to all forms  
-  fields = fields.concat(generateApplicantFields("applicant_details"));
+  fields = fields.concat(generateFields("applicant_details", [
+    { key: "name", title: "Full Name", type: "text" },
+    { key: "phone", title: "Phone", type: "tel" },
+    { key: "email", title: "Email", type: "email" }
+  ]));
   
-  // Basic attachment fields - common to all forms
   fields.push({
     title: "Situation Map",
     type: "radio",
@@ -418,154 +376,49 @@ function getBaseFormFields(): Array<{title: string; type: string; name: string}>
 
 // Update field generators for each section
 function generateDistanceFields(prefix: string): Array<{title: string; type: string; name: string}> {
-  const fieldPrefix = `fields.${prefix}`;
-  
-  return [
-    {
-      title: "Distance to Neighbor Boundary (meters)",
-      type: "text",
-      name: `${fieldPrefix}.neighbor_boundary`
-    },
-    {
-      title: "Distance to Road Center (meters)",
-      type: "text",
-      name: `${fieldPrefix}.road_center`
-    },
-    {
-      title: "Distance to Nearest Building (meters)",
-      type: "text",
-      name: `${fieldPrefix}.nearest_building`
-    },
-    {
-      title: "Distance to Train/Tram Tracks",
-      type: "text",
-      name: `${fieldPrefix}.distance_train_tracks`
-    },
-    {
-      title: "Distance to Water/Sewer Pipes",
-      type: "text",
-      name: `${fieldPrefix}.distance_water_sewer_pipes`
-    },
-    {
-      title: "Distance to High Voltage Lines",
-      type: "text",
-      name: `${fieldPrefix}.distance_high_voltage_lines`
-    },
-    {
-      title: "Distance to VA",
-      type: "text",
-      name: `${fieldPrefix}.distance_va`
-    },
-    {
-      title: "Mønehøyde",
-      type: "text",
-      name: `${fieldPrefix}.mønehøyde`
-    },
-    {
-      title: "Gesimshøyde",
-      type: "text",
-      name: `${fieldPrefix}.gesimshøyde`
-    },
-    {
-      title: "In Flood Risk Area",
-      type: "radio",
-      name: `${fieldPrefix}.in_flood_risk_area`
-    },
-    {
-      title: "Protected Species Present",
-      type: "radio",
-      name: `${fieldPrefix}.protected_species_present`
-    },
-    {
-      title: "Cultural Heritage Site",
-      type: "radio",
-      name: `${fieldPrefix}.cultural_heritage_site`
-    }
-  ];
+  return generateFields(prefix, [
+    { key: "neighbor_boundary", title: "Distance to Neighbor Boundary (meters)", type: "text" },
+    { key: "road_center", title: "Distance to Road Center (meters)", type: "text" },
+    { key: "nearest_building", title: "Distance to Nearest Building (meters)", type: "text" },
+    { key: "distance_train_tracks", title: "Distance to Train/Tram Tracks", type: "text" },
+    { key: "distance_water_sewer_pipes", title: "Distance to Water/Sewer Pipes", type: "text" },
+    { key: "distance_high_voltage_lines", title: "Distance to High Voltage Lines", type: "text" },
+    { key: "distance_va", title: "Distance to VA", type: "text" },
+    { key: "mønehøyde", title: "Mønehøyde", type: "text" },
+    { key: "gesimshøyde", title: "Gesimshøyde", type: "text" },
+    { key: "in_flood_risk_area", title: "In Flood Risk Area", type: "radio" },
+    { key: "protected_species_present", title: "Protected Species Present", type: "radio" },
+    { key: "cultural_heritage_site", title: "Cultural Heritage Site", type: "radio" }
+  ]);
 }
 
 function generateRequirementsFields(prefix: string): Array<{title: string; type: string; name: string}> {
-  const fieldPrefix = `fields.${prefix}`;
-  
-  return [
-    {
-      title: "Situational Map",
-      type: "text",
-      name: `${fieldPrefix}.situational_map`
-    },
-    {
-      title: "Tillatt grad av utnytting (%)",
-      type: "text",
-      name: `${fieldPrefix}.allowed_utilization`
-    },
-    {
-      title: "Tomtens nettoareal (m²)",
-      type: "text",
-      name: `${fieldPrefix}.property_net_area`
-    },
-    {
-      title: "Areal av bygninger, konstruksjoner og parkering i dag (m²)",
-      type: "text",
-      name: `${fieldPrefix}.current_area`
-    },
-    {
-      title: "Areal av bygninger, konstruksjoner og parkering etterpå (m²)",
-      type: "text",
-      name: `${fieldPrefix}.future_area`
-    },
-    {
-      title: "Grad av utnytting etter prosjekt (%)",
-      type: "text",
-      name: `${fieldPrefix}.utilization_after_project`
-    }
-  ];
+  return generateFields(prefix, [
+    { key: "situational_map", title: "Situational Map", type: "text" },
+    { key: "allowed_utilization", title: "Tillatt grad av utnytting (%)", type: "text" },
+    { key: "property_net_area", title: "Tomtens nettoareal (m²)", type: "text" },
+    { key: "current_area", title: "Areal av bygninger, konstruksjoner og parkering i dag (m²)", type: "text" },
+    { key: "future_area", title: "Areal av bygninger, konstruksjoner og parkering etterpå (m²)", type: "text" },
+    { key: "utilization_after_project", title: "Grad av utnytting etter prosjekt (%)", type: "text" }
+  ]);
 }
 
 function generateAccessChangesFields(prefix: string): Array<{title: string; type: string; name: string}> {
-  const fieldPrefix = `fields.${prefix}`;
-  
-  return [
-    {
-      title: "New Driveway Required",
-      type: "radio",
-      name: `${fieldPrefix}.new_driveway`
-    },
-    {
-      title: "Road Type",
-      type: "select",
-      name: `${fieldPrefix}.road_type`
-    }
-  ];
+  return generateFields(prefix, [
+    { key: "new_driveway", title: "New Driveway Required", type: "radio" },
+    { key: "road_type", title: "Road Type", type: "select" }
+  ]);
 }
 
 function generateAttachmentsFields(prefix: string): Array<{title: string; type: string; name: string}> {
-  const fieldPrefix = `fields.${prefix}`;
-  
-  return [
-    {
-      title: "Plans and Drawings",
-      type: "select",
-      name: `${fieldPrefix}.plans_and_drawings.0`
-    },
-    {
-      title: "Neighbor Notification",
-      type: "select",
-      name: `${fieldPrefix}.neighbor_notification.0`
-    },
-    {
-      title: "Dispensation Documentation",
-      type: "text",
-      name: `${fieldPrefix}.dispensation_documentation`
-    },
-    {
-      title: "Other Attachments",
-      type: "text",
-      name: `${fieldPrefix}.other_attachments`
-    }
-  ];
+  return generateFields(prefix, [
+    { key: "plans_and_drawings.0", title: "Plans and Drawings", type: "select" },
+    { key: "neighbor_notification.0", title: "Neighbor Notification", type: "select" },
+    { key: "dispensation_documentation", title: "Dispensation Documentation", type: "text" },
+    { key: "other_attachments", title: "Other Attachments", type: "text" }
+  ]);
 }
 
-// Small Projects specific fields - updated to use modular field generators
 function getSmallProjectsFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
@@ -608,21 +461,18 @@ function getSmallProjectsFields(): Array<{title: string; type: string; name: str
 function getChangeOfUseFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
-  // Basic information
   fields.push({
     title: "Description of Change",
     type: "textarea",
     name: "fields.change_description"
   });
   
-  // Dispensation section
   fields.push({
     title: "Need Dispensation",
     type: "select",
     name: "fields.dispensation.needs_dispensation"
   });
   
-  // Modifications section
   fields.push({
     title: "Interior Staircase",
     type: "radio",
@@ -647,7 +497,6 @@ function getChangeOfUseFields(): Array<{title: string; type: string; name: strin
     name: "fields.modifications.other_physical_changes"
   });
   
-  // Distances for Bruksendring
   fields.push({
     title: "Distance to Neighbor Boundary (meters)",
     type: "text",
@@ -690,10 +539,8 @@ function getChangeOfUseFields(): Array<{title: string; type: string; name: strin
     name: "fields.distances.protected_building"
   });
   
-  // Access section - reuse the same field generator with a different prefix
   fields = fields.concat(generateAccessChangesFields("access"));
   
-  // Attachments specific to change of use
   fields.push({
     title: "Situation Map",
     type: "radio",
@@ -739,7 +586,7 @@ function getChangeOfUseFields(): Array<{title: string; type: string; name: strin
   return fields;
 }
 
-// Generate fields using the improved modular approach
+
 function generateFieldsFromSchema() {
   return [...getBaseFormFields(), ...getSmallProjectsFields()];
 }
@@ -748,12 +595,6 @@ function generateFieldsFromSchemaBruksendring() {
   return [...getBaseFormFields(), ...getChangeOfUseFields()];
 }
 
-
-
-
-
-
-// Export types and functions
 export { 
   FormSchemaSmaProsjekter, 
   FormSchemaBruksendring,

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cn } from "~/lib/utils";
+
 import {
   Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
   Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0,
@@ -16,6 +17,7 @@ import {
 interface SjekklisteSoknadProps {
   currentStep: number;
   currentSubstep: number;
+  applicationID?: number ;
 }
 
 type StepComponentsType = {
@@ -24,9 +26,7 @@ type StepComponentsType = {
   };
 };
 
-
-
-export default function SjekklisteSoknad({ currentStep, currentSubstep }: SjekklisteSoknadProps) { 
+export default function SjekklisteSoknad({ currentStep, currentSubstep, applicationID }: SjekklisteSoknadProps) { 
   const sjekkliste: Record<number, string[]> = {
     1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
     2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte","Last opp andre nødvendige vedlegg"],
@@ -37,71 +37,80 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep }: Sjekkl
   const pathname = usePathname();
   const router = useRouter();
 
-  const isByggeorRive = pathname === "/atlas-app/i-soknad/bygge-eller-rive";
-  const isBruksendre = pathname === "/atlas-app/i-soknad/bruksendring";
+  const isByggeorRive = pathname.includes('/bygge-eller-rive');
+  const isBruksendre = pathname.includes('/bruksendring');
 
+  useEffect(() => {
+    if (!applicationID) {
+      console.warn("No applicationID provided to SjekklisteSoknad");
+      return; 
+    }
+  
+    if (!isByggeorRive && !isBruksendre) {
+      router.push(`/404/${applicationID}`);
+    }
+  }, [isByggeorRive, isBruksendre, applicationID, router]);
 
-const stepComponents: StepComponentsType = isByggeorRive ? {
-  1: {
-      0: Step1_0,
-      1: Step1_1,
-  },
-  2: {
-      0: Step2_0,
-      1: Step2_1,
-      2: Step2_2,
-  },
-  3: {
-      0: Step3_0,
-      1: Step3_1,
-      2: Step3_2,
-  },
-  4: {
-      0: Step4_0,
-      1: Step4_1,
-  },
-  5: {
-      0: Step5_0,
-  },
+  if (!isByggeorRive && !isBruksendre) {
+    return null;
+  }
 
-} : {
-  1: {
-      0: BruksendreStep1_1,
-  },
-  2: {
-      0: BruksendreStep2_0,
-      1: BruksendreStep2_1,
-      2: BruksendreStep2_2,
-  },
-  3: {
-      0: BruksendreStep3_0,
-      1: BruksendreStep3_1,
-      2: BruksendreStep3_2,
-  },
-  4: {
-      0: BruksendreStep4_0,
-      1: BruksendreStep4_1,
-  },
-  5: {
-      0: BruksendreStep5_0,
-  },
-}
+  const stepComponents: StepComponentsType = isByggeorRive ? {
+    1: {
+        0: Step1_0,
+        1: Step1_1,
+    },
+    2: {
+        0: Step2_0,
+        1: Step2_1,
+        2: Step2_2,
+    },
+    3: {
+        0: Step3_0,
+        1: Step3_1,
+        2: Step3_2,
+    },
+    4: {
+        0: Step4_0,
+        1: Step4_1,
+    },
+    5: {
+        0: Step5_0,
+    },
 
-const steps = [
-  { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
-  { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
-  { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
-  { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
-  { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
-  { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
-];
+  } : {
+    1: {
+        0: BruksendreStep1_1,
+    },
+    2: {
+        0: BruksendreStep2_0,
+        1: BruksendreStep2_1,
+        2: BruksendreStep2_2,
+    },
+    3: {
+        0: BruksendreStep3_0,
+        1: BruksendreStep3_1,
+        2: BruksendreStep3_2,
+    },
+    4: {
+        0: BruksendreStep4_0,
+        1: BruksendreStep4_1,
+    },
+    5: {
+        0: BruksendreStep5_0,
+    },
+  }
 
-if (!isByggeorRive && !isBruksendre) {
-  router.push("/404");
-  return null;
-}
+  const steps = [
+    { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
+    { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
+    { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
+    { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
+    { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
+    { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+  ];
 
-const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
+  const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
 
   const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 

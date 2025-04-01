@@ -3,12 +3,14 @@
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { ApplicationType } from "@prisma/client";
-import { Trash2 } from "lucide-react";
+import { Trash2, PlusCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
+import { useState } from "react";
 
 const MyApplications = () => {
   const router = useRouter();
+  const [isCreating, setIsCreating] = useState(false);
   
   // Data fetching
   const { 
@@ -29,9 +31,39 @@ const MyApplications = () => {
     }
   });
   
-  // Navigation handler
-  const handleCreateNewApplication = () => {
-    router.push('/atlas-app/SoknadTest/new');
+  // Create application mutation
+  const createApplication = api.application.createApplication.useMutation({
+    onSuccess: (data) => {
+      setIsCreating(false);
+      
+      if (!data?.applicationID) {
+        toast.error("Noe gikk galt ved oppretting av søknad");
+        return;
+      }
+      
+      toast.success("Søknad opprettet");
+      router.push(`/atlas-app/i-soknad?id=${data.applicationID}`);
+    },
+    onError: (error) => {
+      setIsCreating(false);
+      toast.error(`Error: ${error.message}`);
+    }
+  });
+  
+  // Navigation handler - now initiates application creation
+  const handleCreateNewApplication = async () => {
+    setIsCreating(true);
+    
+    // Use a default/temporary application type
+    const temporaryType = "pending" as ApplicationType; 
+    
+    await createApplication.mutateAsync({
+      applicationType: temporaryType,
+      subTypeId: "pending", 
+      submissionDate: new Date(),
+      updatedDate: new Date(),
+      status: "Pabegynt"
+    });
   };
   
   // Delete handler with confirmation
@@ -94,9 +126,24 @@ const MyApplications = () => {
   
         <button 
           onClick={handleCreateNewApplication}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          disabled={isCreating}
+          className={`flex items-center justify-center gap-2 px-4 py-2 
+            ${isCreating 
+              ? 'bg-blue-400 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700'} 
+            text-white rounded-md transition-colors`}
         >
-          Create New Application
+          {isCreating ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-1"></div>
+              Creating...
+            </>
+          ) : (
+            <>
+              <PlusCircle size={16} />
+              Create New Application
+            </>
+          )}
         </button>
       </div>
 
@@ -120,7 +167,7 @@ const MyApplications = () => {
               
               <div className="mt-3 flex justify-between">
                 <a 
-                  href={`/atlas-app/i-soknad/${application.applicationID}`} 
+                  href={`/atlas-app/i-soknad/${application.applicationID}/applicant-details`} 
                   className="text-blue-600 hover:underline text-sm"
                 >
                   View details →

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Info } from 'lucide-react';
 
 interface Step1_1Props {
+  applicationID: number;
   formData: {
+    
     size: string;
     ridgeHeight: string;
     eavesHeight: string;
@@ -84,9 +86,13 @@ const calculcationMethod = [
 
 ]
 
-const Step1_1: React.FC<Step1_1Props> = ({ formData, setFormData, onValidityChange }) => {
+const Step1_1: React.FC<Step1_1Props> = ({ applicationID, formData, setFormData, onValidityChange }) => {
   const [hoveredBox, setHoveredBox] = useState<string | null>(null);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+   useEffect(() => {
+    console.log("Step1_1 received applicationID:", applicationID);
+  }, [applicationID]);
 
   const handleMouseEnter = (box: string) => {
     if (timeoutId) clearTimeout(timeoutId);
