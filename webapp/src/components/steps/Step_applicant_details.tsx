@@ -7,6 +7,7 @@ import type { FormDataType } from "~/context/FormContext";
 import { Button } from '../ui/button';
 import { ArrowRight, ArrowLeft, Info } from 'lucide-react';
 import { useRouter } from "next/navigation";
+import { ApplicationService, UIComponents, FormService } from '~/utils/api-service';
 
 // Types
 interface StepApplicantDetailsProps {
@@ -28,16 +29,34 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   applicationID, 
   onValidityChange
 }) => {
+  // Add this state to track validity internally
+  const [isFormValid, setIsFormValid] = useState(false);
+
   // Context and navigation hooks
   const { applicantFormData, updateApplicantFormData } = useFormContext();
   const router = useRouter();
   const { data: session } = useSession();
+  const tooltip = UIComponents.useTooltip();
   
-  // State
-  const [formData, setFormDataInternal] = useState<FormDataType>(applicantFormData);
-  const [isDirty, setIsDirty] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hoveredBox, setHoveredBox] = useState<string | null>(null);
+  // Replace your custom form state with FormService
+  const { 
+    formData, 
+    setFormData, 
+    isDirty, 
+    setIsDirty, 
+    handleInputChange 
+  } = FormService.useForm<FormDataType>(
+    applicantFormData,
+    checkFormValidity
+  );
+  
+  // Replace manual save state with ApplicationService
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(
+    applicationID ?? 0, 
+    'sma-prosjekter', // Or whatever application type is appropriate
+    1000
+  );
+  
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   
@@ -45,10 +64,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   const { 
     data: application, 
     isLoading: isLoadingApplication 
-  } = api.application.getApplication.useQuery(
-    { applicationID: applicationID ?? 0 },
-    { enabled: !!applicationID }
-  );
+  } = ApplicationService.getApplication(applicationID ?? 0);
   
   const { 
     data: userDetails, 
@@ -58,23 +74,8 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     { enabled: !!session }
   );
 
-  // API mutations
-  const updateApplication = api.application.updateApplication.useMutation();
-  const addApplicationField = api.application.addApplicationField.useMutation();
-
-  // Tooltip handlers
-  const handleMouseEnter = (boxId: string) => setHoveredBox(boxId);
-  const handleMouseLeave = () => setHoveredBox(null);
-
-  // Form data handler
-  const setFormData = (newData: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    const updatedData = typeof newData === 'function' ? newData(formData) : newData;
-    setFormDataInternal(updatedData);
-    updateApplicantFormData(updatedData);
-  };
-
   // Form validation
-  const checkFormValidity = (data: FormDataType = formData) => {
+  function checkFormValidity(data: FormDataType = formData) {
     const safeString = (value: string | undefined | null): string => 
       (value === undefined || value === null) ? '' : String(value).trim();
     
@@ -85,9 +86,15 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
       !!safeString(data.property.property_number) &&
       !!safeString(data.property.usage_number);
   
-    onValidityChange(isValid);
+    // Only update the parent state in useEffect, not during render
+    setIsFormValid(isValid);
     return isValid;
-  };
+  }
+
+  // Add an effect to notify parent of validity changes
+  useEffect(() => {
+    onValidityChange(isFormValid);
+  }, [isFormValid, onValidityChange]);
 
   // Property selection handler
   const handlePropertyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -103,25 +110,15 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
           address: selectedProperty.address,
         }
       }));
-      setIsDirty(true);
     }
   };
 
-  
-  // Save changes to database
-  const saveChangesToDatabase = async () => {
+  // Save all form data at once - for navigation or other bulk saves
+  const saveAllFormData = async () => {
     if (!applicationID) return false;
     
     try {
-      setIsSaving(true);
-      
-      // Update application timestamp
-      await updateApplication.mutateAsync({
-        applicationID,
-        updatedDate: new Date(),
-      });
-
-      // Prepare fields to save
+      // Create array of fields to save
       const fields = [
         // Applicant fields
         { name: 'applicant.name', value: formData.applicant.name || '' },
@@ -138,31 +135,24 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
         { name: 'property.municipality', value: formData.property.municipality || '' },
       ];
       
-      // Save all fields in parallel
+      // Use individual saveField calls for each field
       await Promise.all(
-        fields.map(field => 
-          addApplicationField.mutateAsync({
-            applicationID,
-            fieldName: field.name,
-            fieldValue: field.value,
-          })
-        )
+        fields.map(field => saveField(field.name, field.value))
       );
       
       setIsDirty(false);
       return true;
     } catch (error) {
       console.error('Error saving form data:', error);
-      throw error;
-    } finally {
-      setIsSaving(false);
+      toast.error("Feil ved lagring av skjemadata");
+      return false;
     }
   };
 
   // Navigation handlers
   const handleNext = async () => {
     if (isDirty) {
-      await saveChangesToDatabase();
+      await saveAllFormData();
     }
     
     if (applicationID) {
@@ -178,12 +168,10 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     }
   };
 
-  // Effects
-  
   // Sync with context
   useEffect(() => {
-    setFormDataInternal(applicantFormData);
-  }, [applicantFormData]);
+    updateApplicantFormData(formData);
+  }, [formData, updateApplicantFormData]);
 
   // Load user properties
   useEffect(() => {
@@ -198,7 +186,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   useEffect(() => {
     if (!userDetails || isDirty || formData.applicant.name || formData.property.address) return;
     
-    const updatedFormData: FormDataType = {
+    setFormData({
       applicant: {
         name: userDetails.name ?? formData.applicant.name ?? '',
         email: userDetails.email ?? formData.applicant.email ?? '',
@@ -213,11 +201,8 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
         postal_code: userDetails.postalCode ?? formData.property.postal_code ?? '',
         municipality: userDetails.postalArea ?? formData.property.municipality ?? '',
       }
-    };
-    
-    setFormData(updatedFormData);
-    checkFormValidity(updatedFormData);
-  }, [userDetails, isDirty]);
+    });
+  }, [userDetails, isDirty, formData.applicant.name, formData.property.address, setFormData]);
 
   // Load data from application
   useEffect(() => {
@@ -231,49 +216,35 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
         fieldsMap[field.fieldName] = field.fieldValue;
       });
       
-      const newFormData: FormDataType = {
+      setFormData(prevFormData => ({
         applicant: {
-          name: fieldsMap['applicant.name'] || formData.applicant.name || '',
-          email: fieldsMap['applicant.email'] || formData.applicant.email || '',
-          phone: fieldsMap['applicant.phone'] || formData.applicant.phone || '',
+          name: fieldsMap['applicant.name'] || prevFormData.applicant.name || '',
+          email: fieldsMap['applicant.email'] || prevFormData.applicant.email || '',
+          phone: fieldsMap['applicant.phone'] || prevFormData.applicant.phone || '',
         },
         property: {
-          address: fieldsMap['property.address'] || formData.property.address || '',
-          property_number: fieldsMap['property.property_number'] || formData.property.property_number || '',
-          usage_number: fieldsMap['property.usage_number'] || formData.property.usage_number || '',
-          lease_number: fieldsMap['property.lease_number'] || formData.property.lease_number || '',
-          section_number: fieldsMap['property.section_number'] || formData.property.section_number || '',
-          postal_code: fieldsMap['property.postal_code'] || formData.property.postal_code || '',
-          municipality: fieldsMap['property.municipality'] || formData.property.municipality || '',
+          address: fieldsMap['property.address'] || prevFormData.property.address || '',
+          property_number: fieldsMap['property.property_number'] || prevFormData.property.property_number || '',
+          usage_number: fieldsMap['property.usage_number'] || prevFormData.property.usage_number || '',
+          lease_number: fieldsMap['property.lease_number'] || prevFormData.property.lease_number || '',
+          section_number: fieldsMap['property.section_number'] || prevFormData.property.section_number || '',
+          postal_code: fieldsMap['property.postal_code'] || prevFormData.property.postal_code || '',
+          municipality: fieldsMap['property.municipality'] || prevFormData.property.municipality || '',
         }
-      };
-      
-      setFormData(newFormData);
-      checkFormValidity(newFormData);
+      }));
     } catch (error) {
       console.error("Error loading application data:", error);
     }
-  }, [application]);
+  }, [application, setFormData]);
 
-  // Auto-save changes
+  // Auto-save when isDirty, using debounced saveField from the service
   useEffect(() => {
     if (!isDirty || !applicationID) return;
     
-    const saveTimeout = setTimeout(() => {
-      saveChangesToDatabase().then(() => {
-        if (Math.random() < 0.2) {
-          toast.success("Endringer lagret", {
-            duration: 2000,
-            position: "bottom-right"
-          });
-        }
-      }).catch(error => {
-        toast.error(`Feil ved lagring: ${error.message}`);
-      });
-    }, 1000);
-    
-    return () => clearTimeout(saveTimeout);
-  }, [formData, isDirty, applicationID]);
+    // Don't need to implement auto-save here, as each field change will trigger saveField
+    // from FormService's handleInputChange method
+    // This is already handled by the ApplicationService.useSaveFormData hook
+  }, [isDirty, applicationID]);
 
   // Prepare display data
   const personalData: FieldDisplay[] = [
@@ -295,118 +266,103 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     { label: "E-post:", value: userDetails?.email || 'Ikke angitt' },
   ];
 
-  // Loading state
-  if ((isLoadingApplication && applicationID) || isLoadingUserDetails) {
-    return <LoadingIndicator />;
-  }
-
   // Return the component
   return (
     <div className="flex flex-col items-center justify-center h-full mt-16">
-      <h1 className="text-3xl font-bold justify-center flex">Dine opplysninger</h1>
+      {(isLoadingApplication && applicationID) || isLoadingUserDetails ? (
+        <LoadingIndicator />
+      ) : (
+        <>
+          <h1 className="text-3xl font-bold justify-center flex">Dine opplysninger</h1>
 
-      <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 lg:w-[950px]" data-cy="main-container">
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Left column - Personal details */}
-          <div className="w-full md:w-2/6" data-cy="left-column">
-            <h1 className='font-medium mb-4'>Personopplysninger</h1>
-            <DisplayFields fields={personalData} />
-          </div>
+          <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 lg:w-[950px]" data-cy="main-container">
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Left column - Personal details */}
+              <div className="w-full md:w-2/6" data-cy="left-column">
+                <h1 className='font-medium mb-4'>Personopplysninger</h1>
+                <DisplayFields fields={personalData} />
+              </div>
 
-          {/* Right column - Property details */}
-          <div className="w-full md:w-4/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
-            <div className='mb-4'>
-              <h1 className='font-medium inline-flex'>
-                Eiendom
-                <TooltipInfo 
-                  id="eiendom"
-                  content="Velg eiendommen du vil gjøre en endring på."
-                  isHovered={hoveredBox === 'eiendom'}
-                  onMouseEnter={() => handleMouseEnter('eiendom')}
-                  onMouseLeave={handleMouseLeave}
-                />
-              </h1>
-            </div>
-
-            <div className='flex flex-col space-y-2 mt-2'>
-              {/* Property selector */}
-              <select 
-                name="velgEiendom" 
-                id="velgEiendom" 
-                value={selectedPropertyId || ''}
-                onChange={handlePropertyChange}
-                className='bg-gray-200 border-2 border-gray-300 focus:outline-none focus:ring rounded-md mb-2 p-2'
-              >
-                <option value="">Velg eiendom</option>
-                {properties.map(property => (
-                  <option key={property.id} value={property.id}>{property.address}</option>
-                ))}
-              </select>
-
-              <h1 className='font-medium'>Eiendomsinformasjon</h1>
-              
-              <div className="flex flex-col md:flex-row md:gap-8 w-full">
-                {/* Property details */}
-                <div className="flex-1 space-y-2">
-                  <DisplayFields fields={propertyData} />
+              {/* Right column - Property details */}
+              <div className="w-full md:w-4/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
+                <div className='mb-4'>
+                  <h1 className='font-medium inline-flex'>
+                    Eiendom
+                    <div className="relative flex">
+                      <Info
+                        size={14}
+                        className="ml-1 hover:cursor-pointer"
+                        onMouseEnter={() => tooltip.handleMouseEnter('eiendom')}
+                        onMouseLeave={tooltip.handleMouseLeave}
+                      />
+                      {tooltip.isVisible('eiendom') && (
+                        <div
+                          className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm z-10"
+                          onMouseEnter={() => tooltip.handleMouseEnter('eiendom')}
+                          onMouseLeave={tooltip.handleMouseLeave}
+                        >
+                          Velg eiendommen du vil gjøre en endring på.
+                        </div>
+                      )}
+                    </div>
+                  </h1>
                 </div>
 
-                {/* Owner details */}
-                <div className="flex-1 space-y-2">
-                  <h1 className='font-medium'>Eies av:</h1>
-                  <div>
-                    {userDetails?.name || 'Ikke angitt'}
+                <div className='flex flex-col space-y-2 mt-2'>
+                  {/* Property selector */}
+                  <select 
+                    name="velgEiendom" 
+                    id="velgEiendom" 
+                    value={selectedPropertyId || ''}
+                    onChange={handlePropertyChange}
+                    className='bg-gray-200 border-2 border-gray-300 focus:outline-none focus:ring rounded-md mb-2 p-2'
+                  >
+                    <option value="">Velg eiendom</option>
+                    {properties.map(property => (
+                      <option key={property.id} value={property.id}>{property.address}</option>
+                    ))}
+                  </select>
+
+                  <h1 className='font-medium'>Eiendomsinformasjon</h1>
+                  
+                  <div className="flex flex-col md:flex-row md:gap-8 w-full">
+                    {/* Property details */}
+                    <div className="flex-1 space-y-2">
+                      <DisplayFields fields={propertyData} />
+                    </div>
+
+                    {/* Owner details */}
+                    <div className="flex-1 space-y-2">
+                      <h1 className='font-medium'>Eies av:</h1>
+                      <div>
+                        {userDetails?.name || 'Ikke angitt'}
+                      </div>
+                      <DisplayFields fields={ownerData} />
+                    </div>
                   </div>
-                  <DisplayFields fields={ownerData} />
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Navigation buttons */}
-      <NavigationButtons 
-        onBack={handleBack}
-        onNext={handleNext}
-        isNextDisabled={isSaving || !checkFormValidity()}
-        isSaving={isSaving}
-      />
+          {/* Navigation buttons */}
+          <NavigationButtons 
+            onBack={handleBack}
+            onNext={handleNext}
+            isNextDisabled={isSaving || !isFormValid} // Don't call checkFormValidity() directly here
+            isSaving={isSaving}
+          />
+        </>
+      )}
     </div>
   );
 };
 
-// Helper components
+// Helper components remain the same
 const LoadingIndicator: React.FC = () => (
   <div className="flex justify-center items-center h-full">
     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     <span className="ml-3">Laster data...</span>
-  </div>
-);
-
-const TooltipInfo: React.FC<{
-  id: string;
-  content: string;
-  isHovered: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-}> = ({ id, content, isHovered, onMouseEnter, onMouseLeave }) => (
-  <div className="relative flex">
-    <Info
-      size={14}
-      className="ml-1 hover:cursor-pointer"
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    />
-    {isHovered && (
-      <div
-        className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm z-10"
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      >
-        {content}
-      </div>
-    )}
   </div>
 );
 

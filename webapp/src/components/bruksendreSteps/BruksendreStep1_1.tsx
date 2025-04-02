@@ -1,28 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Info } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { Tooltip, RadioGroup } from '~/components/ui/ui-components';
 
-// Define a type for the form data to avoid repetition
+// Update FormDataType to match our schema change
 type FormDataType = {
   neighboringBorder: string;
   powerLine: string;
   dangerZone: string;
   protectedBuilding: string;
-  driveway: string;
   drivewayChanges: string;
-  noDrivewayChanges: string;
-  planCompliance: string;
-  nonComplianceReason: string;
-  nationalRoadOrCountyRoad: boolean;
-  communalRoad: boolean;
-  privateRoad: boolean;
-  internalStaircase: string;
-  bearingWallsorConstructions: string;
-  insertOrRemoveWindowOrDoor: string;
-  otherPhysicalChanges: string;
-  description: string;
-  yesDispensationIsAttached: boolean;
-  yesPermitsAreAttached: boolean;
-  noDispensationNeeded: boolean;
+  road_type: string; 
+};
+
+// Define default values to ensure controls are always controlled
+const defaultValues: FormDataType = {
+  neighboringBorder: '',
+  powerLine: 'Nei',
+  dangerZone: 'Nei',
+  protectedBuilding: 'Nei',
+  drivewayChanges: 'Nei',
+  road_type: '',
+};
+
+// Road type options
+const ROAD_TYPES = {
+  RIKSVEI: "riksvei_eller_fylkesvei",
+  KOMMUNAL: "kommunal_vei",
+  PRIVAT: "privat_vei"
 };
 
 interface BruksendreStep1_1Props {
@@ -32,120 +36,21 @@ interface BruksendreStep1_1Props {
   onValidityChange: (isValid: boolean) => void;
 }
 
-// Create reusable components for common UI patterns
-interface TooltipProps {
-  id: string;
-  content: string;
-  isVisible: boolean;
-  onMouseEnter: (id: string) => void;
-  onMouseLeave: () => void;
-}
-
-const Tooltip: React.FC<TooltipProps> = ({ 
-  id, 
-  content, 
-  isVisible, 
-  onMouseEnter, 
-  onMouseLeave 
-}) => (
-  <div className="relative flex">
-    <Info
-      size={14}
-      className="ml-1 hover:cursor-pointer"
-      onMouseEnter={() => onMouseEnter(id)}
-      onMouseLeave={onMouseLeave}
-    />
-    {isVisible && (
-      <div
-        className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm z-10"
-        onMouseEnter={() => onMouseEnter(id)}
-        onMouseLeave={onMouseLeave}
-      >
-        {content}
-      </div>
-    )}
-  </div>
-);
-
-interface RadioGroupProps {
-  name: string;
-  label: string;
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-const RadioGroup: React.FC<RadioGroupProps> = ({ name, label, options, value, onChange }) => (
-  <div className='flex justify-between items-center mr-4'>
-    <span>{label}</span>
-    <div className='flex gap-4'>
-      {options.map((option) => (
-        <label key={option.value} className='items-center mr-4'>
-          <input
-            type="radio"
-            name={name}
-            value={option.value}
-            checked={value === option.value}
-            onChange={onChange}
-            className='mr-2'
-          />
-          {option.label}
-        </label>
-      ))}
-    </div>
-  </div>
-);
-
 const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({ 
-  formData,
   applicationID, 
-  setFormData, 
+  formData: externalFormData, 
+  setFormData: externalSetFormData, 
   onValidityChange 
 }) => {
-
-  useEffect (() => {
-    console.log('BruksendreStep1_1 received applicationID:', applicationID)}, [applicationID]
-  );
-  const [hoveredBox, setHoveredBox] = useState<string | null>(null);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
-
-  // Tooltip handling
-  const handleMouseEnter = (box: string) => {
-    if (timeoutId) clearTimeout(timeoutId);
-    setHoveredBox(box);
-  };
-
-  const handleMouseLeave = () => {
-    const id = setTimeout(() => setHoveredBox(null), 300);
-    setTimeoutId(id);
-  };
-
-  useEffect(() => {
-    // Clean up timeout when component unmounts
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [timeoutId]);
-
-  // Form handlers
-  const handleFormChange = <T extends string | boolean>(name: string, value: T) => {
-    const updatedFormData = { ...formData, [name]: value };
-    setFormData(updatedFormData);
-    checkFormValidity(updatedFormData);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    handleFormChange(e.target.name, e.target.value);
-  };
-
-  const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFormChange(e.target.name, e.target.value);
-  };
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFormChange(e.target.name, e.target.checked);
-  };
-
+  // Merge with defaults to ensure all properties are defined
+  const formData = { ...defaultValues, ...externalFormData };
+  
+  const tooltip = UIComponents.useTooltip();
+  
+  // Use the bruksendring application type specifically
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'bruksendring');
+  
+  // Form validation function
   const checkFormValidity = (data: typeof formData) => {
     const basicFieldsValid = 
       (data.neighboringBorder?.trim() ?? '') !== '' &&
@@ -154,14 +59,45 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
       (data.drivewayChanges === "Ja" || data.drivewayChanges === "Nei") &&
       (data.powerLine?.trim() ?? '') !== '';
 
-    const drivewayValid = data.drivewayChanges === "Nei" || 
-      (data.nationalRoadOrCountyRoad || data.communalRoad || data.privateRoad);
+    // Validate road_type only if driveway changes are planned
+    const drivewayValid = data.drivewayChanges === "Nei" || data.road_type !== '';
 
     const isValid = basicFieldsValid && drivewayValid;
     onValidityChange(isValid);
+    return isValid;
   };
 
-  // Common tooltip options
+  // Single unified handler for all field changes
+  const handleFieldChange = (name: string, value: string | boolean) => {
+    // Create the updated data
+    const updatedFormData = { 
+      ...formData, 
+      [name]: value 
+    };
+    
+    // Update parent component state
+    externalSetFormData(prev => ({...prev, [name]: value}));
+    
+    // Check validity with the updated data
+    checkFormValidity(updatedFormData);
+    
+    // Debug field name
+    console.log(`Saving field: ${name} with value: ${value}`);
+    
+    // Save to API
+    saveField(name, value.toString());
+  };
+
+  // Event handlers for form elements - simplified to use the unified handler
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    handleFieldChange(e.target.name, e.target.value);
+  };
+
+  const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFieldChange(e.target.name, e.target.value);
+  };
+
+  // Common tooltip content
   const tooltips = {
     shortestDistance: "Skriv inn korteste avstand.",
     conflictsWithSurroundings: "konflikt",
@@ -174,22 +110,27 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     { value: "Nei", label: "Nei" }
   ];
 
+  // Validate form on mount
+  useEffect(() => {
+    checkFormValidity(formData);
+  }, []);
+
   return (
     <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Detaljer til det du vil gjøre</h1>
 
       {/* Distance Information Section */}
-      <section className="border-2 border-gray-400 rounded-lg mt-4 p-4" data-cy="main-container">
+      <section className="border-2 border-gray-400 rounded-lg mt-4 p-4">
         <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-3/6 h-72" data-cy="left-column">
+          <div className="w-full md:w-3/6 h-72">
             <h2 className="inline-flex font-medium">
               Korteste avstand
               <Tooltip
                 id="shortestDistance"
                 content={tooltips.shortestDistance}
-                isVisible={hoveredBox === 'shortestDistance'}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
+                isVisible={tooltip.isVisible('shortestDistance')}
+                onMouseEnter={tooltip.handleMouseEnter}
+                onMouseLeave={tooltip.handleMouseLeave}
               />
             </h2>
 
@@ -211,7 +152,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
             </form>
           </div>
 
-          <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
+          <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400 md:pl-8">
             <div className='overflow-hidden'>
               [KART]
             </div>
@@ -226,9 +167,9 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
           <Tooltip
             id="conflictsWithSurroundings"
             content={tooltips.conflictsWithSurroundings}
-            isVisible={hoveredBox === 'conflictsWithSurroundings'}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            isVisible={tooltip.isVisible('conflictsWithSurroundings')}
+            onMouseEnter={tooltip.handleMouseEnter}
+            onMouseLeave={tooltip.handleMouseLeave}
           />
         </h2>  
         <p className='italic text-sm mb-2'>
@@ -262,16 +203,16 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
         </div>
       </section>
 
-      {/* Driveway Section */}
+      {/* Driveway Section - Updated */}
       <section className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
         <h2 className="font-medium inline-flex mb-2">
           Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
           <Tooltip
             id="driveway"
             content={tooltips.driveway}
-            isVisible={hoveredBox === 'driveway'}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            isVisible={tooltip.isVisible('driveway')}
+            onMouseEnter={tooltip.handleMouseEnter}
+            onMouseLeave={tooltip.handleMouseLeave}
           />
         </h2> 
         
@@ -294,36 +235,25 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
         {formData.drivewayChanges === "Ja" && (
           <div className='mt-4 gap-2'>
             <h1 className="text-md font-medium text-gray">
-              Eiendommen vil få ny/endret avkjørsel til (sett kryss):
+              Eiendommen vil få ny/endret avkjørsel til (velg én):
             </h1>
             <div className='ml-8 mt-2 flex flex-col gap-2'>
-              <label className='items-center gap-x-2 flex'>
-                <input 
-                  type="checkbox" 
-                  name='nationalRoadOrCountyRoad'
-                  checked={formData.nationalRoadOrCountyRoad}
-                  onChange={handleCheckboxChange}
-                />
-                Riksvei eller fylkesvei
-              </label>
-              <label className='items-center gap-x-2 flex'>
-                <input 
-                  type="checkbox" 
-                  name='communalRoad'
-                  checked={formData.communalRoad}
-                  onChange={handleCheckboxChange}
-                />
-                Kommunal vei
-              </label>
-              <label className='items-center gap-x-2 flex'>
-                <input 
-                  type="checkbox" 
-                  name='privateRoad'
-                  checked={formData.privateRoad}
-                  onChange={handleCheckboxChange}
-                />
-                Privat vei
-              </label>
+              {[
+                { value: ROAD_TYPES.RIKSVEI, label: "Riksvei eller fylkesvei" },
+                { value: ROAD_TYPES.KOMMUNAL, label: "Kommunal vei" },
+                { value: ROAD_TYPES.PRIVAT, label: "Privat vei" }
+              ].map((option) => (
+                <label key={option.value} className='items-center gap-x-2 flex'>
+                  <input 
+                    type="radio" 
+                    name="road_type"
+                    value={option.value}
+                    checked={formData.road_type === option.value}
+                    onChange={handleRadioChange}
+                  />
+                  {option.label}
+                </label>
+              ))}
             </div>
             <p className='mt-4 italic'>
               Du vil få muligheten til å legge til vedlegg som viser at du har avkjøringstillatelse fra
@@ -332,6 +262,13 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
           </div>
         )}
       </section>
+
+      {/* Show saving indicator */}
+      {isSaving && (
+        <div className="fixed bottom-4 right-4 bg-white shadow-md rounded-full p-2 z-10">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
     </div>
   );
 };

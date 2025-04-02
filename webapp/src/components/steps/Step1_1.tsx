@@ -1,835 +1,477 @@
-import React, { useEffect, useState } from 'react';
-import { Info } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { resolveFieldPath } from '~/utils/field-mappings';
+import { 
+  SmaProsjekterFormData, 
+  smaProsjekterDefaultValues, 
+  ROAD_TYPES, 
+  CALCULATION_METHODS,
+  yesNoOptions 
+} from '~/types/formTypes';
+import { RadioGroup, Tooltip } from '../ui/ui-components';
+
+// Building measurement inputs
+const buildingInputs = [
+  { name: 'size', label: 'Størrelse:', placeholder: 'F.eks. 24', unit: 'm²' },
+  { name: 'mønehøyde', label: 'Mønehøyde:', placeholder: 'F.eks. 4.5', unit: 'meter' },
+  { name: 'gesimshøyde', label: 'Gesimshøyde:', placeholder: 'F.eks. 3.5', unit: 'meter' },
+  { name: 'distance_va', label: 'Avstand til VA-ledninger:', placeholder: 'F.eks. 4', unit: 'meter' },
+  { name: 'distance_high_voltage_lines', label: 'Avstand til strømkabler:', placeholder: 'F.eks. 3', unit: 'meter' },
+  { name: 'road_center', label: 'Avstand til vei:', placeholder: 'F.eks. 5', unit: 'meter' },
+];
+
+// Distance measurement inputs
+const distanceInputs = [
+  { name: 'neighbor_boundary', label: 'Nabogrense:', placeholder: 'F.eks. 4', unit: 'meter' },
+  { name: 'road_center', label: 'Midten av vei:', placeholder: 'F.eks. 6', unit: 'meter' },
+  { name: 'nearest_building', label: 'Nærmeste bygning på naboeiendom:', placeholder: 'F.eks. 5', unit: 'meter' },
+];
+
+// Building density inputs
+const buildingDensityInputs = [
+  { name: 'allowed_utilization', label: 'Tillatt grad av utnytting:', unit: '', wideLabel: true },
+  { name: 'property_net_area', label: 'Tomtens nettoareal:', unit: 'm²', wideLabel: true },
+  { name: 'current_area', label: 'Areal av bygninger, konstruksjoner og parkering i dag:', unit: 'm²', wideLabel: true },
+  { name: 'future_area', label: 'Areal av bygninger, konstruksjoner og parkering etterpå:', unit: 'm²', wideLabel: true },
+  { name: 'utilization_after_project', label: 'Grad av utnytting etter prosjekt:', unit: '', wideLabel: true },
+];
+
+// Calculation methods - use the constants from formTypes
+const calculationMethodOptions = [
+  { label: 'BYA -', value: CALCULATION_METHODS.BYA },
+  { label: 'BRA -', value: CALCULATION_METHODS.BRA },
+  { label: 'T-BRA -', value: CALCULATION_METHODS.T_BRA },
+  { label: '%BYA -', value: CALCULATION_METHODS.BYA_PERCENT },
+  { label: '%BRA -', value: CALCULATION_METHODS.BRA_PERCENT },
+  { label: '%TU -', value: CALCULATION_METHODS.TU_PERCENT },
+  { label: 'U-grad', value: CALCULATION_METHODS.U_GRAD },
+];
+
+// Environmental conflicts
+const environmentalConflictGroups = [
+  [
+    { name: 'distance_train_tracks', label: 'Er det mindre enn 30 meter til nærmeste trikke-eller togspor?' },
+    { name: 'distance_water_sewer_pipes', label: 'Bygger/river du i nærheten av en vann- og avløpsledning?' },
+    { name: 'distance_high_voltage_lines', label: 'Bygger/river du i nærheten av høyspent kraftlinje?' },
+  ],
+  [
+    { name: 'near_beach_or_river', label: 'Bygger/river du i nærheten av strandsonen eller sjø/elv/vassdrag?' }, 
+    { name: 'in_flood_risk_area', label: 'Skal du bygge/rive i et flom-, ras- eller skredutsatt område?' },
+    { name: 'protected_species_present', label: 'Finnes det truende eller vernede arter på eiendommen er i nærheten?' },
+    { name: 'cultural_heritage_site', label: 'Finnes det kulturminner eller verneverdig bebyggelse på eiendommen eller i nærheten?' },
+  ]
+];
 
 interface Step1_1Props {
   applicationID: number;
-  formData: {
-    
-    size: string;
-    ridgeHeight: string;
-    eavesHeight: string;
-    distanceFromVACables: string;
-    distanceFromPowerCables: string;
-    distanceFromRoad: string;
-    distanceFromTracks: string;
-    calculationMethod: string[];
-    buildingDensity: string;
-    driveway: string;
-    drivewayChanges: string;
-    noDrivewayChanges: string;
-    planCompliance: string;
-    nonComplianceReason: string;
-    nationalRoadOrCountyRoad: boolean;
-    communalRoad: boolean;
-    privateRoad: boolean;
-    neighboringBorder: string;
-    middleOfRoad: string;
-    closestToNeighbor: string;
-    allowedBuildingDensity: string;
-    buildingDensityAfter: string;
-    netArea: string;
-    areaToday: string;
-    areaAfter: string;
-    tramOrTrainTrack: string;
-    waterOrSewerLine: string;
-    powerLine: string;
-    beachOrRiver: string;
-    dangerZone: string;
-    endangeredSpecies: string;
-    protectedBuildings: string;
-  };
-  setFormData: React.Dispatch<React.SetStateAction<{
-    size: string;
-    ridgeHeight: string;
-    eavesHeight: string;
-    distanceFromVACables: string;
-    distanceFromPowerCables: string;
-    distanceFromRoad: string;
-    distanceFromTracks: string;
-    calculationMethod: string[];
-    buildingDensity: string;
-    driveway: string;
-    drivewayChanges: string;
-    noDrivewayChanges: string;
-    planCompliance: string;
-    nonComplianceReason: string;
-    nationalRoadOrCountyRoad: boolean;
-    communalRoad: boolean;
-    privateRoad: boolean;
-    neighboringBorder: string;
-    middleOfRoad: string;
-    closestToNeighbor: string;
-    allowedBuildingDensity: string;
-    buildingDensityAfter: string;
-    netArea: string;
-    areaToday: string;
-    areaAfter: string;
-    tramOrTrainTrack: string;
-    waterOrSewerLine: string;
-    powerLine: string;
-    beachOrRiver: string;
-    dangerZone: string;
-    endangeredSpecies: string;
-    protectedBuildings: string;
-  }>>;
+  formData: SmaProsjekterFormData;
+  setFormData: React.Dispatch<React.SetStateAction<SmaProsjekterFormData>>;
   onValidityChange: (isValid: boolean) => void;
 }
 
-const calculcationMethod = [
-    { label: "BYA -", value: "Bebygd areal i m²"},
-    { label: "BRA -", value: "Bruksarea i m²"},
-    { label: "T-BRA -", value: "Tillatt bruksareal i m²"},
-    { label: "%BYA -", value: "Bebygd areal i %"},
-    { label: "%BRA -", value: "Bruksareal i %"},
-    { label: "%TU -", value: "Tillatt utnyttelsesgrad i %"},
-    { label: "U-grad", value: "(denne betegnelsen brukes i enkelte eldre planer)"},
+const Step1_1: React.FC<Step1_1Props> = ({
+  applicationID,
+  formData: externalFormData,
+  setFormData: externalSetFormData,
+  onValidityChange,
+}) => {
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+  const tooltip = UIComponents.useTooltip();
 
-]
+  const formData = { ...smaProsjekterDefaultValues, ...externalFormData };
 
-const Step1_1: React.FC<Step1_1Props> = ({ applicationID, formData, setFormData, onValidityChange }) => {
-  const [hoveredBox, setHoveredBox] = useState<string | null>(null);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const checkFormValidity = (data: SmaProsjekterFormData) => {
+    const basicFieldsValid =
+      // Building measurements
+      (data.size?.trim() ?? '') !== '' &&
+      (data.mønehøyde?.trim() ?? '') !== '' &&
+      (data.gesimshøyde?.trim() ?? '') !== '' &&
+      
+      // Distance measurements
+      (data.road_center?.trim() ?? '') !== '' &&
+      (data.neighbor_boundary?.trim() ?? '') !== '' &&
+      (data.nearest_building?.trim() ?? '') !== '' &&
+      
+      // Calculation method
+      (data.calculation_method?.length ?? 0) > 0 &&
+      
+      // Environmental conflicts
+      (data.distance_train_tracks === 'Ja' || data.distance_train_tracks === 'Nei') &&
+      (data.distance_water_sewer_pipes === 'Ja' || data.distance_water_sewer_pipes === 'Nei') &&
+      (data.distance_high_voltage_lines === 'Ja' || data.distance_high_voltage_lines === 'Nei') &&
+      (data.in_flood_risk_area === 'Ja' || data.in_flood_risk_area === 'Nei') &&
+      (data.near_beach_or_river === 'Ja' || data.near_beach_or_river === 'Nei') && 
+      (data.protected_species_present === 'Ja' || data.protected_species_present === 'Nei') &&
+      (data.cultural_heritage_site === 'Ja' || data.cultural_heritage_site === 'Nei') &&
+      
+      // Building density
+      (data.allowed_utilization?.trim() ?? '') !== '' &&
+      (data.property_net_area?.trim() ?? '') !== '' &&
+      (data.current_area?.trim() ?? '') !== '' &&
+      (data.future_area?.trim() ?? '') !== '' &&
+      (data.utilization_after_project?.trim() ?? '') !== '' &&
+      
+      // Access
+      (data.new_driveway === 'Ja' || data.new_driveway === 'Nei') &&
+      
+      // Plan compliance
+      (data.planCompliance === 'Ja' || data.planCompliance === 'Nei') &&
+      (data.planCompliance !== 'Nei' || (data.nonComplianceReason?.trim() ?? '') !== '');
 
-   useEffect(() => {
-    console.log("Step1_1 received applicationID:", applicationID);
-  }, [applicationID]);
+    // Validate road_type only if new driveway is planned
+    const drivewayValid = data.new_driveway === 'Nei' || data.road_type !== '';
 
-  const handleMouseEnter = (box: string) => {
-    if (timeoutId) clearTimeout(timeoutId);
-    setHoveredBox(box);
+    const isValid = basicFieldsValid && drivewayValid;
+    onValidityChange(isValid);
+    return isValid;
   };
 
-  const handleMouseLeave = () => {
-    const id = setTimeout(() => setHoveredBox(null), 300);
-    setTimeoutId(id);
+  const handleFieldChange = (name: string, value: string | boolean | string[]) => {
+    const updatedFormData = {
+      ...formData,
+      [name]: value,
+    };
+
+    externalSetFormData((prev) => ({ ...prev, [name]: value }));
+    checkFormValidity(updatedFormData);
+
+    console.log(`Saving field: ${name} with value:`, value);
+
+    // Get the mapped field path for saving to the backend
+    const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
+    
+    // Save using the resolved field path
+    if (Array.isArray(value)) {
+      saveField(fieldPath, JSON.stringify(value));
+    } else {
+      saveField(fieldPath, value.toString());
+    }
+  };
+  const tooltipContents = {
+    buildingDetails: 'Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.',
+    calculationMethod: 'Beregningsmetode i en byggesøknad er måten arealer og volumer beregnes på for å sikre at prosjektet overholder gjeldende lover og forskrifter.',
+    buildingDensity: 'Utnyttingsgraden er et mål på hvor stor del av en tomt som kan bebygges. Den regnes ut ved å dividere bygningens bruksareal (BRA) med tomtens areal (BYA).',
+    shortestDistance: 'Skal du rive, eller er noe så langt unna at det ikke vises på situasjonskartet? Da kan du stryke over punktet.',
+    conflictWithSurroundings: 'Her kan du krysse av for endringene du planlegger å gjøre på eiendommen din.',
+    driveway: 'Hvis byggeprosjektet vil føre til en ny eller endret avkjørsel til eiendommen, må du søke om tillatelse fra Statens vegvesen eller kommunen.',
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    const updatedFormData = { ...formData, [name]: value };
-    setFormData(updatedFormData);
-    checkFormValidity(updatedFormData);
+    handleFieldChange(e.target.name, e.target.value);
   };
 
   const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const updatedFormData = { ...formData, [name]: value };
-
-    if (value === "Nei") {
-      updatedFormData.nonComplianceReason = '';
-    }
-
-    if (value === "Ja") {
-      updatedFormData.noDrivewayChanges = '';
-    }
-
-    setFormData(updatedFormData);
-    checkFormValidity(updatedFormData);
+    handleFieldChange(e.target.name, e.target.value);
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    const updatedFormData = { 
-      ...formData, 
-      [name]: checked 
-    };
-    setFormData(updatedFormData);
-    checkFormValidity(updatedFormData);
+  // Handle calculation method changes
+  const handleCalculationMethodChange = (method: string) => {
+    // Since calculation_method is already an array in the type definition,
+    // we don't need to split it
+    const currentMethods = formData.calculation_method || [];
+    
+    const updatedMethods = currentMethods.includes(method)
+      ? currentMethods.filter(v => v !== method)
+      : [...currentMethods, method];
+    
+    // Pass the array directly, no need to join
+    handleFieldChange('calculation_method', updatedMethods);
   };
 
-  const checkFormValidity = (data: typeof formData) => {
-    const basicFieldsValid = 
-      (data.size?.trim() ?? '') !== '' &&
-      (data.netArea?.trim() ?? '') !== '' &&
-      (data.areaAfter?.trim() ?? '') !== '' &&
-      (data.areaToday?.trim() ?? '') !== '' &&
-      (data.buildingDensityAfter?.trim() ?? '') !== '' &&
-      (data.allowedBuildingDensity?.trim() ?? '') !== '' &&
-      (data.neighboringBorder?.trim() ?? '') !== '' &&
-      (data.middleOfRoad?.trim() ?? '') !== '' &&
-      (data.closestToNeighbor?.trim() ?? '') !== '' &&
-      (data.ridgeHeight?.trim() ?? '') !== '' &&
-      (data.eavesHeight?.trim() ?? '') !== '' &&
-      (data.calculationMethod?.length ?? 0) > 0 &&
-      (data.buildingDensity?.trim() ?? '') !== '' &&
-      (data.distanceFromVACables?.trim() ?? '') !== '' &&
-      (data.distanceFromPowerCables?.trim() ?? '') !== '' &&
-      (data.distanceFromRoad?.trim() ?? '') !== '' &&
-      (data.distanceFromTracks?.trim() ?? '') !== '' &&
-      (data.tramOrTrainTrack === "Ja" || data.tramOrTrainTrack === "Nei") &&
-      (data.waterOrSewerLine === "Ja" || data.waterOrSewerLine === "Nei") &&
-      (data.protectedBuildings === "Ja" || data.protectedBuildings === "Nei") &&
-      (data.powerLine === "Ja" || data.powerLine === "Nei") &&
-      (data.dangerZone === "Ja" || data.dangerZone === "Nei") &&
-      (data.beachOrRiver === "Ja" || data.beachOrRiver === "Nei") &&
-      (data.endangeredSpecies === "Ja" || data.endangeredSpecies === "Nei") &&
-      (data.drivewayChanges === "Ja" || data.drivewayChanges === "Nei") &&
-      (data.planCompliance === "Ja" || data.planCompliance === "Nei") &&
-      (data.planCompliance !== "Nei" || (data.nonComplianceReason?.trim() ?? '') !== '');
-  
-    const drivewayValid = data.drivewayChanges === "Nei" || 
-                        (data.nationalRoadOrCountyRoad || 
-                         data.communalRoad || 
-                         data.privateRoad);
-  
-    const isValid = basicFieldsValid && drivewayValid;
-    onValidityChange(isValid);
-  };
+  useEffect(() => {
+    checkFormValidity(formData);
+  }, []);
 
   return (
     <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Detaljer til det du vil gjøre</h1>
 
+      {/* Building Details Section */}
       <div className="border-2 border-gray-400 rounded-lg mt-4 p-4" data-cy="main-container">
         <div className="flex flex-col md:flex-row">
           <div className="w-full md:w-3/6" data-cy="left-column">
             <h2 className="inline-flex font-medium">
               Bygningdetaljer
-              <div className="relative flex">
-                <Info
-                  size={14}
-                  className="ml-1 hover:cursor-pointer"
-                  onMouseEnter={() => handleMouseEnter('buildingDetails')}
-                  onMouseLeave={handleMouseLeave}
-                />
-                {hoveredBox === 'buildingDetails' && (
-                  <div
-                    className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
-                    onMouseEnter={() => handleMouseEnter('buildingDetails')}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.
-                  </div>
-                )}
-              </div>
+              <Tooltip
+                id="buildingDetails"
+                content={tooltipContents.buildingDetails}
+                isVisible={tooltip.isVisible('buildingDetails')}
+                onMouseEnter={tooltip.handleMouseEnter}
+                onMouseLeave={tooltip.handleMouseLeave}
+              />
             </h2>
 
             <form className="mt-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Størrelse:</label>
-                <input
-                  type="number"
-                  name="size"
-                  placeholder='F.eks. 24'
-                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.size}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">m²</span>
-              </div>
+              {buildingInputs.map(input => (
+                <div key={input.name}>
+                  <label className="text-sm font-medium text-gray-700 mb-1 mr-1">{input.label}</label>
+                  <input
+                    type="number"
+                    name={input.name}
+                    placeholder={input.placeholder}
+                    className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
+                    value={formData[input.name as keyof typeof formData] as string}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <span className="ml-2 text-sm">{input.unit}</span>
+                </div>
+              ))}
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Mønehøyde:</label>
-                <input
-                  type="number"
-                  name="ridgeHeight"
-                   placeholder='F.eks. 4.5'
-                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.ridgeHeight}
-                  onChange={handleInputChange}
-                  required
+              <h2 className="inline-flex font-medium mt-2">
+                Korteste avstand
+                <Tooltip
+                  id="shortestDistance" 
+                  content={tooltipContents.shortestDistance}
+                  isVisible={tooltip.isVisible('shortestDistance')}
+                  onMouseEnter={tooltip.handleMouseEnter}
+                  onMouseLeave={tooltip.handleMouseLeave}
                 />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
+              </h2>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Gesimshøyde:</label>
-                <input
-                  type="number"
-                  name="eavesHeight"
-                  placeholder='F.eks. 3.5'
-                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.eavesHeight}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
+              <p className="italic text-sm mb-2">
+                Bruk situasjonskartet og mål opp korteste avstand fra rommet/rommene du skal endre til:
+              </p>
 
-              <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Avstand til VA-ledninger:</label>
-                <input
-                  type="number"
-                  name="distanceFromVACables"
-                   placeholder='F.eks. 4'
-                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.distanceFromVACables}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
-
-              <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Avstand til strømkabler:</label>
-                <input
-                  type="number"
-                  name="distanceFromPowerCables"
-                  placeholder='F.eks. 3'
-                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.distanceFromPowerCables}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
-
-              <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Avstand til vei:</label>
-                <input
-                  type="number"
-                  name="distanceFromRoad"
-                  placeholder='F.eks. 5'
-                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.distanceFromRoad}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
-
-              <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Avstand til trikk/togspor:</label>
-                <input
-                  type="number"
-                  name="distanceFromTracks"
-                  placeholder='F.eks. 30'
-                  className="text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.distanceFromTracks}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
-
-                            <h2 className="inline-flex font-medium mt-2">
-                              Korteste avstand
-                              <div className="relative flex">
-                                <Info
-                                  size={14}
-                                  className="ml-1 hover:cursor-pointer"
-                                  onMouseEnter={() => handleMouseEnter('shortestDistance')}
-                                  onMouseLeave={handleMouseLeave}
-                                />
-                                {hoveredBox === 'shortestDistance' && (
-                                  <div
-                                    className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
-                                    onMouseEnter={() => handleMouseEnter('shortestDistance')}
-                                    onMouseLeave={handleMouseLeave}
-                                  >
-                                    Skal du rive, eller er noe så langt unna at det ikke vises på situasjonskartet? Da kan du stryke over punktet.
-                                  </div>
-                                )}
-                              </div>
-                            </h2>
-                
-                            <p className='italic text-sm mb-2'>Bruk situasjonskartet og mål opp korteste avstand fra rommet/rommene du skal endre til:</p>
-                
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Nabogrense:</label>
-                <input
-                  type="number"
-                  name="neighboringBorder"
-                  placeholder='F.eks. 4'
-                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.neighboringBorder}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Midten av vei:</label>
-                <input
-                  type="number"
-                  name="middleOfRoad"
-                  placeholder='F.eks. 6'
-                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.middleOfRoad}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Nærmeste bygning på naboeiendom:</label>
-                <input
-                  type="number"
-                  name="closestToNeighbor"
-                  placeholder='F.eks. 5'
-                  className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
-                  value={formData.closestToNeighbor}
-                  onChange={handleInputChange}
-                  required
-                />
-                <span className="ml-2 text-sm">meter</span>
-              </div>
+              {distanceInputs.map(input => (
+                <div key={input.name}>
+                  <label className="text-sm font-medium text-gray-700 mb-1 mr-1">{input.label}</label>
+                  <input
+                    type="number"
+                    name={input.name}
+                    placeholder={input.placeholder}
+                    className="required text-sm w-24 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none mb-2"
+                    value={formData[input.name as keyof typeof formData] as string}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <span className="ml-2 text-sm">{input.unit}</span>
+                </div>
+              ))}
             </form>
           </div>
 
           <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
-          <h2 className="font-medium inline-flex">
-        Beregningsmåte
-        <div className="relative flex">
-          <Info
-            size={14}
-            className="ml-1 hover:cursor-pointer"
-            onMouseEnter={() => handleMouseEnter('calculationMethod')}
-            onMouseLeave={handleMouseLeave}
-          />
-          {hoveredBox === 'calculationMethod' && (
-            <div
-              className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
-              onMouseEnter={() => handleMouseEnter('calculationMethod')}
-              onMouseLeave={handleMouseLeave}
-            >
-            Beregningsmetode i en byggesøknad er måten arealer og volumer beregnes på for å sikre at prosjektet overholder gjeldende lover og forskrifter.
+            <h2 className="font-medium inline-flex">
+              Beregningsmåte
+              <Tooltip
+                id="calculationMethod"
+                content={tooltipContents.calculationMethod}
+                isVisible={tooltip.isVisible('calculationMethod')}
+                onMouseEnter={tooltip.handleMouseEnter}
+                onMouseLeave={tooltip.handleMouseLeave}
+              />
+            </h2>
+            <p className="text-sm italic mb-2">
+              Hva er beregningsmåten for grad av utnytting for eiendommen din? (Velg minst én){' '}
+            </p>
+            
+            <div className="space-y-2">
+              {calculationMethodOptions.map((method) => {
+                return (
+                  <div key={method.value} className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id={`calc-method-${method.value}`}
+                      checked={(formData.calculation_method || []).includes(method.value)}
+                      onChange={() => handleCalculationMethodChange(method.value)}
+                      className="mt-1 mr-2"
+                    />
+                    <label htmlFor={`calc-method-${method.value}`} className="flex flex-col">
+                      <span>
+                        {method.label} {method.value}
+                      </span>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
-      </h2>
-    <p className='text-sm italic mb-2'>Hva er beregningsmåten for grad av utnytting for eiendommen din? (Velg minst én) </p>
-    <div className="space-y-2">
-  {calculcationMethod.map((method) => (
-    <div key={method.value} className="flex items-start">
-      <input
-        type="checkbox"
-        id={`calc-method-${method.value}`}
-        checked={formData.calculationMethod?.includes(method.value) ?? false}
-        onChange={() => {
-          const currentMethods = formData.calculationMethod || [];
-          const updatedMethods = currentMethods.includes(method.value)
-            ? currentMethods.filter(v => v !== method.value)
-            : [...currentMethods, method.value];
-          const updatedFormData = { ...formData, calculationMethod: updatedMethods };
-          setFormData(updatedFormData);
-          checkFormValidity(updatedFormData);
-        }}
-        className="mt-1 mr-2"
-      />
-      <label htmlFor={`calc-method-${method.value}`} className="flex flex-col">
-        <span>{method.label} {method.value}</span>
-      </label>
-    </div>
-  ))}
-</div>
           </div>
         </div>
       </div>
 
-      <div className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
-  <h2 className="font-medium inline-flex">
-    Utnyttningsgrad
-    <div className="relative flex">
-      <Info
-        size={14}
-        className="ml-1 hover:cursor-pointer"
-        onMouseEnter={() => handleMouseEnter('buildingDensity')}
-        onMouseLeave={handleMouseLeave}
-      />
-      {hoveredBox === 'buildingDensity' && (
-        <div
-          className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
-          onMouseEnter={() => handleMouseEnter('buildingDensity')}
-          onMouseLeave={handleMouseLeave}
-        >
-          Utnyttingsgraden er et mål på hvor stor del av en tomt som kan bebygges. Den regnes ut ved å dividere bygningens bruksareal (BRA) med tomtens areal (BYA).
+      {/* Building Density Section */}
+      <div className="border-2 border-gray-400 rounded-lg mt-4 p-4">
+        <h2 className="font-medium inline-flex">
+          Utnyttningsgrad
+          <Tooltip
+            id="buildingDensity"
+            content={tooltipContents.buildingDensity}
+            isVisible={tooltip.isVisible('buildingDensity')}
+            onMouseEnter={tooltip.handleMouseEnter}
+            onMouseLeave={tooltip.handleMouseLeave}
+          />
+        </h2>
+        <p className="text-sm mb-1">
+          Oppgi arealet til alle bygninger på eiendommen din, og regn ut ny grad av utnytting.
+        </p>
+        <p className="text-sm font-medium italic mb-4">Bruk den beregningsmåten du krysset av for over.</p>
+
+        <div className="space-y-4">
+          {buildingDensityInputs.map(input => (
+            <div key={input.name} className="flex items-center">
+              <label className="text-sm font-medium text-gray-700 w-[300px]">{input.label}</label>
+              <input
+                type="text"
+                name={input.name}
+                className="text-sm w-72 h-8 p-2 border border-gray-400 rounded ml-20"
+                value={formData[input.name as keyof typeof formData] as string}
+                onChange={handleInputChange}
+                required
+              />
+              {input.unit && <span className="ml-2 text-sm">{input.unit}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Environmental Conflicts Section */}
+      <div className="w-full min-h-28 mt-4 p-4 border-2 border-gray-400 rounded-lg space-y-4">
+        <h2 className="font-medium inline-flex">
+          Kan byggeplanene dine være i konflikt med omgivelsene?
+          <Tooltip
+            id="conflictWithSurroundings"
+            content={tooltipContents.conflictWithSurroundings}
+            isVisible={tooltip.isVisible('conflictWithSurroundings')}
+            onMouseEnter={tooltip.handleMouseEnter}
+            onMouseLeave={tooltip.handleMouseLeave}
+          />
+        </h2>
+        <p className="text-sm italic">
+          Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
+        </p>
+
+        {environmentalConflictGroups[0].map((item) => (
+          <RadioGroup
+            key={item.name}
+            name={item.name}
+            label={item.label}
+            options={yesNoOptions}
+            value={formData[item.name as keyof typeof formData] as string}
+            onChange={handleRadioChange}
+          />
+        ))}
+
+        <div className="border border-gray-300" />
+        <p className="text-sm italic">
+          Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
+        </p>
+
+        {environmentalConflictGroups[1].map((item) => (
+          <RadioGroup
+            key={item.name}
+            name={item.name}
+            label={item.label}
+            options={yesNoOptions}
+            value={formData[item.name as keyof typeof formData] as string}
+            onChange={handleRadioChange}
+          />
+        ))}
+      </div>
+
+      {/* Driveway Section */}
+      <div className="border-2 border-gray-400 rounded-lg mt-4 p-4">
+        <h2 className="font-medium mb-2 inline-flex">
+          Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
+          <Tooltip
+            id="driveway"
+            content={tooltipContents.driveway}
+            isVisible={tooltip.isVisible('driveway')}
+            onMouseEnter={tooltip.handleMouseEnter}
+            onMouseLeave={tooltip.handleMouseLeave}
+          />
+        </h2>
+
+        <div className="gap-4 flex">
+          {yesNoOptions.map((option) => (
+            <label key={option.value} className="items-center">
+              <input
+                type="radio"
+                name="new_driveway"
+                value={option.value}
+                checked={formData.new_driveway === option.value}
+                onChange={handleRadioChange}
+                className="mr-2"
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+        
+        {formData.new_driveway === 'Ja' && (
+          <div className="mt-4 gap-2">
+            <h1 className="text-md font-medium text-gray">
+              Eiendommen vil få ny/endret avkjørsel til (sett kryss):
+            </h1>
+            <div className="ml-8 mt-2 flex flex-col gap-2">
+              {[
+                { value: ROAD_TYPES.RIKSVEI, label: 'Riksvei eller fylkesvei' },
+                { value: ROAD_TYPES.KOMMUNAL, label: 'Kommunal vei' },
+                { value: ROAD_TYPES.PRIVAT, label: 'Privat vei' },
+              ].map((option) => (
+                <label key={option.value} className="items-center gap-x-2 flex">
+                  <input
+                    type="radio"
+                    name="road_type"
+                    value={option.value}
+                    checked={formData.road_type === option.value}
+                    onChange={handleRadioChange}
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            <p className="mt-4 italic">
+              Du vil få muligheten til å legge til vedlegg som viser at du har avkjøringstillatelse fra Statens vegvesen
+              eller kommunen, eller/og veirett gjennom tinglyst erklæring i senere steg.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Plan Compliance Section */}
+      <div className="border-2 border-gray-400 rounded-lg mt-4 p-4">
+        <h2 className="font-medium mb-2">
+          Er tiltaket i samsvar med gjeldende plan?
+        </h2>
+
+        <div className="gap-4 flex">
+          {yesNoOptions.map((option) => (
+            <label key={option.value} className="items-center">
+              <input
+                type="radio"
+                name="planCompliance"
+                value={option.value}
+                checked={formData.planCompliance === option.value}
+                onChange={handleRadioChange}
+                className="mr-2"
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+        
+        {formData.planCompliance === 'Nei' && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Begrunn hvorfor tiltaket ikke er i samsvar med gjeldende plan:
+            </label>
+            <textarea
+              name="nonComplianceReason"
+              rows={3}
+              className="w-full border border-gray-300 rounded-md p-2"
+              value={formData.nonComplianceReason}
+              onChange={handleInputChange}
+            />
+          </div>
+        )}
+      </div>
+
+      {isSaving && (
+        <div className="fixed bottom-4 right-4 bg-white shadow-md rounded-full p-2 z-10">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
-    </div>
-  </h2>      
-  <p className='text-sm mb-1'>Oppgi arealet til alle bygninger på eiendommen din, og regn ut ny grad av utnytting.</p>
-  <p className='text-sm font-medium italic mb-4'>Bruk den beregningsmåten du krysset av for over.</p>
-
-  <div className="space-y-4">
-    <div className="flex items-center">
-      <label className="text-sm font-medium text-gray-700 w-[300px]">
-        Tillatt grad av utnytting:
-      </label>
-      <input
-        type="text"
-        name="allowedBuildingDensity"
-        className="text-sm w-72 h-8 p-2 border border-gray-400 rounded ml-20"
-        value={formData.allowedBuildingDensity}
-        onChange={handleInputChange}
-        required
-      />
-    </div>
-
-    <div className="flex items-center">
-      <label className="text-sm font-medium text-gray-700 w-[300px]">
-        Tomtens nettoareal:
-      </label>
-      <input
-        type="text"
-        name="netArea"
-        className="text-sm w-72 h-8 p-2 border border-gray-400 rounded ml-20"
-        value={formData.netArea}
-        onChange={handleInputChange}
-        required
-      />
-    <span className="ml-2 text-sm">m²</span>
-    </div>
-
-    <div className="flex items-center">
-      <label className="text-sm font-medium whitespace-nowrap text-gray-700 w-[300px]">
-        Areal av bygninger, konstruksjoner og parkering i dag:
-      </label>
-      <input
-        type="text"
-        name="areaToday"
-        className="text-sm w-72 h-8 p-2 border border-gray-400 rounded ml-20"
-        value={formData.areaToday}
-        onChange={handleInputChange}
-        required
-      />
-    <span className="ml-2 text-sm">m²</span>
-    </div>
-
-    <div className="flex items-center">
-      <label className="text-sm font-medium whitespace-nowrap text-gray-700 w-[300px]">
-        Areal av bygninger, konstruksjoner og parkering etterpå:
-      </label>
-      <input
-        type="text"
-        name="areaAfter"
-        className="text-sm w-72 h-8 p-2 border border-gray-400 rounded ml-20"
-        value={formData.areaAfter}
-        onChange={handleInputChange}
-        required
-      />
-    <span className="ml-2 text-sm">m²</span>
-    </div>
-
-    <div className="flex items-center">
-      <label className="text-sm font-medium text-gray-700 w-[300px]">
-        Grad av utnytting etter prosjekt:
-      </label>
-      <input
-        type="text"
-        name="buildingDensityAfter"
-        className="text-sm w-72 h-8 p-2 border border-gray-400 rounded ml-20"
-        value={formData.buildingDensityAfter}
-        onChange={handleInputChange}
-        required
-      />
-    </div>
-  </div>
-</div>
-      
-<div className='w-full min-h-28 mt-4 p-4 border-2 border-gray-400 rounded-lg space-y-4'>
-      <h2 className="font-medium inline-flex">
-        Kan byggeplanene dine være i konflikt med omgivelsene?
-        <div className="relative flex">
-          <Info
-            size={14}
-            className="ml-1 hover:cursor-pointer"
-            onMouseEnter={() => handleMouseEnter('conflictWithSurroundings')}
-            onMouseLeave={handleMouseLeave}
-          />
-          {hoveredBox === 'conflictWithSurroundings' && (
-            <div
-              className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
-              onMouseEnter={() => handleMouseEnter('conflictWithSurroundings')}
-              onMouseLeave={handleMouseLeave}
-            >
-              Her kan du krysse av for endringene du planlegger å gjøre på eiendommen din.
-            </div>
-          )}
-        </div>
-      </h2>
-      <p className='text-sm italic'>Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.</p>
-
-        <div className='flex justify-between items-center mr-4'>
-          <span>Er det mindre enn 30 meter til nærmeste trikke-eller togspor?</span>
-          <div className='flex gap-4'> 
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="tramOrTrainTrack"
-                value="Ja"
-                checked={formData.tramOrTrainTrack === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="tramOrTrainTrack"
-                value="Nei"
-                checked={formData.tramOrTrainTrack === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-
-        <div className='flex justify-between items-center mr-4'>
-          <span>Bygger/river du i nærheten av en vann- og avløpsledning?</span>
-          <div className='flex gap-4'>
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="waterOrSewerLine"
-                value="Ja"
-                checked={formData.waterOrSewerLine === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="waterOrSewerLine"
-                value="Nei"
-                checked={formData.waterOrSewerLine === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-
-        <div className='flex justify-between items-center mr-4'>
-          <span>Bygger/river du i nærheten av høyspent kraftlinje?</span>
-          <div className='flex gap-4'>
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="powerLine"
-                value="Ja"
-                checked={formData.powerLine === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="powerLine"
-                value="Nei"
-                checked={formData.powerLine === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-          <div className='border border-gray-300' />
-          <p className='text-sm italic'>Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.</p>
-
-        <div className='flex justify-between items-center mr-4'>
-          <span>Bygger/river du i nærheten av strandsonen eller sjø/elv/vassdrag?</span>
-          <div className='flex gap-4'>
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="beachOrRiver"
-                value="Ja"
-                checked={formData.beachOrRiver === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="beachOrRiver"
-                value="Nei"
-                checked={formData.beachOrRiver === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-        <div className='flex justify-between items-center mr-4'>
-          <span>Skal du bygge/rive i et flom-, ras- eller skredutsatt område?</span>
-          <div className='flex gap-4'>
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="dangerZone"
-                value="Ja"
-                checked={formData.dangerZone === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="dangerZone"
-                value="Nei"
-                checked={formData.dangerZone === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-        <div className='flex justify-between items-center mr-4'>
-          <span>Finnes det truende eller vernede arter på eiendommen er i nærheten?</span>
-          <div className='flex gap-4'>
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="endangeredSpecies"
-                value="Ja"
-                checked={formData.endangeredSpecies === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="endangeredSpecies"
-                value="Nei"
-                checked={formData.endangeredSpecies === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-        <div className='flex justify-between items-center mr-4'>
-          <span>Finnes det kulturminner eller verneverdig bebyggelse på eiendommen eller i nærheten?</span>
-          <div className='flex gap-4'>
-            <label className='items-center mr-4'>
-              <input 
-                type="radio" 
-                name="protectedBuildings"
-                value="Ja"
-                checked={formData.protectedBuildings === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Ja
-            </label>
-            
-            <label className='items-center'>
-              <input 
-                type="radio" 
-                name="protectedBuildings"
-                value="Nei"
-                checked={formData.protectedBuildings === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-              />
-              Nei
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
-        <h2 className="font-medium mb-2 inline-flex">
-        Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
-        <div className="relative flex">
-          <Info
-            size={14}
-            className="ml-1 hover:cursor-pointer"
-            onMouseEnter={() => handleMouseEnter('driveway')}
-            onMouseLeave={handleMouseLeave}
-          />
-          {hoveredBox === 'driveway' && (
-            <div
-              className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm"
-              onMouseEnter={() => handleMouseEnter('driveway')}
-              onMouseLeave={handleMouseLeave}
-            >
-                Hvis byggeprosjektet vil føre til en ny eller endret avkjørsel til eiendommen, må du søke om tillatelse fra Statens vegvesen eller kommunen.
-            </div>
-          )}
-        </div>
-      </h2>      
-<div className='gap-4 flex'>
-              <label className='items-center'>
-                <input 
-                type="radio" 
-                name="drivewayChanges"
-                value="Ja"
-                checked={formData.drivewayChanges === "Ja"}
-                onChange={handleRadioChange}
-                className='mr-2'
-                />
-              Ja
-              </label>
-              
-              <label className='items-center'>
-                <input 
-                type="radio" 
-                name="drivewayChanges"
-                value="Nei"
-                checked={formData.drivewayChanges === "Nei"}
-                onChange={handleRadioChange}
-                className='mr-2'
-                />
-              Nei
-              </label>
-            </div>
-            {formData.drivewayChanges === "Ja" && (
-              <div className='mt-4 gap-2'>
-                <h1 className="text-md font-medium text-gray">Eiendommen vil få ny/endret avkjørsel til (sett kryss):</h1>
-                <div className='ml-8 mt-2 flex flex-col gap-2'>
-                  <label className='items-center gap-x-2 flex'>
-                  <input 
-                  type="checkbox" 
-                  name='nationalRoadOrCountyRoad'
-                  checked={formData.nationalRoadOrCountyRoad}
-                  onChange={handleCheckboxChange}
-                  />
-                  Riksvei eller fylkesvei
-                </label>
-                <label className='items-center gap-x-2 flex'>
-                  <input 
-                  type="checkbox" 
-                  name='communalRoad'
-                  value='communalRoad'
-                  checked={formData.communalRoad}
-                  onChange={handleCheckboxChange}
-                  />
-                  Kommunal vei
-                </label>
-                <label className='items-center gap-x-2 flex'>
-                  <input 
-                  type="checkbox" 
-                  name='privateRoad'
-                  value='privateRoad'
-                  checked={formData.privateRoad}
-                  onChange={handleCheckboxChange}
-                  />
-                  Privat vei
-                </label>
-                </div>
-                <p className='mt-4 italic'>Du vil få muligheten til å legge til vedlegg som viser at du har avkjøringstillatelse fra
-                  Statens vegvesen eller kommunen, eller/og veirett gjennom tinglyst erklæring i senere steg.
-                </p>
-              </div>
-            )}
-      </div>
     </div>
   );
 };

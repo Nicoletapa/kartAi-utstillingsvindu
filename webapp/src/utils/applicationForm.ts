@@ -1,5 +1,31 @@
 import { z } from "zod";
 
+// =============== CONSTANTS ===============
+
+const JA_NEI_ENUM = z.enum(["Ja", "Nei"]);
+
+// Common form field definitions
+const COMMON_DISTANCE_FIELDS = [
+  { key: "mønehøyde", title: "Mønehøyde", type: "text" },
+  { key: "gesimshøyde", title: "Gesimshøyde", type: "text" },
+];
+
+const PROPERTY_FIELDS = [
+  { key: "address", title: "Address", type: "text" },
+  { key: "property_number", title: "Property Number", type: "text" },
+  { key: "usage_number", title: "Usage Number", type: "text" },
+  { key: "postal_code", title: "Postal Code and Place", type: "text" },
+  { key: "municipality", title: "Municipality", type: "text" },
+  { key: "lease_number", title: "Lease Number", type: "text" },
+  { key: "section_number", title: "Section Number", type: "text" }
+];
+
+const APPLICANT_FIELDS = [
+  { key: "name", title: "Full Name", type: "text" },
+  { key: "phone", title: "Phone", type: "tel" },
+  { key: "email", title: "Email", type: "email" }
+];
+
 // =============== TYPES ===============
 type SimplifiedUser = {
     name?: string | null;
@@ -33,29 +59,22 @@ const ApplicantDetailsSchema = z.object({
 });
 
 const DistancesSmaProsjekterSchema = z.object({
-  neighbor_boundary: z.string().optional(),
-  road_center: z.string().optional(),
-  nearest_building: z.string().optional(),
-  distance_train_tracks: z.string().optional(),
-  distance_water_sewer_pipes: z.string().optional(),
-  distance_high_voltage_lines: z.string().optional(),
-  distance_va: z.string().optional(),
+  size:z.string().optional(),
   mønehøyde: z.string().optional(),
   gesimshøyde: z.string().optional(),
+  road_center: z.string().optional(),
+  neighbor_boundary: z.string().optional(),
+  nearest_building: z.string().optional(),
+  
+  calculation_method: z.string().optional(),  
+  distance_va: z.string().optional(),
+  distance_high_voltage_lines: z.string().optional(),
+
+  distance_water_sewer_pipes: z.string().optional(),
   in_flood_risk_area: z.string().optional(),
   protected_species_present: z.string().optional(),
   cultural_heritage_site: z.string().optional()
 });
-
-
-//============ Fjerne etterhvert =================
-const AttachmentsSchema = z.object({
-  plans_and_drawings: z.array(z.string()).optional(),
-  neighbor_notification: z.array(z.string()).optional(),
-  dispensation_documentation: z.string().optional(),
-  other_attachments: z.string().optional()
-});
-
 
 const RequirementsSchema = z.object({
   situational_map: z.string().optional(),
@@ -73,88 +92,63 @@ const Permissions = z.enum([
 ]);
 
 const AccessChanges = z.object({
-  new_driveway: z.string().optional(),
-  road_type: z.string().optional(),
-
+  new_driveway: JA_NEI_ENUM.optional(),
+  road_type: z.enum(["riksvei_eller_fylkesvei", "kommunal_vei", "privat_vei",""]).optional(),
 });
 
 const DistancesBruksEndringSchema = z.object({
-  
   neighbor_boundary_meters: z.string().optional(),
-  mønehøyde: z.string().optional(),
-  gesimshøyde: z.string().optional(),
   takvinkel: z.string().optional(),
-  high_voltage: z.enum(["Yes", "No"]).optional(),
-  flood_landslide_risk: z.enum(["Yes", "No"]).optional(),
-  protected_building: z.enum(["Yes", "No"]).optional()
+  high_voltage: JA_NEI_ENUM.optional(),
+  flood_landslide_risk: JA_NEI_ENUM.optional(),
+  protected_building: JA_NEI_ENUM.optional()
 }).optional();
 
-// Define a separate attachments schema for Bruksendring application
-const BruksendringAttachmentsSchema = z.object({
-  situation_map: z.string().optional(),
-  floor_plan: z.string().optional(),
-  section_drawing: z.string().optional(),
-  facade_drawings: z.string().optional(),
-  neighbor_notification: z.object({
-    notified: z.string().optional(),
-    comments: z.string().optional()
-  }).optional(),
-  dispensation_documentation: z.string().optional()
-});
-
-type BruksendringAttachmentsDetails = z.infer<typeof BruksendringAttachmentsSchema>;
-type DistancesBruksEndringDetails = z.infer<typeof DistancesBruksEndringSchema>;
-
+// Schema type inferences
 type PropertyDetails = z.infer<typeof PropertyDetailsSchema>;
 type ApplicantDetails = z.infer<typeof ApplicantDetailsSchema>;
-type DistancesDetails  = z.infer<typeof DistancesSmaProsjekterSchema>;
-type AttachmentsDetails = z.infer<typeof AttachmentsSchema>;
+type DistancesDetails = z.infer<typeof DistancesSmaProsjekterSchema>;
 type RequirementsDetails = z.infer<typeof RequirementsSchema>;
-type PermissionsDetails = z.infer<typeof Permissions>;
 type AccessChangesDetails = z.infer<typeof AccessChanges>;
+type DistancesBruksEndringDetails = z.infer<typeof DistancesBruksEndringSchema>;
 
+// =============== FORM SCHEMAS ===============
 const baseSchema = z.object({
   property_details: PropertyDetailsSchema,
   applicant_details: ApplicantDetailsSchema,
 });
 
-const FormSchemaSmaProsjekter = z.object({
-  title: z.string().optional(),
-  fields: baseSchema.extend({
-    description: z.string().optional(),
-    area_purpose: z.string().optional(),
-    distances: DistancesSmaProsjekterSchema,
-    requirements: RequirementsSchema,
-    permissions: z.array(Permissions).optional(),
-    access_changes: AccessChanges,
-    attachments: AttachmentsSchema,
-  }).optional()
+// Helper function to create consistent form schemas
+function createFormSchema(specificFields) {
+  return z.object({
+    title: z.string().optional(),
+    fields: baseSchema.extend(specificFields).optional()
+  });
+}
+
+const FormSchemaSmaProsjekter = createFormSchema({
+  description: z.string().optional(),
+  area_purpose: z.string().optional(),
+  distances: DistancesSmaProsjekterSchema,
+  requirements: RequirementsSchema,
+  permissions: z.array(Permissions).optional(),
+  access_changes: AccessChanges,
 });
 
-const FormSchemaBruksendring = z.object({
-  title: z.string().optional(),
-  fields: baseSchema.extend({
-    change_description: z.string().optional(),
-    dispensation: z.object({
-      needs_dispensation: z.enum([
-        "Yes, application is attached", 
-        "Yes, permission is attached", 
-        "No, I don't need it"
-      ]).optional()
-    }).optional(),
-    modifications: z.object({
-      interior_staircase: z.enum(["Yes", "No"]).optional(),
-      load_bearing_wall: z.enum(["Yes", "No"]).optional(),
-      window_door_exterior: z.enum(["Yes", "No"]).optional(),
-      other_physical_changes: z.enum(["Yes", "No"]).optional()
-    }).optional(),
-    distances: DistancesBruksEndringSchema,
-    access: AccessChanges,
-    attachments: BruksendringAttachmentsSchema
-  }).optional()
+const FormSchemaBruksendring = createFormSchema({
+  change_description: z.string().optional(),
+  dispensation: z.object({
+    needs_dispensation: z.enum([
+      "Yes, application is attached", 
+      "Yes, permission is attached", 
+      "No, I don't need it"
+    ]).optional()
+  }).optional(),
+  distances: DistancesBruksEndringSchema,
+  access: AccessChanges,
 });
 
-// Define form types
+// Form types
 type Form = z.infer<typeof FormSchemaSmaProsjekter>;
 type FormBruksendring = z.infer<typeof FormSchemaBruksendring>;
 
@@ -181,10 +175,11 @@ function getDefaultApplicantDetails(): ApplicantDetails {
 
 function getDefaultDistancesSmaProsjekter(): DistancesDetails {
   return {
+    size: '',
+    calculation_method: '',
     neighbor_boundary: '',
     road_center: '',
     nearest_building: '',
-    distance_train_tracks: '',
     distance_water_sewer_pipes: '',
     distance_high_voltage_lines: '',
     distance_va: '',
@@ -207,47 +202,24 @@ function getDefaultRequirements(): RequirementsDetails {
   };
 }
 
-function getDefaultAttachments(): AttachmentsDetails {
-  return {
-    plans_and_drawings: [],
-    neighbor_notification: [],
-    dispensation_documentation: '',
-    other_attachments: ''
-  };
-}
 function getDefaultAccessChanges(): AccessChangesDetails {
   return {
-    new_driveway: '',
+    new_driveway: 'Nei',
     road_type: ''
-  };
-}
-
-function getDefaultBruksendringAttachments(): BruksendringAttachmentsDetails {
-  return {
-    situation_map: "No",
-    floor_plan: "No",
-    section_drawing: "No",
-    facade_drawings: "No",
-    neighbor_notification: {
-      notified: "No",
-      comments: ""
-    },
-    dispensation_documentation: "No"
   };
 }
 
 function getDefaultDistancesBruksendring(): DistancesBruksEndringDetails {
   return {
     neighbor_boundary_meters: '',
-    mønehøyde: '',
-    gesimshøyde: '',
     takvinkel: '',
-    high_voltage: "No",
-    flood_landslide_risk: "No",
-    protected_building: "No"
+    high_voltage: "Nei",
+    flood_landslide_risk: "Nei",
+    protected_building: "Nei"
   };
 }
 
+// =============== USER DATA MERGING ===============
 function mergeUserDataWithDefaults(sessionUser: SimplifiedUser): ApplicantDetails {
   const defaults = getDefaultApplicantDetails();
   
@@ -276,6 +248,7 @@ function mergePropertyDataWithDefaults(sessionUser: SimplifiedUser): PropertyDet
   };
 }
 
+// =============== FORM CREATION ===============
 // Base form values that are common to all types
 function getBaseFormValues(title: string, user?: SimplifiedUser) {
   const applicantDetails = user ? mergeUserDataWithDefaults(user) : getDefaultApplicantDetails();
@@ -290,8 +263,7 @@ function getBaseFormValues(title: string, user?: SimplifiedUser) {
   };
 }
 
-// Updated create functions to use the base form values
-function createApplicationFormSmaProsjekter(title: string, user?:SimplifiedUser) {
+function createApplicationFormSmaProsjekter(title: string, user?:SimplifiedUser): Form {
   const baseForm = getBaseFormValues(title, user);
   
   return {
@@ -304,12 +276,11 @@ function createApplicationFormSmaProsjekter(title: string, user?:SimplifiedUser)
       requirements: getDefaultRequirements(),
       distances: getDefaultDistancesSmaProsjekter(),
       access_changes: getDefaultAccessChanges(),
-      attachments: getDefaultAttachments()
     }
-  } as Form;
+  };
 }
 
-function createApplicationFormBruksendring(title: string, user?: SimplifiedUser) {
+function createApplicationFormBruksendring(title: string, user?: SimplifiedUser): FormBruksendring {
   const baseForm = getBaseFormValues(title, user);
   
   return {
@@ -320,23 +291,16 @@ function createApplicationFormBruksendring(title: string, user?: SimplifiedUser)
       dispensation: {
         needs_dispensation: "No, I don't need it"
       },
-      modifications: {
-        interior_staircase: "No",
-        load_bearing_wall: "No",
-        window_door_exterior: "No",
-        other_physical_changes: "No"
-      },
       distances: getDefaultDistancesBruksendring(),
       access: getDefaultAccessChanges(),
-      attachments: getDefaultBruksendringAttachments()
     }
-  } as FormBruksendring;
+  };
 }
 
 // =============== FIELD GENERATORS ===============
-// Instead of individual field generators, create a generic one:
+// Generic field generator
 function generateFields(prefix: string, fields: Array<{key: string, title: string, type: string}>): Array<{title: string, type: string, name: string}> {
-  const fieldPrefix = `fields.${prefix}`;
+  const fieldPrefix = prefix ? `fields.${prefix}` : 'fields';
   
   return fields.map(field => ({
     title: field.title,
@@ -349,32 +313,21 @@ function generateFields(prefix: string, fields: Array<{key: string, title: strin
 function getBaseFormFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
-  fields = fields.concat(generateFields("property_details", [
-    { key: "address", title: "Address", type: "text" },
-    { key: "property_number", title: "Property Number", type: "text" },
-    { key: "usage_number", title: "Usage Number", type: "text" },
-    { key: "postal_code", title: "Postal Code and Place", type: "text" },
-    { key: "municipality", title: "Municipality", type: "text" },
-    { key: "lease_number", title: "Lease Number", type: "text" },
-    { key: "section_number", title: "Section Number", type: "text" }
-  ]));
+  // Property details fields
+  fields = fields.concat(generateFields("property_details", PROPERTY_FIELDS));
    
-  fields = fields.concat(generateFields("applicant_details", [
-    { key: "name", title: "Full Name", type: "text" },
-    { key: "phone", title: "Phone", type: "tel" },
-    { key: "email", title: "Email", type: "email" }
-  ]));
+  // Applicant details fields
+  fields = fields.concat(generateFields("applicant_details", APPLICANT_FIELDS));
   
-  fields.push({
-    title: "Situation Map",
-    type: "radio",
-    name: "fields.attachments.situation_map"
-  });
+  // Attachments fields
+  fields = fields.concat(generateFields("attachments", [
+    { key: "situation_map", title: "Situation Map", type: "radio" }
+  ]));
   
   return fields;
 }
 
-// Update field generators for each section
+// Section-specific field generators
 function generateDistanceFields(prefix: string): Array<{title: string; type: string; name: string}> {
   return generateFields(prefix, [
     { key: "neighbor_boundary", title: "Distance to Neighbor Boundary (meters)", type: "text" },
@@ -384,8 +337,7 @@ function generateDistanceFields(prefix: string): Array<{title: string; type: str
     { key: "distance_water_sewer_pipes", title: "Distance to Water/Sewer Pipes", type: "text" },
     { key: "distance_high_voltage_lines", title: "Distance to High Voltage Lines", type: "text" },
     { key: "distance_va", title: "Distance to VA", type: "text" },
-    { key: "mønehøyde", title: "Mønehøyde", type: "text" },
-    { key: "gesimshøyde", title: "Gesimshøyde", type: "text" },
+    ...COMMON_DISTANCE_FIELDS.map(field => ({ key: field.key, title: field.title, type: field.type })),
     { key: "in_flood_risk_area", title: "In Flood Risk Area", type: "radio" },
     { key: "protected_species_present", title: "Protected Species Present", type: "radio" },
     { key: "cultural_heritage_site", title: "Cultural Heritage Site", type: "radio" }
@@ -410,37 +362,20 @@ function generateAccessChangesFields(prefix: string): Array<{title: string; type
   ]);
 }
 
-function generateAttachmentsFields(prefix: string): Array<{title: string; type: string; name: string}> {
-  return generateFields(prefix, [
-    { key: "plans_and_drawings.0", title: "Plans and Drawings", type: "select" },
-    { key: "neighbor_notification.0", title: "Neighbor Notification", type: "select" },
-    { key: "dispensation_documentation", title: "Dispensation Documentation", type: "text" },
-    { key: "other_attachments", title: "Other Attachments", type: "text" }
-  ]);
-}
-
+// Form-specific field generators
 function getSmallProjectsFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
   // Basic project details
-  fields.push({
-    title: "Project Description",
-    type: "textarea",
-    name: "fields.description"
-  });
-  
-  fields.push({
-    title: "Area Purpose",
-    type: "select",
-    name: "fields.area_purpose"
-  });
+  fields = fields.concat(generateFields("", [
+    { key: "description", title: "Project Description", type: "textarea" },
+    { key: "area_purpose", title: "Area Purpose", type: "select" }
+  ]));
   
   // Permissions section
-  fields.push({
-    title: "Do you need permission/dispensation?",
-    type: "select",
-    name: "fields.permissions.0"
-  });
+  fields = fields.concat(generateFields("permissions", [
+    { key: "0", title: "Do you need permission/dispensation?", type: "select" }
+  ]));
   
   // Add requirements section fields
   fields = fields.concat(generateRequirementsFields("requirements"));
@@ -451,142 +386,38 @@ function getSmallProjectsFields(): Array<{title: string; type: string; name: str
   // Add access changes fields
   fields = fields.concat(generateAccessChangesFields("access_changes"));
   
-  // Add attachments fields
-  fields = fields.concat(generateAttachmentsFields("attachments"));
-  
   return fields;
 }
 
-// Change of Use specific fields - updated to match schema
 function getChangeOfUseFields(): Array<{title: string; type: string; name: string}> {
   let fields: Array<{title: string; type: string; name: string}> = [];
   
-  fields.push({
-    title: "Description of Change",
-    type: "textarea",
-    name: "fields.change_description"
-  });
+  // Basic change description
+  fields = fields.concat(generateFields("", [
+    { key: "change_description", title: "Description of Change", type: "textarea" }
+  ]));
   
-  fields.push({
-    title: "Need Dispensation",
-    type: "select",
-    name: "fields.dispensation.needs_dispensation"
-  });
+  // Dispensation information
+  fields = fields.concat(generateFields("dispensation", [
+    { key: "needs_dispensation", title: "Need Dispensation", type: "select" }
+  ]));
+    
+  // Distances fields
+  fields = fields.concat(generateFields("distances", [
+    { key: "neighbor_boundary_meters", title: "Distance to Neighbor Boundary (meters)", type: "text" },
+    { key: "takvinkel", title: "Takvinkel", type: "text" },
+    { key: "high_voltage", title: "Near High Voltage Lines", type: "radio" },
+    { key: "flood_landslide_risk", title: "In Flood/Landslide Risk Area", type: "radio" },
+    { key: "protected_building", title: "Protected Building", type: "radio" }
+  ]));
   
-  fields.push({
-    title: "Interior Staircase",
-    type: "radio",
-    name: "fields.modifications.interior_staircase"
-  });
-  
-  fields.push({
-    title: "Load-bearing Wall",
-    type: "radio",
-    name: "fields.modifications.load_bearing_wall"
-  });
-  
-  fields.push({
-    title: "Window/Door in Exterior Wall",
-    type: "radio",
-    name: "fields.modifications.window_door_exterior"
-  });
-  
-  fields.push({
-    title: "Other Physical Changes",
-    type: "radio",
-    name: "fields.modifications.other_physical_changes"
-  });
-  
-  fields.push({
-    title: "Distance to Neighbor Boundary (meters)",
-    type: "text",
-    name: "fields.distances.neighbor_boundary_meters"
-  });
-  
-  fields.push({
-    title: "Mønehøyde",
-    type: "text",
-    name: "fields.distances.mønehøyde"
-  });
-  
-  fields.push({
-    title: "Gesimshøyde",
-    type: "text",
-    name: "fields.distances.gesimshøyde"
-  });
-  
-  fields.push({
-    title: "Takvinkel",
-    type: "text",
-    name: "fields.distances.takvinkel"
-  });
-  
-  fields.push({
-    title: "Near High Voltage Lines",
-    type: "radio",
-    name: "fields.distances.high_voltage"
-  });
-  
-  fields.push({
-    title: "In Flood/Landslide Risk Area",
-    type: "radio",
-    name: "fields.distances.flood_landslide_risk"
-  });
-  
-  fields.push({
-    title: "Protected Building",
-    type: "radio",
-    name: "fields.distances.protected_building"
-  });
-  
+  // Access changes
   fields = fields.concat(generateAccessChangesFields("access"));
-  
-  fields.push({
-    title: "Situation Map",
-    type: "radio",
-    name: "fields.attachments.situation_map"
-  });
-  
-  fields.push({
-    title: "Floor Plan",
-    type: "radio",
-    name: "fields.attachments.floor_plan"
-  });
-  
-  fields.push({
-    title: "Section Drawing",
-    type: "radio",
-    name: "fields.attachments.section_drawing"
-  });
-  
-  fields.push({
-    title: "Facade Drawings",
-    type: "radio",
-    name: "fields.attachments.facade_drawings"
-  });
-  
-  fields.push({
-    title: "Neighbors Notified",
-    type: "radio",
-    name: "fields.attachments.neighbor_notification.notified"
-  });
-  
-  fields.push({
-    title: "Comments from Neighbors",
-    type: "textarea",
-    name: "fields.attachments.neighbor_notification.comments"
-  });
-  
-  fields.push({
-    title: "Dispensation Documentation",
-    type: "radio",
-    name: "fields.attachments.dispensation_documentation"
-  });
   
   return fields;
 }
 
-
+// Public form field generation functions
 function generateFieldsFromSchema() {
   return [...getBaseFormFields(), ...getSmallProjectsFields()];
 }
@@ -595,6 +426,7 @@ function generateFieldsFromSchemaBruksendring() {
   return [...getBaseFormFields(), ...getChangeOfUseFields()];
 }
 
+// =============== EXPORTS ===============
 export { 
   FormSchemaSmaProsjekter, 
   FormSchemaBruksendring,
