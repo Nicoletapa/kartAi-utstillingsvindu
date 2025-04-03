@@ -23,7 +23,7 @@ const MyApplications = () => {
   // Delete mutation
   const deleteApplication = api.application.deleteApplication.useMutation({
     onSuccess: () => {
-      toast.success("Application deleted successfully");
+      toast.success("Søknaden ble slettet.");
       refetch();
     },
     onError: (error) => {
@@ -118,20 +118,21 @@ const MyApplications = () => {
     }
   };
 
-  // Main UI
+
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">My Applications</h1>
+      <h1 className="text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8">Mine Byggesøknader</h1>
+      <div className="flex justify-end mb-4">
+        
   
         <button 
           onClick={handleCreateNewApplication}
           disabled={isCreating}
-          className={`flex items-center justify-center gap-2 px-4 py-2 
+          className={`flex items-center justify-center gap-2 px-4 py-2 md:mr-20 
             ${isCreating 
               ? 'bg-blue-400 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700'} 
-            text-white rounded-md transition-colors`}
+              : 'bg-white border-kartAI-blue border-2 hover:bg-kartAI-blue hover:text-white'} 
+            text-kartAI-blue font-medium rounded-md transition-colors`}
         >
           {isCreating ? (
             <>
@@ -141,16 +142,16 @@ const MyApplications = () => {
           ) : (
             <>
               <PlusCircle size={16} />
-              Create New Application
+              Lag en ny Byggesøknad
             </>
           )}
         </button>
       </div>
 
       {applications && applications.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-4 px-6 py-6 border-4 border-kartAI-blue rounded-lg md:mx-20 bg-white">
           {applications.map((application) => (
-            <div key={application.applicationID} className="border rounded-md p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div key={application.applicationID} className="border bg-white rounded-md p-4 shadow-sm  hover:bg-gray-100">
               <div className="flex justify-between">
                 <h2 className="text-lg font-semibold">
                   {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}
@@ -161,8 +162,8 @@ const MyApplications = () => {
               </div>
               
               <div className="mt-2 text-sm text-gray-500">
-                <p>Submitted: {formatDate(application.submissionDate)}</p>
-                <p>Last updated: {formatDate(application.updatedDate)}</p>
+                <p>Startet: {formatDate(application.submissionDate)}</p>
+                <p>Sist endret: {formatDate(application.updatedDate)}</p>
               </div>
               
               <div className="mt-3 flex justify-between">
@@ -170,7 +171,7 @@ const MyApplications = () => {
                   href={`/atlas-app/i-soknad/${application.applicationID}/applicant-details`} 
                   className="text-blue-600 hover:underline text-sm"
                 >
-                  View details →
+                  Se detaljer →
                 </a>
 
                 <button
@@ -194,9 +195,9 @@ const MyApplications = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-gray-50 p-6 text-center rounded-md">
-          <p className="text-gray-500">You don't have any applications yet.</p>
-          <p className="mt-4">Click "Create New Application" to get started.</p>
+        <div className="bg-gray-100 p-6 text-center rounded-md md:mx-20">
+          <p className="text-gray-500">Du har ingen søknader enda.</p>
+          <p className="mt-4">Trykk på <span className="font-medium">"Lag ny Byggesøknad"</span>  for å starte.</p>
         </div>
       )}
     </div>
