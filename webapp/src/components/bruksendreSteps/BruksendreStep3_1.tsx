@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 import Nabovarsel from '../Nabovarsel';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const BruksendreStep3_1 = () => {
+
+interface BruksendreStep3_1Props {
+  applicationID: number;
+}
+
+const BruksendreStep3_1: React.FC<BruksendreStep3_1Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
-    
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
 

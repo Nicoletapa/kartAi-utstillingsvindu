@@ -349,7 +349,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
           <NavigationButtons 
             onBack={handleBack}
             onNext={handleNext}
-            isNextDisabled={isSaving || !isFormValid} // Don't call checkFormValidity() directly here
+            // isNextDisabled={isSaving || !isFormValid} // Don't call checkFormValidity() directly here
             isSaving={isSaving}
           />
         </>
@@ -380,26 +380,21 @@ const DisplayFields: React.FC<{ fields: FieldDisplay[] }> = ({ fields }) => (
 const NavigationButtons: React.FC<{
   onBack: () => void;
   onNext: () => void;
-  isNextDisabled: boolean;
+  // isNextDisabled: boolean;
   isSaving: boolean;
-}> = ({ onBack, onNext, isNextDisabled, isSaving }) => (
+}> = ({ onBack, onNext, isSaving }) => (
   <div className="mt-5 w-full flex justify-center gap-4">
     <Button 
       onClick={onBack} 
       className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
     >
-      <ArrowLeft className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" />
+      <ArrowLeft size={18} className="mr-2" />
       <span className="relative inline-block">Tilbake</span>
     </Button>
 
     <Button 
       onClick={onNext}
-      disabled={isNextDisabled} 
-      className={`border-2 bg-white w-44 ${
-        !isNextDisabled
-          ? "text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue"
-          : "text-gray-400 border-gray-300 cursor-not-allowed"
-      }`}
+      className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
     >
       {isSaving ? (
         <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>

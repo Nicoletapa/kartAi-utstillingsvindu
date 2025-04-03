@@ -15,10 +15,10 @@ type FormDataType = {
 // Define default values to ensure controls are always controlled
 const defaultValues: FormDataType = {
   neighboringBorder: '',
-  powerLine: 'Nei',
-  dangerZone: 'Nei',
-  protectedBuilding: 'Nei',
-  drivewayChanges: 'Nei',
+  powerLine: '',
+  dangerZone: '',
+  protectedBuilding: '',
+  drivewayChanges: '',
   road_type: '',
 };
 
@@ -142,7 +142,8 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
                 <input
                   type="number"
                   name="neighboringBorder"
-                  className="required text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
+                  placeholder='F.eks. 4'
+                  className="required text-sm w-20 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none"
                   value={formData.neighboringBorder}
                   onChange={handleInputChange}
                   required

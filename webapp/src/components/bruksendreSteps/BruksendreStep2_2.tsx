@@ -1,9 +1,17 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
 import Dispensasjon from '../Dispenasjon';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const BruksendreStep2_2 = () => {
+
+interface BruksendreStep2_2Props {
+  applicationID: number;
+}
+
+const BruksendreStep2_2: React.FC<BruksendreStep2_2Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    
             
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);

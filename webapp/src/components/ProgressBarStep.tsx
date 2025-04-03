@@ -9,25 +9,18 @@ import { cn } from "~/lib/utils";
 
 // Import all step components
 
-import Step1_1 from "./steps/Step1_1";
-import Step2_0 from "./steps/Step2_0";
-import Step2_1 from "./steps/Step2_1";
-import Step2_2 from "./steps/Step2_2";
-import Step3_0 from "./steps/Step3_0";
-import Step3_1 from "./steps/Step3_1";
-import Step3_2 from "./steps/Step3_2";
-import Step4_0 from "./steps/Step4_0";
-import Step4_1 from "./steps/Step4_1";
-import Step5_0 from "./steps/Step5_0";
-import Step6_0 from "./steps/Step6_0";
-import Step6_1 from "./steps/Step6_1";
-import Step6_2 from "./steps/Step6_2";
+import {
+    Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
+    Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
+    Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
+} from "./steps"
+
 
 // Import bruksendre step components
 import {
-  BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
+  BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
-  BruksendreStep4_1, BruksendreStep5_0,
+  BruksendreStep4_1, BruksendreStep5_0, BruksendreStep5_1,
 } from "./bruksendreSteps";
 
 import { api } from "~/trpc/react";
@@ -74,8 +67,8 @@ export default function ProgressBarStep({
     // Define step components based on application type
     const stepComponents: StepComponentsType = isByggeorRive ? {
         1: {
-           
-            0: Step1_1,
+            0: Step1_0,
+            1: Step1_1,
         },
         2: {
             0: Step2_0,
@@ -93,6 +86,7 @@ export default function ProgressBarStep({
         },
         5: {
             0: Step5_0,
+            1: Step5_1,
         },
         6: {
             0: Step6_0,
@@ -101,7 +95,8 @@ export default function ProgressBarStep({
         },
     } : {
         1: {
-            0: BruksendreStep1_1,
+            0: BruksendreStep1_0,
+            1: BruksendreStep1_1,
         },
         2: {
             0: BruksendreStep2_0,
@@ -119,6 +114,7 @@ export default function ProgressBarStep({
         },
         5: {
             0: BruksendreStep5_0,
+            1: BruksendreStep5_1,
         },
     };
 

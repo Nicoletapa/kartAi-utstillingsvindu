@@ -1,9 +1,17 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
 import Soknaden from '../Soknaden';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const Step4_1 = () => {
+
+interface Step4_1Props {
+  applicationID: number;
+}
+
+const Step4_1: React.FC<Step4_1Props> = ({ applicationID }) => {
       const [openModal, setOpenModal] = useState<boolean>(false);
+      const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+  
     
       const handleOpenModal = () => setOpenModal(true);
       const handleCloseModal = () => setOpenModal(false);

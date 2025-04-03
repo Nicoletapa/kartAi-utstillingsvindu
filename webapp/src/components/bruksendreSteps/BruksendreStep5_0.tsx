@@ -1,9 +1,16 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const BruksendreStep5_0 = () => {
+
+interface BruksendreStep5_0Props {
+  applicationID: number;
+}
+
+const BruksendreStep5_0: React.FC<BruksendreStep5_0Props> = ({ applicationID }) => {
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [status, setStatus] = useState<string | null>(null);
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -63,6 +70,7 @@ const BruksendreStep5_0 = () => {
           {status}
         </div>
       )}
+      
     </div>
     
   )

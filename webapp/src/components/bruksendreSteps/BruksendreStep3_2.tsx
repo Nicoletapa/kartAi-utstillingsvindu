@@ -2,9 +2,17 @@ import { Info, Upload, X } from 'lucide-react'
 import React, { useState, useRef, useCallback } from 'react'
 import Countdown from 'react-countdown'
 import { useDropzone } from 'react-dropzone'
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const BruksendreStep3_2: React.FC = () => {
+
+interface BruksendreStep3_2Props {
+    applicationID: number;
+}
+
+const BruksendreStep3_2: React.FC<BruksendreStep3_2Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+
 
     const targetDate = useRef(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -114,8 +122,14 @@ const BruksendreStep3_2: React.FC = () => {
                         )}
                     </div>
                 </div>
+
+
+
             </div>
+
+
         </div>
+
     );
 };
 

@@ -1,9 +1,17 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
 import Dispensasjon from '../Dispenasjon';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const Step2_2 = () => {
+
+interface Step2_2Props {
+  applicationID: number;
+}
+
+const Step2_2: React.FC<Step2_2Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    
             
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
