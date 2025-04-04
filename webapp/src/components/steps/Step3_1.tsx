@@ -15,6 +15,9 @@ const Step3_1: React.FC<Step3_1Props> = ({ applicationID }) => {
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
 
+    saveField('progress.currentStep', '3_1');
+
+
   return (
     <div className="justify-center flex md:pl-10">
       <div className="w-full max-w-4xl">

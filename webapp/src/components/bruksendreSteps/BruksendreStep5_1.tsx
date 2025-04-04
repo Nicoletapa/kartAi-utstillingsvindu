@@ -16,6 +16,9 @@ const BruksendreStep5_1: React.FC<BruksendreStep5_1Props> = ({ applicationID }) 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
 
+  saveField('progress.currentStep', '5_1');
+
+
   return (
     <div className="md:pl-20 mb-52">
       <h1 className="text-3xl font-bold justify-center flex">Byggesøknaden er godkjent

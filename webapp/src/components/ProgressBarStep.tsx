@@ -145,7 +145,6 @@ export default function ProgressBarStep({
     const submitApplication = api.application.submitApplication.useMutation({
         onSuccess: () => {
             toast.success("Application submitted successfully");
-            router.push("/atlas-app");
         },
         onError: (error) => {
             toast.error(`Error submitting application: ${error.message}`);
@@ -232,12 +231,15 @@ export default function ProgressBarStep({
             return;
         }
 
-        if (currentStep === 4 && currentSubstep === 0) {
+        if (currentStep === 4 && currentSubstep === 1) {
             const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
             if (!confirmSend) return;
 
             try {
                 await submitApplication.mutateAsync({ applicationID });
+                if (currentOverallStep < totalSubsteps - 1) {
+                    setCurrentOverallStep(currentOverallStep + 1);
+                }
             } catch (error) {
                 console.error("Error submitting application:", error);
             }

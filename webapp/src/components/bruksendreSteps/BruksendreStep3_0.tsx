@@ -14,6 +14,8 @@ const BruksendreStep3_0: React.FC<BruksendreStep3_0Props> = ({ applicationID }) 
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
+  saveField('progress.currentStep', '3_0');
+
 
   return (
     <div className="justify-center flex md:pl-32">

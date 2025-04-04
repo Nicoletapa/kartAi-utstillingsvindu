@@ -13,6 +13,8 @@ const BruksendreStep2_1: React.FC<BruksendreStep2_1Props> = ({ applicationID }) 
         
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
+    saveField('progress.currentStep', '2_1');
+
 
   return (
     <div className='relative lg:pl-32 max-w-3xl'>

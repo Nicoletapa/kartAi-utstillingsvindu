@@ -15,6 +15,9 @@ const BruksendreStep4_0: React.FC<BruksendreStep4_0Props> = ({ applicationID }) 
                 
         const handleOpenModal = () => setOpenModal(true);
         const handleCloseModal = () => setOpenModal(false);
+
+        saveField('progress.currentStep', '4_0');
+
   return (
     <div>
         <h1 className="text-3xl font-bold justify-center flex mb-4">Andre vedlegg

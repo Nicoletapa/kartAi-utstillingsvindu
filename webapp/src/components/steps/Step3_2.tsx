@@ -51,6 +51,9 @@ const Step3_2: React.FC<Step3_2Props> = ({ applicationID }) => {
         multiple: true,
     });
 
+    saveField('progress.currentStep', '3_2');
+
+
 
     return (
         <div className="justify-center flex lg:pl-52 md:pl-20">

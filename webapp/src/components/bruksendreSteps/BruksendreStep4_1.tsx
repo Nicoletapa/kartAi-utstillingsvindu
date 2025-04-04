@@ -15,6 +15,9 @@ const BruksendreStep4_1: React.FC<BruksendreStep4_1Props> = ({ applicationID }) 
     
       const handleOpenModal = () => setOpenModal(true);
       const handleCloseModal = () => setOpenModal(false);
+
+      saveField('progress.currentStep', '4_1');
+
   
   return (
     <div>

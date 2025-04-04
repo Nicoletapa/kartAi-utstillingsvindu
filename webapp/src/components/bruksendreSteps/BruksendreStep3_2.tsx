@@ -19,6 +19,7 @@ const BruksendreStep3_2: React.FC<BruksendreStep3_2Props> = ({ applicationID }) 
 
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
+    
 
     const renderer = ({ days, hours, minutes, seconds, completed }: { days: number, hours: number, minutes: number, seconds: number, completed: boolean }) => {
         if (completed) {
@@ -50,6 +51,9 @@ const BruksendreStep3_2: React.FC<BruksendreStep3_2Props> = ({ applicationID }) 
         },
         multiple: true,
     });
+
+    saveField('progress.currentStep', '3_2');
+
 
 
     return (

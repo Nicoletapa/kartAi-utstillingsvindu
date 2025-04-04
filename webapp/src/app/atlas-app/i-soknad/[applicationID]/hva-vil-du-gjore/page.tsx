@@ -56,7 +56,6 @@ const Page: React.FC<PageProps> = ({
   formData: externalFormData, 
   setFormData: externalSetFormData, 
   onValidityChange = () => {}, 
-  onUpload = () => {}, 
 }) => {
     // Hooks
     const router = useRouter();
@@ -71,7 +70,6 @@ const Page: React.FC<PageProps> = ({
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
     const [isFormValid, setIsFormValid] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [uploadedFiles, setUploadedFiles] = useState<{ file: File; name: string | null }[]>([]);
     
     // Form data handling
     const formData = externalFormData || internalFormData;

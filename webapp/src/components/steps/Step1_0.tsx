@@ -52,8 +52,9 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
     };
 
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        handleFieldChange(e.target.name, e.target.value);
-      };
+      handleFieldChange(e.target.name, e.target.checked);
+    };
+    
     
 
       const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,6 +97,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
           saveField(fieldPath, value.toString());
         }
       };
+
     
 
   return (

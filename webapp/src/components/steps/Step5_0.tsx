@@ -19,6 +19,9 @@ const Step5_0: React.FC<Step5_0Props> = ({ applicationID }) => {
     setStatus("Søknaden din er under behandling.");
   }
 
+  saveField('progress.currentStep', '5_0');
+
+
   return (
     <div className="lg:pl-52 md:pl-20 mb-52">
       <h1 className="text-3xl font-bold justify-center flex">Vent på søknadsresultatet

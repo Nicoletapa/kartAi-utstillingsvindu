@@ -15,6 +15,9 @@ const BruksendreStep6_0: React.FC<BruksendreStep6_0Props> = ({ applicationID }) 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
 
+  saveField('progress.currentStep', '6_0');
+
+
   return (
     <div className="mb-40 flex flex-col items-center justify-center min-h-screen mx-auto px-4 w-full max-w-4xl">
       <div className="w-full flex flex-col items-center">

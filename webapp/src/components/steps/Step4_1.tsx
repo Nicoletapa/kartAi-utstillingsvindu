@@ -15,6 +15,9 @@ const Step4_1: React.FC<Step4_1Props> = ({ applicationID }) => {
     
       const handleOpenModal = () => setOpenModal(true);
       const handleCloseModal = () => setOpenModal(false);
+      
+      saveField('progress.currentStep', '4_0');
+
   
   return (
     <div>

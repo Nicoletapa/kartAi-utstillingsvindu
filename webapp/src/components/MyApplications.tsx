@@ -77,7 +77,6 @@ const MyApplications = () => {
   if (isLoading) {
     return (
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">My Applications</h1>
         <div className="flex justify-center">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -89,7 +88,6 @@ const MyApplications = () => {
   if (error) {
     return (
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">My Applications</h1>
         <div className="bg-red-100 p-4 rounded-md text-red-700">
           Error loading applications: {error.message}
         </div>
@@ -121,10 +119,11 @@ const MyApplications = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8">Mine Byggesøknader</h1>
+      <h1 className="text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8">Mine Søknader</h1>
+      <p className="text-xl md:mx-20 px-6 mb-4 flex justify-center">Her finner du en oversikt over alle byggesøknadene dine - både de du jobber med, og de du
+          allerede har sendt inn. Du kan forstsette på en kladd, sjekke status, eller starte en ny søknad.
+      </p>
       <div className="flex justify-end mb-4">
-        
-  
         <button 
           onClick={handleCreateNewApplication}
           disabled={isCreating}
@@ -149,27 +148,32 @@ const MyApplications = () => {
       </div>
 
       {applications && applications.length > 0 ? (
-        <div className="space-y-4 px-6 py-6 border-4 border-kartAI-blue rounded-lg md:mx-20 bg-white">
+        <div className="space-y-4 px-6 py-6 rounded-lg md:mx-20 bg-white">
           {applications.map((application) => (
-            <div key={application.applicationID} className="border bg-white rounded-md p-4 shadow-sm  hover:bg-gray-100">
-              <div className="flex justify-between">
-                <h2 className="text-lg font-semibold">
-                  {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}
-                </h2>
+            <div key={application.applicationID} className="border bg-white rounded-md p-4 shadow-sm hover:bg-gray-100">
+              <div className="flex gap-x-2">
                 <span className={`px-2 py-1 rounded text-sm ${getStatusBadgeStyle(application.status)}`}>
                   {application.status}
                 </span>
+                <h2 className="text-lg font-semibold">
+                  SAK{application.applicationID} - {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}
+                </h2>
+                
+              </div>
+
+              <div className="mt-2 text-sm">
+                <p className="font-medium">Startet: {formatDate(application.submissionDate)}</p>
+                <p className="mt-2">Søknad: {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}</p>
               </div>
               
               <div className="mt-2 text-sm text-gray-500">
-                <p>Startet: {formatDate(application.submissionDate)}</p>
                 <p>Sist endret: {formatDate(application.updatedDate)}</p>
               </div>
               
               <div className="mt-3 flex justify-between">
                 <a 
                   href={`/atlas-app/i-soknad/${application.applicationID}/applicant-details`} 
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-sm p-2 rounded-lg text-white bg-kartAI-blue hover:bg-kartAI-lightblue transition-color duration-300"
                 >
                   Se detaljer →
                 </a>
