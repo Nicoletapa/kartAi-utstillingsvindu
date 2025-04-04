@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronFirst, ChevronLast, Info, Boxes, ListChecks, FileCheck, House, MousePointerClick, FileStack, ArrowRight, ChevronDown, Bot } from "lucide-react";
+import { ChevronFirst, ChevronLast, Info, ListChecks, House, FileStack, ArrowRight, Folder, Bell } from "lucide-react";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,7 +27,10 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         { text: "Før du søker", href: "/atlas-app", icon: <Info size={20} /> },
         { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <ListChecks size={20} /> },
         { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
-        { text: "Søknader", href: "/atlas-app/sidebar/soknader", icon: <FileStack size={20} /> },
+        { text: "Mine Søknader", href: "/atlas-app/sidebar/soknader", icon: <FileStack size={20} /> },
+        { text: "Mine Dokumenter", href: "/atlas-app/sidebar/dokumenter", icon: <Folder size={20} /> },
+        { text: "Meldinger", href: "/atlas-app/sidebar/meldinger", icon: <Bell size={20} /> },
+
     ];
 
     useEffect(() => {
@@ -64,7 +67,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
 
                         {!expanded && (
-                            <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-1 bg-kartAI-lightblue bg-opacity-10 text-kartAI-blue text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                            <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-1 bg-blue-100 text-kartAI-blue text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
                                 Meny
                             </div>
                         )}
@@ -118,7 +121,7 @@ export function SidebarItem({ icon, text, href, active, isSubItem = false }: Sid
             </Link>
 
             {!expanded && (
-                <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-5 bg-kartAI-lightblue bg-opacity-10 text-kartAI-blue text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+                <div className="absolute whitespace-nowrap left-full rounded-md px-2 py-1 ml-5 bg-blue-100 text-kartAI-blue text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
                     {text}
                 </div>
             )}
