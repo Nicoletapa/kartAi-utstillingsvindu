@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronFirst, ChevronLast, Info, ListChecks, House, FileStack, ArrowRight, Folder, Bell } from "lucide-react";
+import { ChevronFirst, ChevronLast, Info, ListChecks, House, FileStack, ArrowRight, Folder, Bell, LayoutGrid } from "lucide-react";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,8 +24,9 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     }
 
     const sidebarItems = [
-        { text: "Før du søker", href: "/atlas-app", icon: <Info size={20} /> },
-        { text: "Sjekkliste", href: "/atlas-app#sjekkliste-oversikt", icon: <ListChecks size={20} /> },
+        { text: "Min Oversikt", href: "/atlas-app", icon: <LayoutGrid size={20} /> },
+        { text: "Før du søker", href: "/atlas-app/sidebar/for-du-soker", icon: <Info size={20} /> },
+        { text: "Sjekkliste", href: "/atlas-app/sidebar/sjekkliste", icon: <ListChecks size={20} /> },
         { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
         { text: "Mine Søknader", href: "/atlas-app/sidebar/soknader", icon: <FileStack size={20} /> },
         { text: "Mine Dokumenter", href: "/atlas-app/sidebar/dokumenter", icon: <Folder size={20} /> },
