@@ -3,7 +3,7 @@
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { ApplicationType } from "@prisma/client";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle, Info } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import { useState } from "react";
@@ -11,6 +11,11 @@ import { useState } from "react";
 const MyApplications = () => {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const [openModal, setOpenModal] = useState<boolean>(false);
+  
+
+  const handleOpenModal = () => setOpenModal(true);
+  const handleCloseModal = () => setOpenModal(false);
   
   // Data fetching
   const { 
@@ -68,7 +73,7 @@ const MyApplications = () => {
   
   // Delete handler with confirmation
   const handleDeleteApplication = (applicationID: number) => {
-    if (confirm("Are you sure you want to delete this application? This cannot be undone.")) {
+    if (confirm("Er du sikker på at du vil slette denne søknaden? Dette kan ikke angres.")) {
       deleteApplication.mutate({ applicationID });
     }
   };
@@ -119,7 +124,75 @@ const MyApplications = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8">Mine Søknader</h1>
+      <h1 className="text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8">Mine Søknader
+              <Info size={18} className="ml-2 hover:cursor-pointer text-kartAI-blue" onClick={handleOpenModal} />
+            </h1>
+            {openModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={handleCloseModal}>
+                <div className="bg-white mx-80 p-6 rounded-lg shadow-lg w-full transform transition-all scale-95 opacity-0 animate-fadeIn"
+                  onClick={(e) => e.stopPropagation()}>
+                  <div className="mb-8">
+                    <h1 className="text-2xl font-medium">Informasjon om søknad</h1>
+                    <h2 className="mb-2 mt-2">Hva kan du gjøre her?</h2>
+                    <ul className="list-disc ml-8 mt-2 space-y-1">
+                      <li>Se status på søknader du har sendt inn</li>
+                      <li>Redigere søknader du jobber med (kladder)</li>
+                      <li>Laste ned ferdige søknader eller dokumenter</li>
+                      <li>Starte en ny søknad når du har et nytt tiltak ved å klikke på "Lag en ny Byggesøknad"</li>
+                    </ul>
+
+                    <div className="mt-8">
+                      <h1 className="text-xl font-medium mb-2">Statusforklaringer</h1>
+                      <div className="max-w-3xl">
+      <div className="rounded-lg overflow-hidden border border-gray-500">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-blue-50">
+              <th className="text-left p-4 font-medium border-b border-gray-500">Status</th>
+              <th className="text-left p-4 font-medium border-b border-gray-500">Forklaring</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-blue-50 border-b border-gray-500">
+              <td className="p-4">Kladd</td>
+              <td className="p-4">Søknaden er påbegynt, men ikke sendt inn enda.</td>
+            </tr>
+            <tr className="bg-blue-50 border-b border-gray-500">
+              <td className="p-4">Innsendt</td>
+              <td className="p-4">Søknaden er sendt inn og venter på behandling.</td>
+            </tr>
+            <tr className="bg-blue-50 border-b border-gray-500">
+              <td className="p-4">Under behandling</td>
+              <td className="p-4">Søknaden er mottatt og vurderes av kommunen.</td>
+            </tr>
+            <tr className="bg-blue-50 border-b border-gray-500">
+              <td className="p-4">Godkjent</td>
+              <td className="p-4">Søknaden er behandlet og godkjent.</td>
+            </tr>
+            <tr className="bg-blue-50 border-b border-gray-500 last:border-b-0">
+              <td className="p-4">Avvist</td>
+              <td className="p-4">Søknaden ble avslått av kommunen.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+                      
+                    </div>
+
+                    <h1 className="mt-8 text-xl font-medium">Vær oppmerksom på at alle søknader lagres automatisk underveis.
+                      Du kan alltid gå tilbake og fortsette senere.
+                    </h1>
+                  </div>
+      
+                  <button className="absolute mt-4 px-4 py-2 right-3 bottom-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+                    onClick={handleCloseModal}>
+                    Lukk
+                  </button>
+                </div>
+              </div>
+            )}
+      
       <p className="text-xl md:mx-20 px-6 mb-4 flex justify-center">Her finner du en oversikt over alle byggesøknadene dine - både de du jobber med, og de du
           allerede har sendt inn. Du kan forstsette på en kladd, sjekke status, eller starte en ny søknad.
       </p>
@@ -173,7 +246,7 @@ const MyApplications = () => {
               <div className="mt-3 flex justify-between">
                 <a 
                   href={`/atlas-app/i-soknad/${application.applicationID}/applicant-details`} 
-                  className="text-sm p-2 rounded-lg text-white bg-kartAI-blue hover:bg-kartAI-lightblue transition-color duration-300"
+                  className="text-sm p-2 px-4 rounded-lg text-white bg-kartAI-blue hover:bg-kartAI-lightblue transition-color duration-300"
                 >
                   Se detaljer →
                 </a>

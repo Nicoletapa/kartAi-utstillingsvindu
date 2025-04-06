@@ -16,7 +16,7 @@ export function PropertySearchBar({
 }: PropertySearchBarProps) {
   return (
     <>
-      <div className="flex items-center gap-2 p-3 bg-white border-b border-gray-200">
+      <div className="flex items-center gap-2 p-3 bg-gray-100 border-b border-gray-200">
         <input
           type="text"
           value={searchInput}
@@ -29,7 +29,7 @@ export function PropertySearchBar({
           onClick={onSearch}
           className="px-4 py-2 bg-kartAI-blue text-white rounded hover:bg-kartAI-blue/90 transition-colors"
         >
-          Search
+          Søk
         </button>
       </div>
       {errorMessage && (

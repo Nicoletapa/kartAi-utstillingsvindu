@@ -58,11 +58,11 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
     return (
         <div className="flex">
-        <aside ref={sidebarRef} className={`fixed left-0 top-1/4 z-50 flex items-center
+        <aside ref={sidebarRef} className={`fixed left-0 top-1/4 z-50 flex items-center transition-all duration-300
                 ${expanded ? "w-48" : "w-16"}`}>
             <nav className="max-h-100 flex flex-col bg-kartAI-blue rounded-r-lg">
                 <div className="p-2 pb-2 pt-2 flex justify-end group">
-                    <span className={`overflow-hidden transition-all mt-1 font-bold text-white ${expanded ? "w-32 pl-8" : "w-0"}`}>Meny</span>
+                    <span className={`overflow-hidden transition-all duration-300 mt-1 font-bold text-white ${expanded ? "w-32 pl-8" : "w-0"}`}>Meny</span>
                     <button onClick={() => setExpanded(!expanded)} className="flex items-center py-2 px-2 font-medium
                              rounded-md cursor-pointer transition-colors group text-gray-400 hover:text-white hover:bg-kartAI-lightblue">
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
@@ -111,10 +111,10 @@ export function SidebarItem({ icon, text, href, active, isSubItem = false }: Sid
     const { expanded } = context;
 
     return (
-        <li className={`relative flex items-center py-2 px-2 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "text-white" : "hover:bg-kartAI-lightblue hover:text-white text-gray-400"}`}>
+        <li className={`relative flex items-center py-2 px-2 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "text-white hover:bg-kartAI-lightblue" : "hover:bg-kartAI-lightblue hover:text-white text-gray-400"}`}>
             <Link href={href} className="flex items-center w-full">
                 <div className={`flex-shrink-0 transition-colors ${active ? "text-white" : "group-hover:text-white"}`}>{icon}</div>
-                <span className={` overflow-hidden whitespace-nowrap text-ellipsis font-normal ${expanded ? "w-36 ml-3" : "w-0"}`}>{text}</span>
+                <span className={` overflow-hidden whitespace-nowrap text-ellipsis font-normal transition-all duration-300 ${expanded ? "w-36 ml-3" : "w-0"}`}>{text}</span>
 
                 {expanded && !isSubItem && (
                     <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
