@@ -189,7 +189,7 @@ const MyProperty = () => {
         onSearch={() => handlePropertySearch()}
         errorMessage={errorMessage}
       />
-      <div className='no-rounded-map'>
+      <div className='no-rounded-map relative z-0'>
         <TiltaksAidMap
                 onMapReady={handleMapReady} 
                 onShapeDrawn={handleShapeDrawn}
