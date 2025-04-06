@@ -1,14 +1,25 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
+import Dispensasjon from '../Dispenasjon';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const Step2_2 = () => {
+
+interface Step2_2Props {
+  applicationID: number;
+}
+
+const Step2_2: React.FC<Step2_2Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    
             
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
+
+    saveField('progress.currentStep', '2_2');
   return (
     <div>
-      <h1 className="text-3xl font-bold justify-center flex">Andre vedlegg
+      <h1 className="text-3xl font-bold justify-center flex">Søknad om Dispensasjon
         <Info size={18} className="ml-2 hover:cursor-pointer" onClick={handleOpenModal} />
       </h1>
       {openModal && (
@@ -30,7 +41,10 @@ const Step2_2 = () => {
           </div>
         </div>
       )}
+      <Dispensasjon /> 
     </div>
+
+    
   )
 }
 

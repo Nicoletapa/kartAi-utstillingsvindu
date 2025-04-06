@@ -9,7 +9,7 @@ const AtlasSidebar: React.FC<AtlasSidebarInterface> = ({ children }) => {
   return (
       <Sidebar>
       <div
-        className={`flex w-full flex-col items-center`}
+        className={`w-full flex-col items-center`}
       >
         {children}
       </div>

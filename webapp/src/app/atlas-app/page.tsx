@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
-import { ArrowRight } from "lucide-react";
 import { SjekklisteOversikt } from "~/components/sjekkliste-oversikt";
 import AtlasSidebar from "~/components/AtlasSidebar";
 import dynamic from "next/dynamic";

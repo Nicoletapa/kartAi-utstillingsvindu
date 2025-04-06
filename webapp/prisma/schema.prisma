@@ -214,6 +214,7 @@ enum ApplicationStatus {
 enum ApplicationType {
   sma_byggeprosjekter
   bruksendring
+  pending
 
   
 }

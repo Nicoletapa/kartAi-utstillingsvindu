@@ -1,121 +1,177 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle, Check } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
-import { useRouter } from "next/navigation";
-import SjekklisteSoknad from "./SjekklisteSoknad";
-import Step_applicant_details from "./steps/Step_applicant_details";
-import Step1_0 from "./steps/Step1_0";
-import Step2_0 from "./steps/Step2_0";
-import Step2_1 from "./steps/Step2_1";
-import Step2_2 from "./steps/Step2_2";
-import Step3_0 from "./steps/Step3_0";
-import Step3_1 from "./steps/Step3_1";
-import Step3_2 from "./steps/Step3_2";
-import Step4_0 from "./steps/Step4_0";
-import Step5_0 from "./steps/Step5_0";
-import Step6_0 from "./steps/Step6_0";
-import Step6_1 from "./steps/Step6_1";
-import Step6_2 from "./steps/Step6_2";
+import { useRouter, usePathname } from "next/navigation";
+import { cn } from "~/lib/utils";
+
+// Import all step components
+
+import {
+    Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
+    Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
+    Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
+} from "./steps"
+
+
+// Import bruksendre step components
+import {
+  BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
+  BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
+  BruksendreStep4_1, BruksendreStep5_0, BruksendreStep5_1,
+} from "./bruksendreSteps";
+
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { ApplicationType } from "@prisma/client";
 
+// Update the interface to be more flexible
 interface StepComponentType {
-    onValidityChange: (isValid: boolean) => void;
+    onValidityChange?: (isValid: boolean) => void;
     applicationID?: number;
+    [key: string]: any; // Allow additional props
 }
 
+// Update the type definition
 type StepComponentsType = {
     [key: number]: {
-        [key: number]: React.ComponentType<StepComponentType>;
+        [key: number]: React.ComponentType<any>;
     };
 };
 
-const stepComponents: StepComponentsType = {
-    0: {
-        0: Step_applicant_details,
-    },
-    1: {
-        0: Step1_0,
-    },
-    2: {
-        0: Step2_0,
-        1: Step2_1,
-        2: Step2_2,
-    },
-    3: {
-        0: Step3_0,
-        1: Step3_1,
-        2: Step3_2,
-    },
-    4: {
-        0: Step4_0,
-    },
-    5: {
-        0: Step5_0,
-    },
-    6: {
-        0: Step6_0,
-        1: Step6_1,
-        2: Step6_2,
-    },
-};
-
-export const steps = [
-    { title: "Søker og eiendom", totalSubsteps: Object.keys(stepComponents[0] || {}).length },
-    { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
-    { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
-    { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
-    { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
-    { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
-    { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
-];
-interface ProgressBarStepProps {
+export interface ProgressBarStepProps {
     applicationID?: number;
+    currentStep?: number;
 }
 
-export default function ProgressBarStep({ applicationID }: ProgressBarStepProps) {
+export default function ProgressBarStep({ 
+    applicationID,
+    currentStep: externalCurrentStep 
+}: ProgressBarStepProps) {
     const router = useRouter();
-    const [currentOverallStep, setCurrentOverallStep] = useState(0);
+    const pathname = usePathname();
+    
+    // Application type detection
+    const isByggeorRive = pathname.includes('/bygge-eller-rive');
+    const isBruksendre = pathname.includes('/bruksendring');
+    
+    // If an external step is provided, use it instead of determining from pathname
+    const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep || 0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
-
-    // Add state variables for each step's validity
-    const [isStep0_0Valid, setIsStep0_0Valid] = useState(false); // For Step_applicant_details
-    const [isStep1_0Valid, setIsStep1_0Valid] = useState(false); // For Step1_0
-
+    const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
+    const [formData, setFormData] = useState<Record<string, any>>({});
 
-    // Fetch application data
+    // Define step components based on application type
+    const stepComponents: StepComponentsType = isByggeorRive ? {
+        1: {
+            0: Step1_0,
+            1: Step1_1,
+        },
+        2: {
+            0: Step2_0,
+            1: Step2_1,
+            2: Step2_2,
+        },
+        3: {
+            0: Step3_0,
+            1: Step3_1,
+            2: Step3_2,
+        },
+        4: {
+            0: Step4_0,
+            1: Step4_1,
+        },
+        5: {
+            0: Step5_0,
+            1: Step5_1,
+        },
+        6: {
+            0: Step6_0,
+            1: Step6_1,
+            2: Step6_2,
+        },
+    } : {
+        1: {
+            0: BruksendreStep1_0,
+            1: BruksendreStep1_1,
+        },
+        2: {
+            0: BruksendreStep2_0,
+            1: BruksendreStep2_1,
+            2: BruksendreStep2_2,
+        },
+        3: {
+            0: BruksendreStep3_0,
+            1: BruksendreStep3_1,
+            2: BruksendreStep3_2,
+        },
+        4: {
+            0: BruksendreStep4_0,
+            1: BruksendreStep4_1,
+        },
+        5: {
+            0: BruksendreStep5_0,
+            1: BruksendreStep5_1,
+        },
+    };
+
+    // Define steps based on the step components
+    const steps = [
+        { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
+        { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
+        { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
+        { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
+        { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
+        { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+    ];
+
+    // Define checklist tasks
+    const sjekkliste: Record<number, string[]> = {
+        1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
+        2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
+        3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
+        4: ["Sørg for at søknaden er korrekt. Du kan sende byggesøknaden dersom alt er til dine behov"],
+        5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
+    };
+
     const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
         { enabled: !!applicationID }
     );
 
-    // Submit application mutation
     const submitApplication = api.application.submitApplication.useMutation({
         onSuccess: () => {
             toast.success("Application submitted successfully");
-            router.push("/atlas-app");
         },
         onError: (error) => {
             toast.error(`Error submitting application: ${error.message}`);
         }
     });
 
-    // Load data from application if it exists
+    useEffect(() => {
+        if (!applicationID || isNaN(applicationID)) {
+            console.error("Invalid applicationID:", applicationID);
+            toast.error("Ugyldig søknads-ID");
+            router.push("/atlas-app");
+            return;
+        }
+        
+        if (!isByggeorRive && !isBruksendre) {
+            router.push(`/404/${applicationID}`);
+            return;
+        }
+    }, [applicationID, isByggeorRive, isBruksendre]);
+
     useEffect(() => {
         if (!application) return;
 
-        // Update application type
         setAppType(application.applicationType);
 
-        // Create a map of field names to values
         const fieldsMap: Record<string, string> = {};
 
-        // Check if application_fields exists before using forEach
         if (Array.isArray(application.application_fields)) {
             application.application_fields.forEach(field => {
                 fieldsMap[field.fieldName] = field.fieldValue;
@@ -124,7 +180,6 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
             console.warn("application_fields is missing or not an array:", application);
         }
 
-        // Check validity of Step1_0 form data using optional chaining
         const isStep1Valid =
             fieldsMap['description']?.trim() !== '' &&
             fieldsMap['area_purpose']?.trim() !== '' &&
@@ -133,49 +188,7 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
             fieldsMap['distances.gesimshøyde']?.trim() !== '';
 
         setIsStep1_0Valid(isStep1Valid);
-
-        // Check validity of Step_applicant_details form data
-        const isStep0Valid =
-            !!fieldsMap['applicant.name']?.trim() &&
-            !!fieldsMap['applicant.email']?.trim() &&
-            !!fieldsMap['property.address']?.trim() &&
-            !!fieldsMap['property.property_number']?.trim() &&
-            !!fieldsMap['property.usage_number']?.trim();
-
-        setIsStep0_0Valid(isStep0Valid);
     }, [application]);
-
-    // Handle next button click
-    const handleNext = async () => {
-        // We should always have an applicationID now
-        if (!applicationID) {
-            console.error("No applicationID found, this shouldn't happen");
-            return;
-        }
-
-        // Handle submission
-        if (currentStep === 4 && currentSubstep === 0) {
-            const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
-            if (!confirmSend) return;
-
-            try {
-                await submitApplication.mutateAsync({ applicationID });
-            } catch (error) {
-                console.error("Error submitting application:", error);
-            }
-            return;
-        }
-
-        // Move to next step
-        if (currentOverallStep < totalSubsteps - 1) {
-            setCurrentOverallStep(currentOverallStep + 1);
-        } else if (!lastStepCompleted) {
-            setLastStepCompleted(true);
-        }
-    };
-
-    // Rest of your component remains the same
-    const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
 
     const getCurrentStepInfo = (step = currentOverallStep) => {
         let stepIndex = 0;
@@ -201,23 +214,52 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
     };
 
     const { currentStep, currentSubstep } = getCurrentStepInfo(currentOverallStep);
-
+    
     useEffect(() => {
-        // Force reload application data when navigating to Step_applicant_details
-        if (currentStep === 1 && currentSubstep === 0) {
-            console.log("Navigated to Step_applicant_details, forcing reload");
-
-            // Fetch application data again
-            // This will trigger the application data loading effect in Step_applicant_details
-            void refetchApplication();
+        if (currentStep === 0 && currentSubstep === 0 && applicationID) {
+            const previousStep = localStorage.getItem('previousStep');
+            if (previousStep && previousStep !== '0-0') {
+                refetchApplication();
+            }
+            localStorage.setItem('previousStep', `${currentStep}-${currentSubstep}`);
         }
-    }, [currentStep, currentSubstep]);
+    }, [currentStep, currentSubstep, applicationID, refetchApplication]);
+
+    const handleNext = async () => {
+        if (!applicationID) {
+            console.error("No applicationID found, this shouldn't happen");
+            return;
+        }
+
+        if (currentStep === 4 && currentSubstep === 1) {
+            const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
+            if (!confirmSend) return;
+
+            try {
+                await submitApplication.mutateAsync({ applicationID });
+                if (currentOverallStep < totalSubsteps - 1) {
+                    setCurrentOverallStep(currentOverallStep + 1);
+                }
+            } catch (error) {
+                console.error("Error submitting application:", error);
+            }
+            return;
+        }
+
+        if (currentOverallStep < totalSubsteps - 1) {
+            setCurrentOverallStep(currentOverallStep + 1);
+        } else if (!lastStepCompleted) {
+            setLastStepCompleted(true);
+        }
+    };
+
+    const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
 
     const handlePrev = () => {
         if (currentOverallStep === 0) {
             const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
             if (confirmExit) {
-                router.push("/atlas-app");
+                router.push(`/atlas-app/i-soknad/${applicationID}/hva-vil-du-gjore`);
             }
         } else {
             setCurrentOverallStep(currentOverallStep - 1);
@@ -240,24 +282,64 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
             isFirstStep: index === 0,
         };
     });
+    console.log("ProgressBarStep rendering with applicationID:", applicationID);
 
-    const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
+    const isAtSubmissionStep = currentStep === 4 && currentSubstep === 1;
+    const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
 
-    const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] || null;
+    const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
+    const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
+    const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
-    // Update to check all step validations
-    const isNextButtonDisabled =
-        (currentStep === 1 && currentSubstep === 0 && !isStep0_0Valid) || // Check Step_applicant_details
-        (currentStep === 2 && currentSubstep === 0 && !isStep1_0Valid) || // Check Step1_0
-        submitApplication.isPending;
+    
 
-    // Function to get the correct validator function for the current step
-    const getValidatorForCurrentStep = () => {
-        if (currentStep === 1 && currentSubstep === 0) return setIsStep0_0Valid;
-        if (currentStep === 2 && currentSubstep === 0) return setIsStep1_0Valid;
+    const handleValidityChange = (isValid: boolean) => {
+        if (currentStep === 1 && currentSubstep === 0) {
+            setIsStep1_0Valid(isValid);
+        }
+    };
 
-        // Default validator function - allows progression if no specific validation is required
-        return () => true;
+    // Render checklist component
+    const renderChecklist = () => {
+        if (!isByggeorRive && !isBruksendre) return null;
+        
+        return (
+            <div className="rounded-lg shadow-md p-4 min-w-72 h-full max-w-80 bg-blue-100 border-2 border-blue-200">
+                <h2 className="text-lg font-semibold">
+                    Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
+                </h2>
+                <ul className="list-disc pl-3 space-y-2 mt-3">
+                    {currentTasks.map((task, index) => {
+                        const isVisible = currentStep === 1 
+                            ? true 
+                            : currentStep === 2 
+                                ? index < currentSubstep + 2 
+                                : index <= currentSubstep;
+                        const isCompleted = completedTasks[index];
+
+                        return (
+                            isVisible && (
+                                <li key={index} className="flex items-start pt-1">
+                                    <div className={cn("flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full border-2 mr-3 z-10 duration-500 ease-in-out",
+                                        isCompleted 
+                                            ? "border-green-600 bg-green-600 text-white"
+                                            : "border-red-600"
+                                        )}
+                                    >
+                                        {isCompleted ? (
+                                            <Check className="h-4 w-4" />
+                                        ) : (
+                                            ""
+                                        )}
+                                    </div>
+                                    <span>{task}</span>
+                                </li>
+                            )
+                        );
+                    })}
+                </ul>
+            </div>
+        );
     };
 
     return (
@@ -267,15 +349,13 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
             </div>
 
             <div className="flex space-x-8 flex-1">
-                <SjekklisteSoknad currentStep={currentStep} currentSubstep={currentSubstep} />
-                {isLoadingApplication ? (
-                    <div className="w-full flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
-                ) : CurrentStepComponent && (
+                {currentStep <= 5 && renderChecklist()}
+                {CurrentStepComponent && (
                     <CurrentStepComponent
-                        onValidityChange={getValidatorForCurrentStep()}
-                        applicationID={applicationID}
+                        applicationID={applicationID} // Make sure this is being passed
+                        formData={formData}
+                        setFormData={setFormData}
+                        onValidityChange={handleValidityChange}
                     />
                 )}
             </div>

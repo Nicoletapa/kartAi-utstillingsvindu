@@ -1,11 +1,21 @@
 import { Info } from 'lucide-react';
 import React, { useState } from 'react';
+import { ApplicationService, UIComponents } from '~/utils/api-service';
 
-const Step3_0 = () => {
+
+interface Step3_0Props {
+  applicationID: number;
+}
+
+const Step3_0: React.FC<Step3_0Props> = ({ applicationID }) => {
   const [openModal, setOpenModal] = useState<boolean>(false);
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+  
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
+
+  saveField('progress.currentStep', '3_0');
 
   return (
     <div className="justify-center flex md:pl-32">

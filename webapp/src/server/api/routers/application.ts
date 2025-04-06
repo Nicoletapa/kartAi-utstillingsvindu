@@ -10,7 +10,7 @@ export const applicationRouter = createTRPCRouter({
     .input(
       z.object({
         applicationType: z.nativeEnum(ApplicationType),
-        subTypeId: z.string(),
+        subTypeId: z.string().optional(),
         submissionDate: z.date(),
         updatedDate: z.date().optional(),
         status: z.nativeEnum(ApplicationStatus).optional().default("Pabegynt"),
@@ -55,6 +55,21 @@ export const applicationRouter = createTRPCRouter({
         throw new Error("Failed to create application");
       }
       return res;
+    }),
+
+    updateApplicationSubtype: protectedProcedure
+    .input(z.object({
+      applicationID: z.number(),
+      subTypeId: z.string(),
+
+    }))
+    .mutation(async({ctx, input}) => {
+      const {applicationID, subTypeId} = input;
+
+      return await ctx.db.application.update({
+        where: {applicationID},
+        data: {subTypeId} ,
+      });
     }),
     
   updateApplication: protectedProcedure

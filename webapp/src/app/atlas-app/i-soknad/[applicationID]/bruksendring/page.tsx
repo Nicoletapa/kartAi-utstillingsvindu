@@ -1,0 +1,17 @@
+"use client";
+
+import React from 'react';
+import { useParams } from 'next/navigation';
+import ProgressBarStep from '~/components/ProgressBarStep';
+
+export default function Bruksendring() {
+  const params = useParams();
+  const applicationID = parseInt(params.applicationID as string, 10);
+  console.log("BruksEndring page - ApplicationID:", applicationID);
+
+  return (
+    <div className="min-h-screen">
+      <ProgressBarStep applicationID={applicationID} currentStep={0} />
+    </div>
+  );
+}
