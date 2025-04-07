@@ -25,6 +25,18 @@ interface FieldDisplay {
   value: string;
 }
 
+// Move this outside the component or memoize it
+const checkFormValidity = (data: FormDataType) => {
+  const safeString = (value: string | undefined | null): string => 
+    (value === undefined || value === null) ? '' : String(value).trim();
+  
+  return !!safeString(data.applicant.name) && 
+         !!safeString(data.applicant.email) &&
+         !!safeString(data.property.address) &&
+         !!safeString(data.property.property_number) &&
+         !!safeString(data.property.usage_number);
+};
+
 const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({ 
   applicationID, 
   onValidityChange
@@ -38,6 +50,8 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   const { data: session } = useSession();
   const tooltip = UIComponents.useTooltip();
   
+  // Form validation
+
   // Replace your custom form state with FormService
   const { 
     formData, 
@@ -75,26 +89,14 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   );
 
   // Form validation
-  function checkFormValidity(data: FormDataType = formData) {
-    const safeString = (value: string | undefined | null): string => 
-      (value === undefined || value === null) ? '' : String(value).trim();
-    
-    const isValid = 
-      !!safeString(data.applicant.name) && 
-      !!safeString(data.applicant.email) &&
-      !!safeString(data.property.address) &&
-      !!safeString(data.property.property_number) &&
-      !!safeString(data.property.usage_number);
-  
-    // Only update the parent state in useEffect, not during render
-    setIsFormValid(isValid);
-    return isValid;
-  }
 
-  // Add an effect to notify parent of validity changes
-  useEffect(() => {
-    onValidityChange(isFormValid);
-  }, [isFormValid, onValidityChange]);
+
+// In your component, use this effect instead:
+useEffect(() => {
+  const isValid = checkFormValidity(formData);
+  setIsFormValid(isValid);
+  onValidityChange(isValid);
+}, [formData, onValidityChange]); // Only run when formData changes
 
   // Property selection handler
   const handlePropertyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -184,58 +186,62 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   
   // Auto-fill form with user data
   useEffect(() => {
-    if (!userDetails || isDirty || formData.applicant.name || formData.property.address) return;
+    if (!userDetails || isDirty) return;
     
-    setFormData({
-      applicant: {
-        name: userDetails.name ?? formData.applicant.name ?? '',
-        email: userDetails.email ?? formData.applicant.email ?? '',
-        phone: userDetails.phone ?? formData.applicant.phone ?? '',
-      },
-      property: {
-        address: userDetails.address ?? formData.property.address ?? '',
-        property_number: userDetails.gnr?.toString() ?? formData.property.property_number ?? '',
-        usage_number: userDetails.bnr?.toString() ?? formData.property.usage_number ?? '',
-        lease_number: formData.property.lease_number ?? '',
-        section_number: formData.property.section_number ?? '',
-        postal_code: userDetails.postalCode ?? formData.property.postal_code ?? '',
-        municipality: userDetails.postalArea ?? formData.property.municipality ?? '',
-      }
-    });
-  }, [userDetails, isDirty, formData.applicant.name, formData.property.address, setFormData]);
+    // Only auto-fill if all fields are empty
+    const shouldAutoFill = 
+      !formData.applicant.name && 
+      !formData.applicant.email && 
+      !formData.property.address;
+  
+    if (shouldAutoFill) {
+      setFormData(prev => ({
+        applicant: {
+          name: userDetails.name ?? prev.applicant.name ?? '',
+          email: userDetails.email ?? prev.applicant.email ?? '',
+          phone: userDetails.phone ?? prev.applicant.phone ?? '',
+        },
+        property: {
+          ...prev.property,
+          address: userDetails.address ?? prev.property.address ?? '',
+          property_number: userDetails.gnr?.toString() ?? prev.property.property_number ?? '',
+          usage_number: userDetails.bnr?.toString() ?? prev.property.usage_number ?? '',
+          postal_code: userDetails.postalCode ?? prev.property.postal_code ?? '',
+          municipality: userDetails.postalArea ?? prev.property.municipality ?? '',
+        }
+      }));
+    }
+  }, [userDetails, isDirty]); // Remove formData fields from dependencies
 
   // Load data from application
   useEffect(() => {
-    if (!application?.application_fields || application.application_fields.length === 0) {
-      return;
-    }
-    
-    try {
+    if (!application?.application_fields) return;
+  
+    setFormData(prev => {
       const fieldsMap: Record<string, string> = {};
       application.application_fields.forEach(field => {
         fieldsMap[field.fieldName] = field.fieldValue;
       });
       
-      setFormData(prevFormData => ({
+      return {
         applicant: {
-          name: fieldsMap['applicant.name'] || prevFormData.applicant.name || '',
-          email: fieldsMap['applicant.email'] || prevFormData.applicant.email || '',
-          phone: fieldsMap['applicant.phone'] || prevFormData.applicant.phone || '',
+          name: fieldsMap['applicant.name'] || prev.applicant.name || '',
+          email: fieldsMap['applicant.email'] || prev.applicant.email || '',
+          phone: fieldsMap['applicant.phone'] || prev.applicant.phone || '',
         },
         property: {
-          address: fieldsMap['property.address'] || prevFormData.property.address || '',
-          property_number: fieldsMap['property.property_number'] || prevFormData.property.property_number || '',
-          usage_number: fieldsMap['property.usage_number'] || prevFormData.property.usage_number || '',
-          lease_number: fieldsMap['property.lease_number'] || prevFormData.property.lease_number || '',
-          section_number: fieldsMap['property.section_number'] || prevFormData.property.section_number || '',
-          postal_code: fieldsMap['property.postal_code'] || prevFormData.property.postal_code || '',
-          municipality: fieldsMap['property.municipality'] || prevFormData.property.municipality || '',
+          ...prev.property,
+          address: fieldsMap['property.address'] || prev.property.address || '',
+          property_number: fieldsMap['property.property_number'] || prev.property.property_number || '',
+          usage_number: fieldsMap['property.usage_number'] || prev.property.usage_number || '',
+          lease_number: fieldsMap['property.lease_number'] || prev.property.lease_number || '',
+          section_number: fieldsMap['property.section_number'] || prev.property.section_number || '',
+          postal_code: fieldsMap['property.postal_code'] || prev.property.postal_code || '',
+          municipality: fieldsMap['property.municipality'] || prev.property.municipality || '',
         }
-      }));
-    } catch (error) {
-      console.error("Error loading application data:", error);
-    }
-  }, [application, setFormData]);
+      };
+    });
+  }, [application]); // Only run when application changes
 
   // Auto-save when isDirty, using debounced saveField from the service
   useEffect(() => {
