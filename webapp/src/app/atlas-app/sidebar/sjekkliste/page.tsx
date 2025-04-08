@@ -1,12 +1,12 @@
 import React from 'react'
 import AtlasSidebar from "~/components/AtlasSidebar";
-import { SjekklisteOversikt } from '~/components/sjekkliste-oversikt';
+import ChecklistAtlas from '~/components/ChecklistAtlas';
 
 export default function SjekklistePage() {
   return (
     <AtlasSidebar>
       <div>
-        <SjekklisteOversikt />
+        <ChecklistAtlas />
       </div>
     </AtlasSidebar>
   )

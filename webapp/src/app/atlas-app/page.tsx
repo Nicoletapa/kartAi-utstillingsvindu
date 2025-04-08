@@ -26,9 +26,6 @@ export default function AtlasPage() {
         <></>
       </AtlasSidebar>
         
-        <SjekklisteOversikt />
-      
-        
         <Link
           href="/"
           className="fixed bottom-8 left-8 z-50 flex items-center gap-2 text-kartAI-blue transition-colors hover:text-kartAI-blue/80"
