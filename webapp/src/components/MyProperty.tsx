@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import TiltaksAidMap from './TiltaksAidMap';
 import type { Map } from 'leaflet';
 import type { SpatialAnalysisResult } from '~/utils/propertyUtils';
@@ -10,6 +10,9 @@ import { searchProperty as fetchProperty } from '~/utils/propertyUtils';
 import * as L from 'leaflet';
 import Link from 'next/link'
 import { Bot, Check, Plus } from 'lucide-react';
+import { api } from "~/trpc/react"
+import { useSession } from "next-auth/react";
+
 
 
 interface FieldDisplay {
@@ -43,6 +46,16 @@ const MyProperty = () => {
         const MAX_ZOOM = 19; // Adjust this value as needed
         const { userData } = usePropertySearch();
         const loggedPropertyData = useRef(false);
+          const { data: session } = useSession();
+        
+
+          const { 
+            data: userDetails, 
+            isLoading: isLoadingUserDetails 
+          } = api.user.getUserDetails.useQuery(
+            undefined,
+            { enabled: !!session }
+          );
         
         const handleMapReady = useCallback((map: Map) => {
           if (mapRef.current) return; 
@@ -107,7 +120,6 @@ const MyProperty = () => {
                 mapRef.current.removeLayer(propertyBoundary);
               }
         
-              // Convert the property data to a GeoJSON feature with ID
               const propertyFeature = {
                 type: 'Feature',
                 geometry: data[0]?.geom,
@@ -117,10 +129,8 @@ const MyProperty = () => {
                 }
               } as GeoJSON.Feature;
         
-              // Replace setter with direct assignment to a local constant to prevent unused state
               const currentPropertyData = data[0] ?? null;
               
-              // Only log once per component instance
               if (!loggedPropertyData.current && currentPropertyData) {
                 console.log('Current property data:', currentPropertyData);
                 loggedPropertyData.current = true;
@@ -151,6 +161,14 @@ const MyProperty = () => {
               setErrorMessage(null);
             }
           };
+
+            useEffect(() => {
+              if (userDetails) {
+                setProperties([
+                  { id: '1', address: userDetails.address || 'Hovedgata 1, 0123 Oslo' }
+                ]);
+              }
+            }, [userDetails]);
   return (
     <div className='p-4 md:mx-20 px-6'>
       <h1 className='text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8'>Min Eiendom</h1>
@@ -175,7 +193,6 @@ const MyProperty = () => {
                   <h1 className='text-2xl font-medium mt-8 mb-2'>Adresse og Eiendomsinformasjon</h1>
                   
                   <div className="flex flex-col md:flex-row md:gap-8 w-full">
-                    {/* Property details */}
                     <div className="flex-1 space-y-2">
                       <DisplayFields fields={propertyData} />
                     </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Download, Eye, Info, Repeat, Trash2 } from 'lucide-react'
+import { Download, Eye, Info, Repeat, Trash2, Loader2 } from 'lucide-react'
 import { api } from "~/trpc/react"
 import { ApplicationType } from "@prisma/client"
 import { toast } from "react-hot-toast"
@@ -188,7 +188,7 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
     return (
       <div className="p-4">
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
         </div>
       </div>
     )

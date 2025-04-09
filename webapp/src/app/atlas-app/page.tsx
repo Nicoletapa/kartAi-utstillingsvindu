@@ -4,25 +4,16 @@ import React from "react";
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
 import AtlasSidebar from "~/components/AtlasSidebar";
-import dynamic from "next/dynamic";
 import { SendAppNow } from "~/components/SendAppNow";
-const MapChatIntegrationWithNoSSR = dynamic(
-  () => import("~/components/MapChatIntegration"),
-  { ssr: false } 
-);
+import FrontPage from "~/components/FrontPage";
+
 
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
-      <h1 className="flex justify-center pt-8 text-4xl text-kartAI-blue font-medium">Før du søker</h1>
-      <div className="lg:w-3/4 mx-auto mt-8 mb-0">
-        <MapChatIntegrationWithNoSSR/>
-      </div>
-
-      <SendAppNow />
-
       <AtlasSidebar>
-        <></>
+        <FrontPage />
+        <SendAppNow />
       </AtlasSidebar>
         
         <Link
@@ -44,9 +35,6 @@ export default function AtlasPage() {
           </svg>
           Tilbake til hovedsiden
         </Link>
-        
-
-      
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { ApplicationType } from "@prisma/client";
-import { Trash2, PlusCircle, Info } from "lucide-react";
+import { Trash2, PlusCircle, Info, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import { useState } from "react";
@@ -83,7 +83,7 @@ const MyApplications = () => {
     return (
       <div className="p-4">
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
         </div>
       </div>
     );

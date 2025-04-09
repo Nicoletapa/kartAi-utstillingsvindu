@@ -65,7 +65,7 @@ const checklistData = {
     ],
 }
 
-const CustomCheckbox = ({ 
+export const CustomCheckbox = ({ 
     checked, 
     onChange 
 }: { 
@@ -88,7 +88,7 @@ const CustomCheckbox = ({
     >
         {checked && (
             <svg 
-                className="w-[14px] h-[14px] text-white absolute"  // Fixed SVG size
+                className="w-[14px] h-[14px] text-white absolute"
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
                 strokeWidth={3}

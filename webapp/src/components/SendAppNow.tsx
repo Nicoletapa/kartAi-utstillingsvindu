@@ -1,6 +1,6 @@
 "use client";
 import React from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import { ApplicationType } from "@prisma/client";
 import { useState } from "react";
 import { api } from "~/trpc/react";
@@ -62,23 +62,23 @@ export function SendAppNow({ isNewApplication, onTypeSelect }: TemplateProps) {
     return (
       <div className="container mx-auto py-6 px-4 flex flex-col items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kartAI-blue mb-4"></div>
-          <p className="text-lg">Oppretter søknad...</p>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
+        <p className="text-lg">Oppretter søknad...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='flex flex-col items-start justify-center h-full max-w-2xl mx-auto border-l-2 px-6 border-kartAI-blue'>
-      <h1 className='font-medium text-2xl text-gray-700 text-left'>Vet du allerede at du må søke?</h1>
+    <div className='flex flex-col justify-center h-full max-w-2xl mx-auto px-6 border-kartAI-blue mb-4'>
+      <h1 className='font-medium text-2xl text-gray-700 text-center'>Vet du allerede at du må søke?</h1>
 
-      <p className='mt-2 text-left text-lg'>
+      <p className='mt-2 text-center text-lg'>
         Dersom du allerede vet at tiltaket krever en byggesøknad eller dispensasjon, 
         kan du starte søknadsprosessen med en gang. Klikk på knappen under for å sende inn en søknad.
       </p>
 
-      <div className="mt-5 w-full flex items-left">
+      <div className="mt-5 w-full flex justify-center">
         <Button 
           onClick={handleCreateApplication}
           disabled={isCreating}
