@@ -24,7 +24,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     }
 
     const sidebarItems = [
-        { text: "Min Oversikt", href: "/atlas-app", icon: <LayoutGrid size={20} /> },
+        { text: "Min Oversikt", href: "/atlas-app/sidebar/min-oversikt", icon: <LayoutGrid size={20} /> },
         { text: "Før du søker", href: "/atlas-app/sidebar/for-du-soker", icon: <Info size={20} /> },
         { text: "Sjekkliste", href: "/atlas-app/sidebar/sjekkliste", icon: <ListChecks size={20} /> },
         { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
@@ -111,9 +111,9 @@ export function SidebarItem({ icon, text, href, active, isSubItem = false }: Sid
     const { expanded } = context;
 
     return (
-        <li className={`relative flex items-center py-2 px-2 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "text-white hover:bg-kartAI-lightblue" : "hover:bg-kartAI-lightblue hover:text-white text-gray-400"}`}>
+        <li className={`relative flex items-center py-2 px-2 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? "text-white hover:bg-kartAI-lightblue bg-kartAI-lightblue" : "hover:bg-kartAI-lightblue hover:text-white text-gray-400"}`}>
             <Link href={href} className="flex items-center w-full">
-                <div className={`flex-shrink-0 transition-colors ${active ? "text-white" : "group-hover:text-white"}`}>{icon}</div>
+                <div className={`flex items-center justify-center w-6 h-6 transition-colors ${active ? "text-white" : "group-hover:text-white"}`}>{icon}</div>
                 <span className={` overflow-hidden whitespace-nowrap text-ellipsis font-normal transition-all duration-300 ${expanded ? "w-36 ml-3" : "w-0"}`}>{text}</span>
 
                 {expanded && !isSubItem && (
