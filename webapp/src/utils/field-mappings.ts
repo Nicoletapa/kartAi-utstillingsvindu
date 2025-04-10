@@ -70,5 +70,5 @@ export function resolveFieldPath(
     
     const mappedField = (mappings as Record<string, string | undefined>)[fieldName];
     
-    return mappedField || fieldName;
+    return mappedField ?? fieldName;
   }

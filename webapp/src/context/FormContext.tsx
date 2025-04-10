@@ -13,33 +13,50 @@ type FormContextType = {
   updateApplicantFormData: (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => void;
 };
 
-// Create context with default values from applicationForm types
+// Create default values that match the types exactly
+const defaultFormData: FormDataType = {
+  applicant: { name: '', email: '', phone: '' },
+  property: {
+    address: '',
+    property_number: '',
+    usage_number: '',
+    lease_number: '',
+    section_number: '',
+    postal_code: '',
+    municipality: '', 
+  }
+};
+
+// Create context with properly typed non-empty function
 const FormContext = createContext<FormContextType>({
-  applicantFormData: {
-    applicant: { name: '', email: '', phone: '' },
-    property: {
-      address: '',
-      property_number: '',
-      usage_number: '',
-      lease_number: '',
-      section_number: '',
-      postal_code: '',
-      municipality: '', 
-    }
+  applicantFormData: defaultFormData,
+  // Fix: Provide a non-empty implementation
+  updateApplicantFormData: () => {
+    console.warn('FormContext used outside of provider');
   },
-  updateApplicantFormData: () => {},
 });
 
 // Create provider component
 export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  // Use localStorage to persist data between page refreshes
-  const [applicantFormData, setApplicantFormData] = useState(() => {
+  // Use localStorage to persist data between page refreshes with proper typing
+  const [applicantFormData, setApplicantFormData] = useState<FormDataType>(() => {
     // Try to load from localStorage first
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('applicantFormData');
       if (savedData) {
         try {
-          return JSON.parse(savedData);
+          // Fix: Add type validation to ensure the parsed data matches FormDataType
+          const parsedData = JSON.parse(savedData) as FormDataType;
+          
+          // Ensure all required fields are present
+          if (
+            parsedData &&
+            typeof parsedData === 'object' &&
+            parsedData.applicant &&
+            parsedData.property
+          ) {
+            return parsedData;
+          }
         } catch (e) {
           console.error('Failed to parse saved form data', e);
         }
@@ -47,22 +64,14 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
     }
     
     // Default empty state if no saved data
-    return {
-      applicant: { name: '', email: '', phone: '' },
-      property: {
-        address: '',
-        property_number: '',
-        usage_number: '',
-        lease_number: '',
-        section_number: '',
-        postal_code: '',
-        municipality: '',
-      }
-    };
+    return defaultFormData;
   });
 
   const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    const newData = typeof data === 'function' ? data(applicantFormData) : data;
+    const newData = typeof data === 'function' 
+      ? (data as (prevData: FormDataType) => FormDataType)(applicantFormData) 
+      : data;
+    
     setApplicantFormData(newData);
     
     // Save to localStorage
@@ -72,11 +81,14 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
 
   return (
-    <FormContext.Provider value={{ applicantFormData, updateApplicantFormData }}>
+    <FormContext.Provider value={{ 
+      applicantFormData, 
+      updateApplicantFormData 
+    }}>
       {children}
     </FormContext.Provider>
   );
 };
 
 // Create custom hook for using the context
-export const useFormContext = () => useContext(FormContext);
+export const useFormContext = (): FormContextType => useContext(FormContext);

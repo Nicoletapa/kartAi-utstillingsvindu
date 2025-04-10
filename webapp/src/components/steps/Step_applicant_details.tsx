@@ -44,7 +44,6 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     setFormData, 
     isDirty, 
     setIsDirty, 
-    handleInputChange 
   } = FormService.useForm<FormDataType>(
     applicantFormData,
     checkFormValidity
@@ -113,7 +112,6 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     }
   };
 
-  // Save all form data at once - for navigation or other bulk saves
   const saveAllFormData = async () => {
     if (!applicationID) return false;
     
@@ -121,18 +119,18 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
       // Create array of fields to save
       const fields = [
         // Applicant fields
-        { name: 'applicant.name', value: formData.applicant.name || '' },
-        { name: 'applicant.email', value: formData.applicant.email || '' },
-        { name: 'applicant.phone', value: formData.applicant.phone || '' },
+        { name: 'applicant.name', value: formData.applicant.name ?? '' },
+        { name: 'applicant.email', value: formData.applicant.email ?? '' },
+        { name: 'applicant.phone', value: formData.applicant.phone ?? '' },
         
         // Property fields
-        { name: 'property.address', value: formData.property.address || '' },
-        { name: 'property.property_number', value: formData.property.property_number || '' },
-        { name: 'property.usage_number', value: formData.property.usage_number || '' },
-        { name: 'property.lease_number', value: formData.property.lease_number || '' },
-        { name: 'property.section_number', value: formData.property.section_number || '' },
-        { name: 'property.postal_code', value: formData.property.postal_code || '' },
-        { name: 'property.municipality', value: formData.property.municipality || '' },
+        { name: 'property.address', value: formData.property.address ?? '' },
+        { name: 'property.property_number', value: formData.property.property_number ?? '' },
+        { name: 'property.usage_number', value: formData.property.usage_number ?? '' },
+        { name: 'property.lease_number', value: formData.property.lease_number ?? '' },
+        { name: 'property.section_number', value: formData.property.section_number ?? '' },
+        { name: 'property.postal_code', value: formData.property.postal_code ?? '' },
+        { name: 'property.municipality', value: formData.property.municipality ?? '' },
       ];
       
       // Use individual saveField calls for each field
@@ -177,7 +175,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   useEffect(() => {
     if (userDetails) {
       setProperties([
-        { id: '1', address: userDetails.address || 'Hovedgata 1, 0123 Oslo' }
+        { id: '1', address: userDetails.address ?? 'Hovedgata 1, 0123 Oslo' }
       ]);
     }
   }, [userDetails]);
@@ -218,18 +216,18 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
       
       setFormData(prevFormData => ({
         applicant: {
-          name: fieldsMap['applicant.name'] || prevFormData.applicant.name || '',
-          email: fieldsMap['applicant.email'] || prevFormData.applicant.email || '',
-          phone: fieldsMap['applicant.phone'] || prevFormData.applicant.phone || '',
+          name: fieldsMap['applicant.name'] ?? prevFormData.applicant.name ?? '',
+          email: fieldsMap['applicant.email'] ?? prevFormData.applicant.email ?? '',
+          phone: fieldsMap['applicant.phone'] ?? prevFormData.applicant.phone ?? '',
         },
         property: {
-          address: fieldsMap['property.address'] || prevFormData.property.address || '',
-          property_number: fieldsMap['property.property_number'] || prevFormData.property.property_number || '',
-          usage_number: fieldsMap['property.usage_number'] || prevFormData.property.usage_number || '',
-          lease_number: fieldsMap['property.lease_number'] || prevFormData.property.lease_number || '',
-          section_number: fieldsMap['property.section_number'] || prevFormData.property.section_number || '',
-          postal_code: fieldsMap['property.postal_code'] || prevFormData.property.postal_code || '',
-          municipality: fieldsMap['property.municipality'] || prevFormData.property.municipality || '',
+          address: fieldsMap['property.address'] ?? prevFormData.property.address ?? '',
+          property_number: fieldsMap['property.property_number'] ?? prevFormData.property.property_number ?? '',
+          usage_number: fieldsMap['property.usage_number'] ?? prevFormData.property.usage_number ?? '',
+          lease_number: fieldsMap['property.lease_number'] ?? prevFormData.property.lease_number ?? '',
+          section_number: fieldsMap['property.section_number'] ?? prevFormData.property.section_number ?? '',
+          postal_code: fieldsMap['property.postal_code'] ?? prevFormData.property.postal_code ?? '',
+          municipality: fieldsMap['property.municipality'] ?? prevFormData.property.municipality ?? '',
         }
       }));
     } catch (error) {
@@ -241,35 +239,33 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   useEffect(() => {
     if (!isDirty || !applicationID) return;
     
-    // Don't need to implement auto-save here, as each field change will trigger saveField
-    // from FormService's handleInputChange method
-    // This is already handled by the ApplicationService.useSaveFormData hook
+
   }, [isDirty, applicationID]);
 
   // Prepare display data
   const personalData: FieldDisplay[] = [
-    { label: "Navn:", value: formData.applicant.name || 'Ikke angitt' },
-    { label: "E-post:", value: formData.applicant.email || 'Ikke angitt' },
-    { label: "Telefon:", value: formData.applicant.phone || 'Ikke angitt' },
+    { label: "Navn:", value: formData.applicant.name ?? 'Ikke angitt' },
+    { label: "E-post:", value: formData.applicant.email ?? 'Ikke angitt' },
+    { label: "Telefon:", value: formData.applicant.phone ?? 'Ikke angitt' },
   ];
 
   const propertyData: FieldDisplay[] = [
-    { label: "Adresse:", value: formData.property.address || 'Ikke angitt' },
-    { label: "Gårdsnr.:", value: formData.property.property_number || 'Ikke angitt' },
-    { label: "Bruksnr.:", value: formData.property.usage_number || 'Ikke angitt' },
-    { label: "Festenr.:", value: formData.property.lease_number || 'Ikke angitt' },
-    { label: "Seksjonsnr.:", value: formData.property.section_number || 'Ikke angitt' },
+    { label: "Adresse:", value: formData.property.address ?? 'Ikke angitt' },
+    { label: "Gårdsnr.:", value: formData.property.property_number ?? 'Ikke angitt' },
+    { label: "Bruksnr.:", value: formData.property.usage_number ?? 'Ikke angitt' },
+    { label: "Festenr.:", value: formData.property.lease_number ?? 'Ikke angitt' },
+    { label: "Seksjonsnr.:", value: formData.property.section_number ?? 'Ikke angitt' },
   ];
 
   const ownerData: FieldDisplay[] = [
-    { label: "Telefon:", value: userDetails?.phone || 'Ikke angitt' },
-    { label: "E-post:", value: userDetails?.email || 'Ikke angitt' },
+    { label: "Telefon:", value: userDetails?.phone ?? 'Ikke angitt' },
+    { label: "E-post:", value: userDetails?.email ?? 'Ikke angitt' },
   ];
 
   // Return the component
   return (
     <div className="flex flex-col items-center justify-center h-full mt-16">
-      {(isLoadingApplication && applicationID) || isLoadingUserDetails ? (
+      {(isLoadingApplication && applicationID) ?? isLoadingUserDetails ? (
         <LoadingIndicator />
       ) : (
         <>
@@ -313,7 +309,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
                   <select 
                     name="velgEiendom" 
                     id="velgEiendom" 
-                    value={selectedPropertyId || ''}
+                    value={selectedPropertyId ?? ''}
                     onChange={handlePropertyChange}
                     className='bg-gray-200 border-2 border-gray-300 focus:outline-none focus:ring rounded-md mb-2 p-2'
                   >
@@ -335,7 +331,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
                     <div className="flex-1 space-y-2">
                       <h1 className='font-medium'>Eies av:</h1>
                       <div>
-                        {userDetails?.name || 'Ikke angitt'}
+                        {userDetails?.name ?? 'Ikke angitt'}
                       </div>
                       <DisplayFields fields={ownerData} />
                     </div>

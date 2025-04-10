@@ -10,7 +10,7 @@ import { FormProvider } from "~/context/FormContext";
 export default function ApplicationStartPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const applicationID = searchParams.get('id') ? parseInt(searchParams.get('id') as string, 10) : undefined;
+  const applicationID = searchParams.get('id') ? parseInt(searchParams.get('id')!, 10) : undefined;
   const [isLoading, setIsLoading] = useState(false);
   const [hoveredBox, setHoveredBox] = useState<string | null>(null);
 
@@ -71,7 +71,7 @@ export default function ApplicationStartPage() {
                 </div>
                 <div className="flex">
                   <p className="font-medium mr-1">Status:</p>
-                  <span>{application?.status || 'Påbegynt'}</span>
+                  <span>{application?.status ?? 'Påbegynt'}</span>
                 </div>
                 <div className="flex">
                   <p className="font-medium mr-1">Opprettet:</p>

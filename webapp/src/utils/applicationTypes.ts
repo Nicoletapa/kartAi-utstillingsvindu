@@ -4,6 +4,7 @@ import { ApplicationType } from "@prisma/client";
 export const APPLICATION_TYPE_DISPLAY_NAMES: Record<string, string> = {
   [ApplicationType.sma_byggeprosjekter]: "Små byggeprosjekter",
   [ApplicationType.bruksendring]: "Bruksendring",
+  [ApplicationType.pending]: "pending",
 };
 
 // Subtypes for each main application type
@@ -31,6 +32,13 @@ export const APPLICATION_SUBTYPES: Record<ApplicationType, SubType[]> = {
       id: "bruksendring",
       name: "Bruksendring",
       description: "For endring av bruksformål for eksisterende bygninger"
+    }
+  ], 
+  [ApplicationType.pending]: [
+    {
+      id: "pending",
+      name: "Søknaden er under behandling",
+      description: "Søkanden har ikke subtype enda"
     }
   ]
 };

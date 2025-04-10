@@ -269,13 +269,21 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
 
   useEffect(() => {
     if (fullSizeImage?.startsWith('data:image/')) {
-      const blob = fetch(fullSizeImage)
-        .then(res => res.blob())
-        .then(blob => URL.createObjectURL(blob));
-      blob.then(setImageSrc);
-  } else {
-    setImageSrc(fullSizeImage);
-  }
+     void (async()=> {
+      try {
+        const res = await fetch(fullSizeImage);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        setImageSrc(url);
+      } catch( error) {
+        console.error("Error fetching image:", error);
+        setImageSrc(fullSizeImage); 
+      }     
+
+      })();
+     } else {
+      setImageSrc(fullSizeImage);
+     }
 }, [fullSizeImage]);
 
   return (

@@ -5,20 +5,8 @@ import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import { useRouter, useParams } from "next/navigation"; 
 import { Button } from "../../../../../components/ui/button";
 import { api } from "~/trpc/react"; 
-import { ApplicationType } from "@prisma/client";
+import type { ApplicationType } from "@prisma/client"; // Fix import to use import type
 import { toast } from "react-hot-toast"; 
-
-// Types
-interface PageProps {
-  onUpload: (files: File[]) => void;
-  formData?: {
-    description: string;
-  };
-  setFormData?: React.Dispatch<React.SetStateAction<{
-    description: string;
-  }>>;
-  onValidityChange?: (isValid: boolean) => void;
-}
 
 // Options data
 const options = [
@@ -52,29 +40,21 @@ const checkboxOptions = {
     ]
 };
 
-const Page: React.FC<PageProps> = ({ 
-  formData: externalFormData, 
-  setFormData: externalSetFormData, 
-  onValidityChange = () => {}, 
-  onUpload = () => {}, 
-}) => {
+// This is a Next.js page - it should not expect props
+export default function Page() {
     // Hooks
     const router = useRouter();
     const params = useParams();
     const applicationID = parseInt(params.applicationID as string, 10);
 
     // State
-    const [internalFormData, setInternalFormData] = useState({ description: "" });
+    const [formData, setFormData] = useState({ description: "" });
     const [selectedOption, setSelectedOption] = useState("");
     const [selectedCheckboxes, setSelectedCheckboxes] = useState<string[]>([]);
     const [hoveredBox, setHoveredBox] = useState<string | null>(null);
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
     const [isFormValid, setIsFormValid] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [uploadedFiles, setUploadedFiles] = useState<{ file: File; name: string | null }[]>([]);
-    
-    // Form data handling
-    const formData = externalFormData || internalFormData;
     
     // API queries and mutations
     const { data: applicationData } = api.application.getApplication.useQuery(
@@ -109,14 +89,6 @@ const Page: React.FC<PageProps> = ({
     });
 
     // Utility functions
-    const updateFormData = (newData: typeof formData) => {
-        if (typeof externalSetFormData === 'function') {
-            externalSetFormData(newData);
-        } else {
-            setInternalFormData(newData);
-        }
-    };
-    
     const handleMouseEnter = (box: string) => {
         if (timeoutId) clearTimeout(timeoutId);
         setHoveredBox(box);
@@ -161,9 +133,8 @@ const Page: React.FC<PageProps> = ({
     // Event handlers
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        const updatedFormData = { ...formData, [name]: value };
-        updateFormData(updatedFormData);
-        checkFormValidity(updatedFormData, selectedOption);
+        setFormData(prev => ({ ...prev, [name]: value }));
+        checkFormValidity({ ...formData, [name]: value }, selectedOption);
     };
 
     const handleCheckboxChange = (checkboxValue: string) => {
@@ -213,24 +184,16 @@ const Page: React.FC<PageProps> = ({
         option: string, 
         checkboxes: string[] = selectedCheckboxes
     ) => {
-        const descriptionText = data?.description || '';
+        const descriptionText = data?.description ?? '';
         const isCheckboxValid = (option === "Bygge" || option === "Rive") ? checkboxes.length > 0 : true;
         const isValid = descriptionText.trim() !== '' && option !== '' && isCheckboxValid;
         
         setIsFormValid(isValid);
-        
-        if (typeof onValidityChange === 'function') {
-            onValidityChange(isValid);
-        }
     };
 
     // Navigation handlers
     const handleBack = () => {
         router.push(`/atlas-app/i-soknad/${applicationID}/applicant-details`);
-    };
-
-    const determineApplicationType = (): ApplicationType | null => {
-        return getApplicationTypeFromSelection(selectedOption);
     };
 
     const handleNext = async () => {
@@ -242,34 +205,36 @@ const Page: React.FC<PageProps> = ({
             await addApplicationField.mutateAsync({
                 applicationID,
                 fieldName: 'description',
-                fieldValue: formData.description || '',
+                fieldValue: formData.description ?? '',
             });
 
-             // Get the application type based on user selection
-        const appType = getApplicationTypeFromSelection(selectedOption);
-        
-        // Navigate to different routes based on application type
-        if (appType === "bruksendring") {
-            // For bruksendring applications
-            router.push(`/atlas-app/i-soknad/${applicationID}/bruksendring`);
-        } else  {
-            // For bygge/rive applications
-            router.push(`/atlas-app/i-soknad/${applicationID}/bygge-eller-rive`);
-        } 
-        
-        // Reset updating state in case navigation takes time
-        setIsUpdating(false);
-    } catch (error: any) {
-        console.error("Error updating application type:", error);
-        toast.error(`Error: ${error.message || 'Something went wrong'}`);
-        setIsUpdating(false);
-    }
+            // Get the application type based on user selection
+            const appType = getApplicationTypeFromSelection(selectedOption);
+            
+            // Navigate to different routes based on application type
+            if (appType === "bruksendring") {
+                // For bruksendring applications
+                router.push(`/atlas-app/i-soknad/${applicationID}/bruksendring`);
+            } else {
+                // For bygge/rive applications
+                router.push(`/atlas-app/i-soknad/${applicationID}/bygge-eller-rive`);
+            } 
+            
+            // Reset updating state in case navigation takes time
+            setIsUpdating(false);
+        } catch (error) {
+            console.error("Error updating application type:", error);
+            // Fix the unsafe member access
+            const errorMessage = error instanceof Error ? error.message : 'Something went wrong';
+            toast.error(`Error: ${errorMessage}`);
+            setIsUpdating(false);
+        }
     };
 
     // Side effects
     useEffect(() => {
         checkFormValidity(formData, selectedOption);
-    }, [formData, selectedOption, selectedCheckboxes]);
+    }, [formData, selectedOption, selectedCheckboxes, checkFormValidity]); // Added missing dependency
 
     useEffect(() => {
         if (!applicationData) return;
@@ -305,11 +270,11 @@ const Page: React.FC<PageProps> = ({
             }
         }
         
-        const description = applicationData?.application_fields?.find(f => f.fieldName === 'description')?.fieldValue || '';
-        updateFormData({ description });
+        const description = applicationData?.application_fields?.find(f => f.fieldName === 'description')?.fieldValue ?? '';
+        setFormData({ description });
     }, [applicationData]);
 
-    // Render
+    // Render UI
     return (
         <div className="flex flex-col items-center justify-center h-full mt-10 w-full max-w-[900px] mx-auto">
             <h1 className="text-3xl font-bold justify-center flex">
@@ -370,7 +335,7 @@ const Page: React.FC<PageProps> = ({
                             name="description"
                             className="w-full min-h-60 mt-2 p-4 text-md border-2 border-gray-300 rounded-lg"
                             placeholder="Skriv her ..."
-                            value={formData?.description || ""}
+                            value={formData?.description ?? ""}
                             onChange={handleInputChange}
                             required
                         />
@@ -408,7 +373,7 @@ const Page: React.FC<PageProps> = ({
                     <div className="mb-4">
                         <p className="text-sm mb-2">Hva vil du {selectedOption === "Bygge" ? "bygge" : "rive"}?</p>
                         <div className="flex gap-4">
-                            {checkboxOptions[selectedOption as keyof typeof checkboxOptions].map((option) => (
+                            {checkboxOptions[selectedOption].map((option) => (
                                 <label key={option.value} className="flex items-start space-x-2 text-sm">
                                     <input
                                         type="checkbox"
@@ -457,6 +422,4 @@ const Page: React.FC<PageProps> = ({
             </div>
         </div>
     );
-};
-
-export default Page;
+}

@@ -1,14 +1,15 @@
 import React, { useEffect } from 'react';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
+import type { SmaProsjekterFormData } from '~/types/formTypes';
 import { 
-  SmaProsjekterFormData, 
   smaProsjekterDefaultValues, 
   ROAD_TYPES, 
   CALCULATION_METHODS,
   yesNoOptions 
 } from '~/types/formTypes';
 import { RadioGroup, Tooltip } from '../ui/ui-components';
+import { StepComponentProps } from '../ProgressBarStep';
 
 // Building measurement inputs
 const buildingInputs = [
@@ -47,8 +48,14 @@ const calculationMethodOptions = [
   { label: 'U-grad', value: CALCULATION_METHODS.U_GRAD },
 ];
 
-// Environmental conflicts
-const environmentalConflictGroups = [
+// Define a type for the environmental conflict item
+type EnvironmentalConflictItem = {
+  name: string;
+  label: string;
+};
+
+// Define the array with proper typing
+const environmentalConflictGroups: EnvironmentalConflictItem[][] = [
   [
     { name: 'distance_train_tracks', label: 'Er det mindre enn 30 meter til nærmeste trikke-eller togspor?' },
     { name: 'distance_water_sewer_pipes', label: 'Bygger/river du i nærheten av en vann- og avløpsledning?' },
@@ -62,8 +69,8 @@ const environmentalConflictGroups = [
   ]
 ];
 
-interface Step1_1Props {
-  applicationID: number;
+interface Step1_1Props extends StepComponentProps<SmaProsjekterFormData> {
+  applicationID: number; // Make this required
   formData: SmaProsjekterFormData;
   setFormData: React.Dispatch<React.SetStateAction<SmaProsjekterFormData>>;
   onValidityChange: (isValid: boolean) => void;
@@ -137,16 +144,15 @@ const Step1_1: React.FC<Step1_1Props> = ({
 
     console.log(`Saving field: ${name} with value:`, value);
 
-    // Get the mapped field path for saving to the backend
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
-    // Save using the resolved field path
     if (Array.isArray(value)) {
-      saveField(fieldPath, JSON.stringify(value));
+      void saveField(fieldPath, JSON.stringify(value));
     } else {
-      saveField(fieldPath, value.toString());
+      void saveField(fieldPath, value.toString());
     }
   };
+
   const tooltipContents = {
     buildingDetails: 'Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.',
     calculationMethod: 'Beregningsmetode i en byggesøknad er måten arealer og volumer beregnes på for å sikre at prosjektet overholder gjeldende lover og forskrifter.',
@@ -166,21 +172,18 @@ const Step1_1: React.FC<Step1_1Props> = ({
 
   // Handle calculation method changes
   const handleCalculationMethodChange = (method: string) => {
-    // Since calculation_method is already an array in the type definition,
-    // we don't need to split it
     const currentMethods = formData.calculation_method || [];
     
     const updatedMethods = currentMethods.includes(method)
       ? currentMethods.filter(v => v !== method)
       : [...currentMethods, method];
     
-    // Pass the array directly, no need to join
     handleFieldChange('calculation_method', updatedMethods);
   };
 
   useEffect(() => {
     checkFormValidity(formData);
-  }, []);
+  }, [checkFormValidity, formData]);
 
   return (
     <div className="justify-center flex flex-col w-full">
@@ -341,7 +344,8 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[0].map((item) => (
+        {/* First group of environmental conflicts */}
+        {environmentalConflictGroups[0]?.map((item) => (
           <RadioGroup
             key={item.name}
             name={item.name}
@@ -357,7 +361,8 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[1].map((item) => (
+        {/* Second group of environmental conflicts */}
+        {environmentalConflictGroups[1]?.map((item) => (
           <RadioGroup
             key={item.name}
             name={item.name}

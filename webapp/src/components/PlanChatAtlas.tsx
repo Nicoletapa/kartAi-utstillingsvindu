@@ -26,10 +26,11 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   const [chatItems, setChatItems] = useState<
     { text: string; isUser: boolean, guides?: GuideButton[] }[]
   >([]);
-  const [shapeContext, setShapeContext] = useState<string | null>(null);
-  const utils = api.useUtils();
   const mapCenterLogged = useRef(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // Get TRPC utilities
+  const utils = api.useUtils();
 
   useEffect(() => {
     if (lastDrawnShape) {
@@ -53,9 +54,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
           description += ` The shape is outside the property boundary by approximately ${spatialAnalysis.distanceToProperty.toFixed(2)} meters.`;
         }
       }
-      
-      setShapeContext(description);
-      
       
       setChatItems((prevChatItems) => [
         { text: `System: ${description} Ask me about it!`, isUser: false },
@@ -86,7 +84,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
 
   const handleSendMessage = () => {
     if (!isTyping && text.trim() !== "") {
-      handleSubmit();
+      void handleSubmit(); 
       setText("");
     }
   }
@@ -121,7 +119,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
            !!spatialAnalysis?.nearestPropertyId;
   };
 
-  // Update the queryPlanprat function
+  // Update the queryPlanprat function with the correct tRPC method
   async function queryPlanprat(queryInput: string) {
     try {
       let enhancedQuery = queryInput;
@@ -156,6 +154,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         enhancedQuery += ` [Map context: User is viewing map at coordinates ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}, zoom level ${zoom}]`;
       }
       
+    
       const response = await utils.planprat.fetchResponse.fetch({
         query: enhancedQuery,
       });
@@ -164,6 +163,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     } catch (error) {
       console.error(error);
       setError("Error: Failed to retrieve response.");
+      return null;
     }
   }
 
@@ -235,68 +235,46 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     }
   };
 
-  // Format text with markdown-like syntax using Tailwind classes
-  const formatText = (text: string): JSX.Element => {
-    // Split the text into paragraphs
-    const paragraphs = text.split(/\n\n+/);
-    
+  // Apply formatted text and guides to the UI
+  const renderChatItem = (chatItem: { text: string; isUser: boolean; guides?: GuideButton[] }, index: number) => {
     return (
-      <>
-        {paragraphs.map((paragraph, idx) => {
-          if (!paragraph.trim()) return null;
-          
-          // Process bold text - ** or __ for bold
-          const formattedText = paragraph.replace(
-            /(\*\*|__)(.*?)\1/g, 
-            '<strong class="font-semibold">$2</strong>'
-          );
-          
-          // Check if this is a list item
-          if (formattedText.match(/^[-*•] /)) {
-            return (
-              <ul key={idx} className="list-disc ml-6 mb-3">
-                {formattedText.split(/\n/).map((item, i) => {
-                  const listItem = item.replace(/^[-*•] /, '');
-                  return <li key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: listItem }} />;
-                })}
-              </ul>
-            );
-          }
-          
-          return <p key={idx} className="mb-3" dangerouslySetInnerHTML={{ __html: formattedText }} />;
-        })}
-      </>
-    );
-  };
-
-  const renderGuideButtons = (guides: GuideButton[]) => {
-    if (!guides || guides.length === 0) return null;
-    
-    return (
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <h4 className="text-sm font-semibold mb-2 text-blue-800">Relevante veivisere:</h4>
-        <div className="flex flex-col gap-2">
-          {guides.map((guide, index) => (
-            <a 
-              key={index}
-              href={guide.url}
-              target="_blank"
-              rel="noopener noreferrer" 
-              className="inline-flex items-center justify-between px-4 py-3 border border-blue-300 text-sm font-medium rounded-md shadow-sm text-blue-800 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-            >
-              <span className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                {guide.title}
-              </span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
-          ))}
-        </div>
-      </div>
+      <li
+        data-cy="chat-output"
+        className={
+          chatItem.isUser
+            ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100"
+            : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black"
+        }
+        key={index}
+      >
+        {chatItem.text}
+        {!chatItem.isUser && chatItem.guides && chatItem.guides.length > 0 && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-semibold mb-2 text-blue-800">Relevante veivisere:</h4>
+            <div className="flex flex-col gap-2">
+              {chatItem.guides.map((guide, guideIndex) => (
+                <a 
+                  key={guideIndex}
+                  href={guide.url}
+                  target="_blank"
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center justify-between px-4 py-3 border border-blue-300 text-sm font-medium rounded-md shadow-sm text-blue-800 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                >
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    {guide.title}
+                  </span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </li>
     );
   };
 
@@ -329,42 +307,30 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </li>
           )}
 
-          
-          {chatItems.map((chatItem, index) => (
-            <li
-              data-cy="chat-output"
-              className={
-                chatItem.isUser
-                  ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100"
-                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black"
-              }
-              key={index}
-            >
-              {chatItem.text}
-            </li>
-          ))}
+          {/* Use the new renderChatItem function */}
+          {chatItems.map((chatItem, index) => renderChatItem(chatItem, index))}
         </ul>
         <div className="relative w-full mt-2 mb-2">
-  <textarea
-    id="planprat-input"
-    className="w-full min-h-20 rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner resize-none"
-    placeholder="Still meg et spørsmål ..."
-    value={text}
-    onChange={handleTextChange}
-    disabled={isTyping}
-    onKeyDown={handleKeyDown}
-  ></textarea>
+          <textarea
+            id="planprat-input"
+            className="w-full min-h-20 rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner resize-none"
+            placeholder="Still meg et spørsmål ..."
+            value={text}
+            onChange={handleTextChange}
+            disabled={isTyping}
+            onKeyDown={handleKeyDown}
+          ></textarea>
 
-  <button
-    type="submit"
-    id="planprat-input-button"
-    className="absolute bottom-2 right-2 p-2 rounded bg-transparent"
-    onClick={handleSendMessage}
-    disabled={isTyping || text.trim() === ""}
-  >
-    <SendHorizonal size={24} className="text-kartAI-blue hover:text-blue-800 duration-300 transition" />
-  </button>
-</div>  
+          <button
+            type="submit"
+            id="planprat-input-button"
+            className="absolute bottom-2 right-2 p-2 rounded bg-transparent"
+            onClick={handleSendMessage}
+            disabled={isTyping || text.trim() === ""}
+          >
+            <SendHorizonal size={24} className="text-kartAI-blue hover:text-blue-800 duration-300 transition" />
+          </button>
+        </div>  
       </div>
     </section>
   );

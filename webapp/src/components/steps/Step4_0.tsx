@@ -4,9 +4,16 @@ import AndreVedlegg from '../AndreVedlegg';
 
 const Step4_0 = () => {
     const [openModal, setOpenModal] = useState<boolean>(false);
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
                 
         const handleOpenModal = () => setOpenModal(true);
         const handleCloseModal = () => setOpenModal(false);
+
+        const handleFileUpload = (files: File[]) => {
+          console.log('Files uploaded:', files);
+          setUploadedFiles((prev) => [...prev, ...files]);
+         
+        };
   return (
     <div>
         <h1 className="text-3xl font-bold justify-center flex mb-4">Andre vedlegg
@@ -31,7 +38,7 @@ const Step4_0 = () => {
           </div>
         </div>
       )}
-       <AndreVedlegg documents={[]} onUpload={() => {}} />
+       <AndreVedlegg documents={[]} onUpload={handleFileUpload} />
     </div>
 
    

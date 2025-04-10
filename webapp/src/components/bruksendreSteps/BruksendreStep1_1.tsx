@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { Tooltip, RadioGroup } from '~/components/ui/ui-components';
+import { StepComponentProps } from '~/components/ProgressBarStep';
 
 // Update FormDataType to match our schema change
 type FormDataType = {
@@ -29,8 +30,9 @@ const ROAD_TYPES = {
   PRIVAT: "privat_vei"
 };
 
-interface BruksendreStep1_1Props {
-  applicationID: number;
+// Update the interface to extend the generic StepComponentProps
+interface BruksendreStep1_1Props extends StepComponentProps<FormDataType> {
+  applicationID: number; // Make this required
   formData: FormDataType;
   setFormData: React.Dispatch<React.SetStateAction<FormDataType>>;
   onValidityChange: (isValid: boolean) => void;
@@ -85,7 +87,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     console.log(`Saving field: ${name} with value: ${value}`);
     
     // Save to API
-    saveField(name, value.toString());
+   void saveField(name, value.toString());
   };
 
   // Event handlers for form elements - simplified to use the unified handler
@@ -113,7 +115,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
   // Validate form on mount
   useEffect(() => {
     checkFormValidity(formData);
-  }, []);
+  }, [checkFormValidity, formData]);
 
   return (
     <div className="justify-center flex flex-col w-full">

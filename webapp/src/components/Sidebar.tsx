@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronFirst, ChevronLast, Info, Boxes, ListChecks, FileCheck, House, MousePointerClick, FileStack, ArrowRight, ChevronDown, Bot } from "lucide-react";
+import { ChevronFirst, ChevronLast, Info,  ListChecks, FileCheck, House, MousePointerClick, FileStack, ArrowRight, ChevronDown, Bot } from "lucide-react";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 interface SidebarContextType {
     expanded: boolean;
@@ -11,7 +12,6 @@ interface SidebarContextType {
 
 export const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
-import { ReactNode } from "react";
 
 export default function Sidebar({ children }: { children: ReactNode }) {
     const [expanded, setExpanded] = useState(true);
@@ -42,7 +42,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     useEffect(() => {
         const isSubMenuItemActive = subMenuItems.some((item) => pathname.startsWith(item.href));
         setSubExpanded(isSubMenuItemActive);
-    }, [pathname]);
+    }, [pathname, subMenuItems]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -64,7 +64,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     useEffect(() => {
         console.log('Current pathname:', pathname);
         console.log('Is main page:', isMainPage());
-    }, [pathname]);
+    }, [pathname, isMainPage]);
 
     return (
         <div className="flex">

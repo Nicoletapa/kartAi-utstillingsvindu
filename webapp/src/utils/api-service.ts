@@ -2,6 +2,17 @@ import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import React from 'react';
 import { resolveFieldPath } from './field-mappings';
+import type { ApplicationStatus, ApplicationType } from "@prisma/client";
+
+/**
+ * Interface for application update data
+ */
+interface ApplicationUpdateData {
+  status?: ApplicationStatus;
+  applicationType?: ApplicationType;
+  submissionDate?: Date;
+  updatedDate?: Date;
+}
 
 /**
  * Service for handling common API operations related to applications
@@ -81,7 +92,7 @@ export const ApplicationService = {
 
     return {
       ...mutation,
-      updateApplication: async (applicationID: number, data: any) => {
+      updateApplication: async (applicationID: number, data: ApplicationUpdateData) => {
         try {
           await mutation.mutateAsync({
             applicationID,
@@ -144,70 +155,73 @@ export const ApplicationService = {
   },
 
   /**
- * Auto-save form data to application fields with debounce
- */
-useSaveFormData: (
-  applicationID: number, 
-  applicationType: 'bruksendring' | 'sma-prosjekter' = 'bruksendring',
-  debounceMs: number = 1000
-) => {
-  const addField = ApplicationService.useAddField();
-  const [isSaving, setIsSaving] = React.useState(false);
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+   * Auto-save form data to application fields with debounce
+   */
+  useSaveFormData: (
+    applicationID: number, 
+    applicationType: 'bruksendring' | 'sma-prosjekter' = 'bruksendring',
+    debounceMs = 1000  // Removed explicit type as it's inferrable
+  ) => {
+    const addField = ApplicationService.useAddField();
+    const [isSaving, setIsSaving] = React.useState(false);
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const saveField = React.useCallback(async (fieldName: string, fieldValue: string) => {
-    if (!applicationID) return;
+    const saveField = React.useCallback(async (fieldName: string, fieldValue: string) => {
+      if (!applicationID) return;
 
-    // Resolve the field path using our centralized utility
-    const mappedFieldName = resolveFieldPath(fieldName, applicationType);
+      // Resolve the field path using our centralized utility
+      const mappedFieldName = resolveFieldPath(fieldName, applicationType);
 
-    // Log field name resolution for debugging
-    console.log('Field mapping:', {
-      original: fieldName,
-      mapped: mappedFieldName
-    });
+      // Log field name resolution for debugging
+      console.log('Field mapping:', {
+        original: fieldName,
+        mapped: mappedFieldName
+      });
 
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Set new timeout for debounce
-    timeoutRef.current = setTimeout(async () => {
-      try {
-        setIsSaving(true);
-        await addField.addField(applicationID, mappedFieldName, fieldValue);
-        setIsSaving(false);
-        
-        // Occasionally show a success message (not on every save)
-        if (Math.random() < 0.2) {
-          toast.success("Changes saved", { 
-            duration: 2000, 
-            position: "bottom-right" 
-          });
-        }
-      } catch (error) {
-        console.error(`Failed to save field ${mappedFieldName}:`, error);
-        toast.error("Error saving changes");
-        setIsSaving(false);
-      }
-    }, debounceMs);
-  }, [applicationID, applicationType, addField, debounceMs]);
-
-  // Cleanup timeout on unmount
-  React.useEffect(() => {
-    return () => {
+      // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-    };
-  }, []);
 
-  return {
-    saveField,
-    isSaving
-  };
-}
+      // Set new timeout for debounce
+      timeoutRef.current = setTimeout(() => {
+        // Wrap the async code in IIFE to avoid returning a promise
+        void (async () => {
+          try {
+            setIsSaving(true);
+            await addField.addField(applicationID, mappedFieldName, fieldValue);
+            setIsSaving(false);
+            
+            // Occasionally show a success message (not on every save)
+            if (Math.random() < 0.2) {
+              toast.success("Changes saved", { 
+                duration: 2000, 
+                position: "bottom-right" 
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to save field ${mappedFieldName}:`, error);
+            toast.error("Error saving changes");
+            setIsSaving(false);
+          }
+        })();
+      }, debounceMs);
+    }, [applicationID, applicationType, addField, debounceMs]);
+
+    // Cleanup timeout on unmount
+    React.useEffect(() => {
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, []);
+
+    return {
+      saveField,
+      isSaving
+    };
+  }
 };
 
 /**
@@ -227,7 +241,6 @@ export const FormService = {
       newData: T | ((prevData: T) => T)
     ) => {
       setFormData(prev => {
-        // Fix: Use proper type casting instead of generic Function
         const updated = typeof newData === 'function' 
           ? (newData as (prevData: T) => T)(prev) 
           : newData;
@@ -253,9 +266,9 @@ export const FormService = {
         : value;
 
       updateFormData(prev => ({
-        ...prev,
+        ...prev as Record<string, unknown>,
         [name]: fieldValue
-      }));
+      }) as T);
     }, [updateFormData]);
 
     return {

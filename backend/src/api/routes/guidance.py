@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from src.core.embeddings import DocumentStore
+from src.document_store import DocumentStore
 
 # Initialize document store as a singleton
 _document_store = None

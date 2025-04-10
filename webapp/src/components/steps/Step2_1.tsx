@@ -42,7 +42,7 @@ const Step2_1 = () => {
 
       <div className='border-4 rounded-lg border-blue-800 mt-4 p-4'>
           <h1 className='font-bold'>Hva må du gjøre?</h1>
-          <p>Du vil bli ført til dispensasjonssøknaden ved å trykke på knappen <b>"Søk om dispensasjon"</b> </p>
+          <p>Du vil bli ført til dispensasjonssøknaden ved å trykke på knappen <b>&quot;Søk om dispensasjon&quot;</b> </p>
       </div>
 
       <button className="w-full my-3 py-2 border-2 border-kartAI-blue rounded-lg text-kartAI-blue hover:bg-kartAI-blue hover:text-white duration-300">
