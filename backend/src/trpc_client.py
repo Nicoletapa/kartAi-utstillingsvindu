@@ -7,7 +7,7 @@ from datetime import date, datetime
 from enum import Enum
 # Use typing_extensions for older Python versions if needed, otherwise standard typing
 # from typing_extensions import Any, Dict, Optional, List, Union, TypedDict
-from typing import Any, Dict, Optional, List, Union, TypedDict
+from typing_extensions import Any, Dict, Optional, List, Union, TypedDict
 from dotenv import load_dotenv
 import logging
 

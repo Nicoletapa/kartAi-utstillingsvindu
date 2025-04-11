@@ -4,7 +4,7 @@ from langchain.schema import Document
 
 from langchain_chroma import Chroma 
 
-from generator import embedder, llm
+from generator import embedder
 
 import os
 import shutil
@@ -13,7 +13,7 @@ import shutil
 
 CHROMA_PATH ="chroma"
 
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src/data")
+DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backend/src/data")
 
 def main():
     generate_data_store()
@@ -26,7 +26,7 @@ def generate_data_store():
 
 
 def load_documents():
-    loader = DirectoryLoader(DATA_PATH, glob="*.md")
+    loader = DirectoryLoader(DATA_PATH, glob="**/*.[pt][dx][ft]")
     documents = loader.load()
     return documents
 
@@ -35,7 +35,7 @@ def split_text(documents:list[Document]):
     
     text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000, 
-    chunk_overlap=500, 
+    chunk_overlap=200, 
     length_function=len, 
     add_start_index=True,
 )
@@ -43,9 +43,6 @@ def split_text(documents:list[Document]):
     chunks = text_splitter.split_documents(documents)
     print (f"Split {len(documents)} documents into {len(chunks)} chunks.")
     
-    document = chunks[5]
-    print(document.page_content)
-    print(document.metadata)
 
     return chunks
 
