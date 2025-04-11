@@ -15,7 +15,7 @@ const ForDuSoker = () => {
     }
 
   return (
-    <div className='p-4 px-20'>
+    <div className='p-4 md:mx-20'>
       <h1 className='text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8'>Før du søker</h1>
         <p className='mb-4'>Før du søker, må du vite hvilke regler som gjelder for eiendommen din.</p>
 

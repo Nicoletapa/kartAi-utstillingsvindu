@@ -1,12 +1,12 @@
 import React from 'react'
 import AtlasSidebar from "~/components/AtlasSidebar";
-import ChecklistAtlas from '~/components/ChecklistAtlas';
+import MyOverview from '~/components/MyOverview';
 
-export default function SjekklistePage() {
+export default function MyOverviewPage() {
   return (
     <AtlasSidebar>
       <div>
-        <ChecklistAtlas />
+        <MyOverview />
       </div>
     </AtlasSidebar>
   )
