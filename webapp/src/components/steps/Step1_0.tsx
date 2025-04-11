@@ -1,7 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { Info } from 'lucide-react';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
+import TiltaksAidMap from '../TiltaksAidMap';
+import { Map } from "leaflet";
+import { usePropertySearch } from "~/hooks/usePropertySearch";
+import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
+
 
 interface Step1_0Props {
   applicationID: number;
@@ -33,6 +38,13 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
     const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
     const [hoveredBox, setHoveredBox] = useState<string | null>(null);
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+    const [mapReady, setMapReady] = useState(false);
+    const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
+    const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
+    
+    const { userData, searchInput, setSearchInput, errorMessage, setErrorMessage } = usePropertySearch();
+      
+    const mapRef = useRef<Map | null>(null);
     
   
     const safeFormData = {
@@ -98,13 +110,34 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
         }
       };
 
-    
+          const handleMapReady = useCallback((map: Map) => {
+            if (!mapRef.current) {
+              mapRef.current = map;
+              setMapReady(true);
+            }
+          }, []);
+        
+          const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
+            setLastDrawnShape(shape);
+            setSpatialAnalysis(analysis || null);
+          }, []);
 
   return (
     <div className='justify-center flex flex-col w-full'>
       <h1 className="text-3xl font-bold justify-center flex">Planer & Regelverk</h1>
-      <div className='border-2 border-gray-400 rounded-lg mt-4 h-80'>
-          [kommunekart]
+      <div className='border-2 border-gray-400 rounded-lg mt-4'>
+        <div className='overflow-hidden rounded-lg max-h-80 relative z-10'>
+          <TiltaksAidMap 
+          onMapReady={handleMapReady}
+          onShapeDrawn={handleShapeDrawn}
+          userGnr={userData?.gnr}
+          userBnr={userData?.bnr}
+          userFnr={userData?.fnr}
+          userSnr={userData?.snr}
+          autoZoom={true}
+          />
+        </div>
+          
       </div>
       <div className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
         <h1 className='font-medium inline-flex'>Hvilke kommunale planer gjelder for din eiendom?

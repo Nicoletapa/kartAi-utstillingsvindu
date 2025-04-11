@@ -21,6 +21,7 @@ import {
   BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
   BruksendreStep4_1, BruksendreStep5_0, BruksendreStep5_1,
+  BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
 } from "./bruksendreSteps";
 
 import { api } from "~/trpc/react";
@@ -116,6 +117,11 @@ export default function ProgressBarStep({
             0: BruksendreStep5_0,
             1: BruksendreStep5_1,
         },
+        6: {
+            0: BruksendreStep6_0,
+            1: BruksendreStep6_1,
+            2: BruksendreStep6_2,
+        }
     };
 
     // Define steps based on the step components
@@ -291,7 +297,9 @@ export default function ProgressBarStep({
     const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
     const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
-    
+    const handleBackToMain= () => {
+        router.push(`/atlas-app`);
+    };
 
     const handleValidityChange = (isValid: boolean) => {
         if (currentStep === 1 && currentSubstep === 0) {
@@ -343,8 +351,16 @@ export default function ProgressBarStep({
     };
 
     return (
-        <div className="container mx-auto py-6 px-4 flex flex-col">
+        <div>
+            <div className="mx-20 mt-6">
+               <Button className="bg-kartAI-blue hover:bg-kartAI-lightblue w-44" onClick={handleBackToMain}>
+                    Tilbake til hovedsiden
+               </Button>
+            </div>
+            
+            <div className="container px-4 flex mx-20 flex-col">
             <div className="mb-8 top-0 bg-background pt-4 pb-8 z-10">
+                
                 <ProgressBar steps={stepsWithStatus} />
             </div>
 
@@ -352,7 +368,7 @@ export default function ProgressBarStep({
                 {currentStep <= 5 && renderChecklist()}
                 {CurrentStepComponent && (
                     <CurrentStepComponent
-                        applicationID={applicationID} // Make sure this is being passed
+                        applicationID={applicationID}
                         formData={formData}
                         setFormData={setFormData}
                         onValidityChange={handleValidityChange}
@@ -360,7 +376,7 @@ export default function ProgressBarStep({
                 )}
             </div>
 
-            <div className="flex justify-between mt-8 gap-4">
+            <div className="flex justify-between mt-8 gap-4 mb-8">
                 <Button
                     onClick={handlePrev}
                     className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
@@ -393,5 +409,7 @@ export default function ProgressBarStep({
                 </div>
             </div>
         </div>
+        </div>
+        
     );
 }

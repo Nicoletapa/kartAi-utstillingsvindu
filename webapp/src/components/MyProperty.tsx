@@ -11,7 +11,6 @@ import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import { searchProperty as fetchProperty } from "~/utils/propertyUtils";
-
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
 
 interface FieldDisplay {

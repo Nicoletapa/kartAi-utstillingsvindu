@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import * as L from "leaflet";
+import { Map } from "leaflet";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import { useRouter, useParams } from "next/navigation"; 
 import { Button } from "../../../../../components/ui/button";
 import { api } from "~/trpc/react"; 
 import { ApplicationType } from "@prisma/client";
 import { toast } from "react-hot-toast"; 
+import TiltaksAidMap from "~/components/TiltaksAidMap";
+import { PropertySearchBar } from "~/components/map/PropertySearchBar";
+import { searchProperty as fetchProperty } from "~/utils/propertyUtils";
+import { usePropertySearch } from "~/hooks/usePropertySearch";
+import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
 
-// Types
+
 interface PageProps {
   onUpload: (files: File[]) => void;
   formData?: {
@@ -20,7 +27,9 @@ interface PageProps {
   onValidityChange?: (isValid: boolean) => void;
 }
 
-// Options data
+const MAX_ZOOM = 19;
+
+
 const options = [
     {
         value: "Bruksendring",
@@ -57,12 +66,10 @@ const Page: React.FC<PageProps> = ({
   setFormData: externalSetFormData, 
   onValidityChange = () => {}, 
 }) => {
-    // Hooks
     const router = useRouter();
     const params = useParams();
     const applicationID = parseInt(params.applicationID as string, 10);
 
-    // State
     const [internalFormData, setInternalFormData] = useState({ description: "" });
     const [selectedOption, setSelectedOption] = useState("");
     const [selectedCheckboxes, setSelectedCheckboxes] = useState<string[]>([]);
@@ -70,15 +77,36 @@ const Page: React.FC<PageProps> = ({
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
     const [isFormValid, setIsFormValid] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [propertyBoundary, setPropertyBoundary] = useState<L.Layer | null>(null);
+    const [propertyBoundaries, setPropertyBoundaries] = useState<GeoJSON.Feature[]>([]);
+    const [autoZoomSuccessful, setAutoZoomSuccessful] = useState(false);
+    const [mapReady, setMapReady] = useState(false);
+    const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
+    const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
+
+    const mapRef = useRef<Map | null>(null);
+    const loggedPropertyData = useRef(false);
     
-    // Form data handling
     const formData = externalFormData || internalFormData;
     
-    // API queries and mutations
     const { data: applicationData } = api.application.getApplication.useQuery(
         { applicationID },
         { enabled: !isNaN(applicationID) }
     );
+
+    const { userData, searchInput, setSearchInput, errorMessage, setErrorMessage } = usePropertySearch();
+    
+      const handleMapReady = useCallback((map: Map) => {
+        if (!mapRef.current) {
+          mapRef.current = map;
+          setMapReady(true);
+        }
+      }, []);
+    
+      const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
+        setLastDrawnShape(shape);
+        setSpatialAnalysis(analysis || null);
+      }, []);
 
     const updateApplication = api.application.updateApplication.useMutation({
         onSuccess: () => {
@@ -106,7 +134,6 @@ const Page: React.FC<PageProps> = ({
         }
     });
 
-    // Utility functions
     const updateFormData = (newData: typeof formData) => {
         if (typeof externalSetFormData === 'function') {
             externalSetFormData(newData);
@@ -125,7 +152,6 @@ const Page: React.FC<PageProps> = ({
         setTimeoutId(id);
     };
 
-    // Type selection helpers
     const getApplicationTypeFromSelection = (option: string): ApplicationType | null => {
         if (option === "Bygge" || option === "Rive") {
             return "sma_byggeprosjekter";
@@ -156,7 +182,6 @@ const Page: React.FC<PageProps> = ({
         return null;
     };
 
-    // Event handlers
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         const updatedFormData = { ...formData, [name]: value };
@@ -205,7 +230,55 @@ const Page: React.FC<PageProps> = ({
         });
     };
 
-    // Form validation
+    const handlePropertySearch = async (propertyNumberToSearch: string = searchInput) => {
+        const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
+    
+        if (!data?.length) {
+          setErrorMessage("No property found with this number or invalid property data");
+          return;
+        }
+    
+        const geometry = data[0]?.geom as GeoJSON.Geometry | undefined;
+        if (!geometry) {
+          setErrorMessage("Invalid geometry data for the property");
+          return;
+        }
+        if (!geometry) return;
+    
+        if (propertyBoundary && mapRef.current) {
+          mapRef.current.removeLayer(propertyBoundary);
+        }
+    
+        const propertyFeature: GeoJSON.Feature = {
+          type: "Feature",
+          geometry: geometry,
+          properties: {
+            id: propertyNumberToSearch,
+            matrikkelnummer: data[0]?.matrikkelnummer,
+          },
+        };
+        
+        setPropertyBoundaries([propertyFeature]);
+    
+        if (!loggedPropertyData.current) {
+          console.log("Current property data:", data[0]);
+          loggedPropertyData.current = true;
+        }
+    
+        const newBoundary = L.geoJSON(propertyFeature, {
+          style: { color: "blue", weight: 2, fillOpacity: 0.1 },
+        });
+    
+        if (mapRef.current) {
+          newBoundary.addTo(mapRef.current);
+          mapRef.current.fitBounds(newBoundary.getBounds(), { maxZoom: MAX_ZOOM, padding: [20, 20] });
+          setAutoZoomSuccessful(true);
+        }
+    
+        setPropertyBoundary(newBoundary);
+        setErrorMessage(null);
+      };
+
     const checkFormValidity = (
         data: typeof formData, 
         option: string, 
@@ -222,7 +295,6 @@ const Page: React.FC<PageProps> = ({
         }
     };
 
-    // Navigation handlers
     const handleBack = () => {
         router.push(`/atlas-app/i-soknad/${applicationID}/applicant-details`);
     };
@@ -243,19 +315,14 @@ const Page: React.FC<PageProps> = ({
                 fieldValue: formData.description || '',
             });
 
-             // Get the application type based on user selection
         const appType = getApplicationTypeFromSelection(selectedOption);
         
-        // Navigate to different routes based on application type
         if (appType === "bruksendring") {
-            // For bruksendring applications
             router.push(`/atlas-app/i-soknad/${applicationID}/bruksendring`);
         } else  {
-            // For bygge/rive applications
             router.push(`/atlas-app/i-soknad/${applicationID}/bygge-eller-rive`);
         } 
         
-        // Reset updating state in case navigation takes time
         setIsUpdating(false);
     } catch (error: any) {
         console.error("Error updating application type:", error);
@@ -264,7 +331,6 @@ const Page: React.FC<PageProps> = ({
     }
     };
 
-    // Side effects
     useEffect(() => {
         checkFormValidity(formData, selectedOption);
     }, [formData, selectedOption, selectedCheckboxes]);
@@ -273,11 +339,9 @@ const Page: React.FC<PageProps> = ({
         if (!applicationData) return;
         
         if (applicationData?.subTypeId) {
-            // For standard bruksendring
             if (applicationData.subTypeId === "standard") {
                 setSelectedOption("Bruksendring");
             } 
-            // For bygge subtypes
             else if (applicationData.subTypeId.startsWith("bygge_")) {
                 setSelectedOption("Bygge");
                 const subType = applicationData.subTypeId.replace("bygge_", "");
@@ -289,7 +353,6 @@ const Page: React.FC<PageProps> = ({
                     setSelectedCheckboxes(["byggeAnnet"]);
                 }
             } 
-            // For rive subtypes
             else if (applicationData.subTypeId.startsWith("rive_")) {
                 setSelectedOption("Rive");
                 const subType = applicationData.subTypeId.replace("rive_", "");
@@ -307,7 +370,6 @@ const Page: React.FC<PageProps> = ({
         updateFormData({ description });
     }, [applicationData]);
 
-    // Render
     return (
         <div className="flex flex-col items-center justify-center h-full mt-10 w-full max-w-[900px] mx-auto">
             <h1 className="text-3xl font-bold justify-center flex">
@@ -316,7 +378,6 @@ const Page: React.FC<PageProps> = ({
 
             <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 w-full" data-cy="main-container">
                 <div className="flex flex-col md:flex-row gap-8">
-                    {/* Project Type Selection */}
                     <div className="w-full md:w-3/6" data-cy="left-column">
                         <h1 className="font-medium">Hva gjelder tiltaket?</h1>
                         <div className="flex flex-col space-y-4 mt-2">
@@ -342,7 +403,6 @@ const Page: React.FC<PageProps> = ({
                         </div>
                     </div>
 
-                    {/* Project Description */}
                     <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
                         <h2 className="font-medium inline-flex">
                             Beskrivelse av tiltaket
@@ -379,9 +439,8 @@ const Page: React.FC<PageProps> = ({
                 </div>
             </div>
 
-            {/* Project Details and Drawings */}
             <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 w-full">
-                <h1 className="font-medium inline-flex">
+                <h1 className="font-medium inline-flex mb-2">
                     Tegninger
                     <div className="relative flex">
                         <Info
@@ -424,10 +483,26 @@ const Page: React.FC<PageProps> = ({
                     </div>
                 )}
 
-                <p>[SITUASJONSKART]</p>
+                <PropertySearchBar
+                    searchInput={searchInput}
+                    onSearchInputChange={setSearchInput}
+                    onSearch={() => handlePropertySearch()}
+                    errorMessage={errorMessage}
+                />
+                <div className="no-rounded-map relative z-0">
+                    <TiltaksAidMap
+                        onMapReady={handleMapReady}
+                        onShapeDrawn={handleShapeDrawn}
+                        userGnr={userData?.gnr}
+                        userBnr={userData?.bnr}
+                        userFnr={userData?.fnr}
+                        userSnr={userData?.snr}
+                        autoZoom={true}
+                    />
+                </div>
+                
             </div>
 
-            {/* Navigation Buttons */}
             <div className="mt-5 w-full flex justify-center mb-4 gap-4">
                 <Button 
                     onClick={handleBack} 
