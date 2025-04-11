@@ -1,12 +1,13 @@
 "use client"
 
+
 import React, { useState } from 'react'
 import { Download, Eye, Info, Repeat, Trash2, Loader2 } from 'lucide-react'
 import { api } from "~/trpc/react"
 import { ApplicationType } from "@prisma/client"
 import { toast } from "react-hot-toast"
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes"
-import { string } from 'zod'
+import { DocumentPreviewModal } from "./DocumentPreviewModal"; 
 
 interface ExistingDocument {
   documentID: number;
@@ -32,179 +33,90 @@ interface MyDocumentsProps {
   existingDocuments?: ExistingDocument[];
 }
 
-const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => {
-  const [openModal, setOpenModal] = useState<boolean>(false)
+const formatDate = (date: Date) =>
+  new Date(date).toLocaleDateString('nb-NO', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+const MyDocuments: React.FC<MyDocumentsProps> = () => {
+  const [openModal, setOpenModal] = useState(false)
   const [replaceDocumentId, setReplaceDocumentId] = useState<number | null>(null)
   const [fileToUpload, setFileToUpload] = useState<File | null>(null)
-  const [previewDocument, setPreviewDocument] = useState<{
-    fileName: string
-    content: string
-    type: string
-  } | null>(null)
 
-  const handleOpenModal = () => setOpenModal(true)
-  const handleCloseModal = () => setOpenModal(false)
-
-  const { 
-    data: applications, 
-    isLoading, 
-    error, 
-    refetch: refetchApplications
-  } = api.application.getAllApplications.useQuery()
-
-  // Fetch documents for all applications
+  const { data: applications, isLoading, error, refetch: refetchApplications } = api.application.getAllApplications.useQuery()
   const { data: allDocuments, error: docsError, refetch: refetchDocuments } = api.document.getAllUserDocuments.useQuery()
 
-  if (docsError) {
-    console.error('Document fetch error:', docsError)
-    return (
-      <div className="p-4">
-        <div className="bg-red-100 p-4 rounded-md text-red-700">
-          Error loading documents: {docsError.message}
-        </div>
-      </div>
-    )
-  }
-  // Delete mutation
+  const [previewDocument, setPreviewDocument] = useState<{
+    fileName: string;
+    document: number[];
+    documentType: string;
+  } | null>(null);
+
   const deleteDocument = api.document.deleteDocument.useMutation({
-    onSuccess: () => {
+    onSuccess: (_, { documentId }) => {
       toast.success("Dokumentet ble slettet.")
       refetchDocuments()
+      refetchApplications()
     },
-    onError: (error) => {
-      toast.error(`Feil ved sletting: ${error.message}`)
-    }
+    onError: (err) => toast.error(`Feil ved sletting: ${err.message}`)
   })
 
-  // Replace mutation
   const replaceDocument = api.document.replaceDocument.useMutation({
     onSuccess: () => {
       toast.success("Dokumentet ble oppdatert.")
-      setReplaceDocumentId(null)
-      setFileToUpload(null)
+      resetReplacement()
       refetchDocuments()
     },
     onError: (error) => {
-      toast.error(`Feil ved oppdatering: ${error.message}`)
+      if (error.message.includes('File was replaced but could not validate')) {
+        toast(error.message, { icon: '⚠️' })
+        refetchDocuments()
+      } else {
+        toast.error(`Erstatning feilet: ${error.message}`)
+      }
     }
   })
 
-  // Format date helper function
-  const formatDate = (dateString: Date) => {
-    return new Date(dateString).toLocaleDateString('nb-NO', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
+  const resetReplacement = () => {
+    setReplaceDocumentId(null)
+    setFileToUpload(null)
   }
 
-  const handleDeleteDocument = async (documentId: number) => {
-    if (confirm("Er du sikker på at du vil slette dette dokumentet? Dette kan ikke angres.")) {
-      try {
-        await deleteDocument.mutateAsync(
-          { documentId },
-          {
-            onSuccess: (data) => {
-              toast.success(`Dokument ${data.deletedFileName} ble slettet`);
-              void refetchDocuments();
-              if (data.applicationID) {
-                void refetchApplications();
-              }
-            },
-            onError: (error) => {
-              toast.error(`Feil ved sletting: ${error.message}`);
-            }
-          }
-        );
-      } catch (error) {
-        console.error('Delete error:', error);
-        toast.error('En uventet feil oppstod ved sletting');
-      }
-    }
-  };
-
-  // Handle file upload for replacement
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setFileToUpload(e.target.files[0])
     }
   }
 
-  // Handle document replacement
   const handleReplaceDocument = async (documentId: number) => {
-    if (!fileToUpload) return;
-  
-    try {
-      const arrayBuffer = await fileToUpload.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-  
-      await replaceDocument.mutateAsync(
-        {
-          documentId,
-          file: uint8Array,
-          fileName: fileToUpload.name,
-          applicationID: undefined,
-        },
-        {
-          onSuccess: (data) => {
-             {
-              toast.success('Document replaced but could not validate');
-            }
-            setReplaceDocumentId(null);
-            setFileToUpload(null);
-          },
-          onError: (error) => {
-            // Check if it's a partial success (file replaced but validation failed)
-            if (error.message.includes('File was replaced but could not validate')) {
-              toast(error.message, { icon: '⚠️' });
-              void refetchDocuments();
-            } else {
-              toast.error(`Replacement failed: ${error.message}`);
-            }
-          }
-        }
-      );
-    } catch (error) {
-      console.error('File processing error:', error);
-      toast.error('Failed to process file');
-    }
-  };
+    if (!fileToUpload) return
+    const buffer = await fileToUpload.arrayBuffer()
+    const uint8Array = new Uint8Array(buffer)
 
-  // Handle document download
-  const handleDownloadDocument = (doc: { fileName: string, document: number[] }) => {
-      try {
-        const byteArray = new Uint8Array(doc.document)
-        const blob = new Blob([byteArray], { type: 'application/octet-stream' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = doc.fileName
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error('Download error:', error)
-        toast.error('Failed to download document')
-      }
+    replaceDocument.mutate({ documentId, file: uint8Array, fileName: fileToUpload.name })
+  }
+
+  const handleDownload = (doc: { fileName: string, document: number[] }) => {
+    try {
+      const blob = new Blob([new Uint8Array(doc.document)], { type: 'application/octet-stream' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.fileName
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download error:', err)
+      toast.error('Kunne ikke laste ned dokumentet.')
     }
+  }
 
   if (isLoading) {
     return (
-      <div className="p-4">
-        <div className="flex justify-center">
+      <div className="p-4 flex justify-center">
         <Loader2 className="animate-spin text-gray-500" size={24} />
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-4">
-        <div className="bg-red-100 p-4 rounded-md text-red-700">
-          Feil ved lasting av søknader: {error.message}
-        </div>
       </div>
     )
   }
@@ -213,11 +125,11 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
     <div className='p-4'>
       <h1 className='text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8'>
         Mine Dokumenter
-        <Info size={18} className="ml-2 hover:cursor-pointer text-kartAI-blue" onClick={handleOpenModal} />
+        <Info size={18} className="ml-2 hover:cursor-pointer text-kartAI-blue" onClick={() => setOpenModal(true)} />
       </h1>
       
       {openModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={handleCloseModal}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={() => setOpenModal(false)}>
           <div className="bg-white mx-80 p-6 rounded-lg shadow-lg w-full transform transition-all scale-95 opacity-0 animate-fadeIn"
             onClick={(e) => e.stopPropagation()}>
             <div className="mb-8">
@@ -231,12 +143,19 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
               </ul>
             </div>
             <button className="absolute mt-4 px-4 py-2 right-3 bottom-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
-              onClick={handleCloseModal}>
+              onClick={() => setOpenModal(false)}>
               Lukk
             </button>
           </div>
         </div>
       )}
+
+{previewDocument && (
+  <DocumentPreviewModal
+    document={previewDocument}
+    onClose={() => setPreviewDocument(null)}
+  />
+)}
 
       <p className="text-xl md:mx-20 px-6 mb-4 flex justify-center">
         Her finner du alle dokumentene du har lastet opp til søknadene dine. 
@@ -294,11 +213,17 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
                               </td>
                               <td className="w-1/4">
                                 <div className="flex items-center gap-2 space-x-2">
-                                  <Eye 
-                                    size={20} 
-                                    className="text-gray-500 hover:text-gray-700 cursor-pointer" 
-                                    onClick={() => {/* Implement preview logic */}}
-                                  />
+                                <Eye 
+  size={20} 
+  className="text-gray-500 hover:text-gray-700 cursor-pointer" 
+  onClick={() => {
+    setPreviewDocument({
+      fileName: document.fileName,
+      document: Array.from(document.document),
+      documentType: document.fileName.split('.').pop()?.toLowerCase() || ''
+    });
+  }}
+/>
                                   <Repeat 
                                     size={20} 
                                     className="text-gray-500 hover:text-gray-700 cursor-pointer" 
@@ -327,7 +252,7 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
                                   <Download 
                                     size={20} 
                                     className="text-gray-500 hover:text-gray-700 cursor-pointer" 
-                                    onClick={() => handleDownloadDocument({
+                                    onClick={() => handleDownload({
                                       fileName: document.fileName,
                                       document: Array.from(document.document)
                                     })}
