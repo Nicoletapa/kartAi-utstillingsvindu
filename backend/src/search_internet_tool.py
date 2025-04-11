@@ -1,7 +1,7 @@
 import os
 import asyncio
 from langchain_core.tools import BaseTool
-from tavily import TavilyClient, AsyncTavilyClient # Import Tavily clients
+from tavily import TavilyClient, AsyncTavilyClient 
 from dotenv import load_dotenv
 from pydantic.v1 import BaseModel, Field
 
@@ -29,32 +29,26 @@ class SearchTool(BaseTool):
         if not tavily_api_key:
             return "Tavily API key not found. Please set the TAVILY_API_KEY environment variable."
         try:
-            # Initialize synchronous client
             tavily_client = TavilyClient(api_key=tavily_api_key)
-            # Perform search - you can adjust parameters like max_results, search_depth, include_answer
             response = tavily_client.search(query=query, search_depth="basic", max_results=5)
-            # Extract and format results (example: joining context snippets)
-            # --- Start of corrected section ---
             results = response.get('results', [])
             answer = response.get('answer', None)
 
             output = f"Tavily Search Results for '{query}':\n"
             if answer:
-                 output += f"Answer: {answer}\n\n" # Keep the answer part if it exists
+                 output += f"Answer: {answer}\n\n" 
 
             if results:
-                # Use .get() for each key to avoid KeyErrors
                 formatted_results = []
                 for res in results:
                     title = res.get('title', 'No Title Provided')
-                    snippet = res.get('snippet', 'No Snippet Available') # Provide default if missing
+                    snippet = res.get('snippet', 'No Snippet Available')
                     url = res.get('url', 'No URL Provided')
                     formatted_results.append(f"- {title}: {snippet}\nURL: {url}")
 
                 output += "\n".join(formatted_results)
-            elif not answer: # Only say "No results" if there's no answer AND no results list
+            elif not answer: 
                  output += "No results found."
-            # --- End of corrected section ---
 
             return output
         except Exception as e:
