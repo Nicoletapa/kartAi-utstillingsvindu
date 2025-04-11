@@ -4,10 +4,9 @@ import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
 import * as L from 'leaflet';
 import type { Map } from 'leaflet';
-import type { Feature, Geometry, GeoJsonProperties } from 'geojson'; // Add missing imports
+import type { Feature, Geometry, GeoJsonProperties } from 'geojson'; 
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
-//import { PropertySearchBar } from './map/PropertySearchBar';
 import { 
   SpatialAnalysisResult, 
   analyzeSpatialRelationship,

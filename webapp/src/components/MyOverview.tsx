@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { api } from "~/trpc/react";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import { ApplicationType } from "@prisma/client";
@@ -94,7 +95,17 @@ const MyOverview = () => {
             setExpandedAppId(prev => (prev === id ? null : id));
         }
 
-        if (isLoading) return <p className="text-center">Laster inn...</p>;
+        if (isLoading) {
+          return (
+            <div className="p-4">
+              <div className="flex justify-center">
+                <Loader2 className="animate-spin text-gray-500" size={24} />
+                <p className='text-center'>Laster inn...</p>
+              </div>
+            </div>
+          );
+        }       
+
         if (error) return <p className="text-center text-red-500">Noe gikk galt: {error.message}</p>;
     
   return (
@@ -126,11 +137,11 @@ const MyOverview = () => {
     </div>
     
     {isExpanded && (
-        <div className='mt-6 flex flex-row gap-2 justify-start duration-300'>
+        <div className='mt-6 flex flex-row gap-2 justify-star'>
             <button
                 onClick={(e) => {
                     e.stopPropagation();
-                    router.push(`/atlas-app/i-soknad?id=${app.applicationID}`);
+                    router.push(`/atlas-app/i-soknad/${app.applicationID}/applicant-details`);
                 }}
                 className='bg-kartAI-blue text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-kartAI-lightblue transition'
             >
@@ -164,7 +175,7 @@ const MyOverview = () => {
               >
                   {isCreating ? (
                       <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-1"></div>
+                        <Loader2 className="animate-spin text-gray-500" size={24} />
                           Creating...
                       </>
                   ) : (

@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { ArrowRight, ArrowLeft, Info } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { ApplicationService, UIComponents, FormService } from '~/utils/api-service';
+import { Loader2 } from 'lucide-react';
 
 // Types
 interface StepApplicantDetailsProps {
@@ -272,7 +273,6 @@ useEffect(() => {
     { label: "E-post:", value: userDetails?.email || 'Ikke angitt' },
   ];
 
-  // Return the component
   return (
     <div className="flex flex-col items-center justify-center h-full mt-16">
       {(isLoadingApplication && applicationID) || isLoadingUserDetails ? (
@@ -283,13 +283,11 @@ useEffect(() => {
 
           <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 lg:w-[950px]" data-cy="main-container">
             <div className="flex flex-col md:flex-row gap-8">
-              {/* Left column - Personal details */}
               <div className="w-full md:w-2/6" data-cy="left-column">
                 <h1 className='font-medium mb-4'>Personopplysninger</h1>
                 <DisplayFields fields={personalData} />
               </div>
 
-              {/* Right column - Property details */}
               <div className="w-full md:w-4/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
                 <div className='mb-4'>
                   <h1 className='font-medium inline-flex'>
@@ -315,7 +313,6 @@ useEffect(() => {
                 </div>
 
                 <div className='flex flex-col space-y-2 mt-2'>
-                  {/* Property selector */}
                   <select 
                     name="velgEiendom" 
                     id="velgEiendom" 
@@ -332,12 +329,10 @@ useEffect(() => {
                   <h1 className='font-medium'>Eiendomsinformasjon</h1>
                   
                   <div className="flex flex-col md:flex-row md:gap-8 w-full">
-                    {/* Property details */}
                     <div className="flex-1 space-y-2">
                       <DisplayFields fields={propertyData} />
                     </div>
 
-                    {/* Owner details */}
                     <div className="flex-1 space-y-2">
                       <h1 className='font-medium'>Eies av:</h1>
                       <div>
@@ -351,11 +346,9 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Navigation buttons */}
           <NavigationButtons 
             onBack={handleBack}
             onNext={handleNext}
-            // isNextDisabled={isSaving || !isFormValid} // Don't call checkFormValidity() directly here
             isSaving={isSaving}
           />
         </>
@@ -364,11 +357,10 @@ useEffect(() => {
   );
 };
 
-// Helper components remain the same
 const LoadingIndicator: React.FC = () => (
   <div className="flex justify-center items-center h-full">
-    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-    <span className="ml-3">Laster data...</span>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
+        <span className="ml-3">Laster data...</span>
   </div>
 );
 
@@ -386,7 +378,6 @@ const DisplayFields: React.FC<{ fields: FieldDisplay[] }> = ({ fields }) => (
 const NavigationButtons: React.FC<{
   onBack: () => void;
   onNext: () => void;
-  // isNextDisabled: boolean;
   isSaving: boolean;
 }> = ({ onBack, onNext, isSaving }) => (
   <div className="mt-5 w-full flex justify-center gap-4">
@@ -403,7 +394,7 @@ const NavigationButtons: React.FC<{
       className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
     >
       {isSaving ? (
-        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
       ) : null}
       <span className="relative inline-block">
         Neste

@@ -6,6 +6,7 @@ import { api } from "~/trpc/react"
 import { ApplicationType } from "@prisma/client"
 import { toast } from "react-hot-toast"
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes"
+import { string } from 'zod'
 
 interface ExistingDocument {
   documentID: number;
@@ -35,6 +36,11 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
   const [openModal, setOpenModal] = useState<boolean>(false)
   const [replaceDocumentId, setReplaceDocumentId] = useState<number | null>(null)
   const [fileToUpload, setFileToUpload] = useState<File | null>(null)
+  const [previewDocument, setPreviewDocument] = useState<{
+    fileName: string
+    content: string
+    type: string
+  } | null>(null)
 
   const handleOpenModal = () => setOpenModal(true)
   const handleCloseModal = () => setOpenModal(false)
@@ -183,7 +189,6 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
       }
     }
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="p-4">
@@ -194,7 +199,6 @@ const MyDocuments: React.FC<MyDocumentsProps> = ({ existingDocuments = [] }) => 
     )
   }
 
-  // Error state
   if (error) {
     return (
       <div className="p-4">

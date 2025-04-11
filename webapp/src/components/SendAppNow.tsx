@@ -33,7 +33,7 @@ export function SendAppNow({ isNewApplication, onTypeSelect }: TemplateProps) {
         onTypeSelect(data.applicationID);
       } else {
         
-        router.push(`/atlas-app/i-soknad?id=${data.applicationID}`);
+        router.push(`/atlas-app/i-soknad/${data.applicationID}/applicant-details`);
       }
     },
     onError: (error) => {
