@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import ProgressBarStep from '~/components/ProgressBarStep';
 import { FormProvider } from "~/context/FormContext";
+import { Loader2 } from 'lucide-react'
 
 export default function ApplicationDetailPage() {
   // Get the applicationID from the URL parameters
@@ -21,8 +22,8 @@ export default function ApplicationDetailPage() {
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+          <Loader2 className="animate-spin text-gray-500" size={24} />
+          </div>
     );
   }
 

@@ -3,7 +3,7 @@
 import * as L from "leaflet";
 import { Map } from "leaflet";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, ArrowRight, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation"; 
 import { Button } from "../../../../../components/ui/button";
 import { api } from "~/trpc/react"; 
@@ -522,7 +522,7 @@ const Page: React.FC<PageProps> = ({
                     aria-disabled={!isFormValid || isUpdating}
                 >
                     {isUpdating && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
+                        <Loader2 className="animate-spin text-gray-500" size={24} />
                     )}
                     <span className="relative inline-block">Neste</span>
                     <ArrowRight className="w-5 h-5 transition-transform duration-300" />

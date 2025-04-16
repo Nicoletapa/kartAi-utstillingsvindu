@@ -44,7 +44,19 @@ const Step4_1: React.FC<Step4_1Props> = ({ applicationID }) => {
         </div>
       )}
 
-      <Soknaden />
+      <Soknaden 
+        application={{ applicationID, applicationType: 'sma-prosjekter' }}
+        user={{
+          email: 'example@example.com',
+          address: '123 Example Street',
+          name: 'John Doe',
+          gnr: 1,
+          bnr: 2,
+          postalCode: '1234',
+          postalArea: 'Example City'
+        }}
+        userDocuments={[]}
+      />
     </div>
     
   )

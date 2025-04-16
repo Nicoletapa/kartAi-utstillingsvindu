@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
-import Dispensasjon from '../Dispenasjon';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import Dispensasjon from '../Dispensasjon';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface Step2_2Props {
@@ -41,7 +41,16 @@ const Step2_2: React.FC<Step2_2Props> = ({ applicationID }) => {
           </div>
         </div>
       )}
-      <Dispensasjon /> 
+      <Dispensasjon
+        application={{ applicationID }}
+        user={{
+          email: 'example@example.com',
+          address: '123 Example Street',
+          name: 'John Doe',
+          gnr: 1,
+          bnr: 2,
+        }}
+      /> 
     </div>
 
     

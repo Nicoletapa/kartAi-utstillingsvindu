@@ -1,19 +1,26 @@
 import React from 'react'
+import { api } from "~/trpc/react";
 
-const infoFields = [
+const Nabovarsel = () => {
+    const { data: users } = api.user.getUserDetails.useQuery();
+
+    const infoFields = [
     { label: "Til:", value: "[Navn på nabo]" },
     { label: "Adresse:", value: "[Naboens adresse]" },
-    { label: "Fra:", value: "[Navn]" },
-    { label: "Adresse:", value: "[Adresse]" },
-    { label: "Dato:", value: "[Dato]" }
+    { label: "Fra:", value: users?.name },
+    { label: "Adresse:", value: users?.address },
+    { label: "Dato:", value: new Date().toLocaleDateString('no-NO') }
 ]
 
 const contactInfoFields = [
-    { label: "E-post:", value: "[Email]" },
-    { label: "Telefon:", value: "[Telelfonnummer]" },
+    { label: "E-post:", value: users?.email },
+    { label: "Telefon:", value: users?.phone },
 ]
 
-const Nabovarsel = () => {
+const footer = [
+    { value: users?.name },
+]
+    
   return (
     <div className="w-full h-full border-4 rounded-lg border-gray-400 mt-6">
       <div className="px-3">
@@ -30,7 +37,7 @@ const Nabovarsel = () => {
             <h1 className="font-medium">Varsel om byggesøknad - Oppføring av garasje</h1>
             <p>I henhold til plan-og bygningsloven § 21-3 varsles du herved om at
                 det vil bli sendt inn en byggesak til ______ kommune for oppføring
-                av en frittstående garasje på min eiendom, ______.
+                av en frittstående garasje på min eiendom, {users?.address}.
             </p>
         </div>
 
@@ -55,7 +62,11 @@ const Nabovarsel = () => {
 
             <div className="mt-4 mb-10">
                 <p className="font-medium">Vennlig hilsen,</p>
-                <p>[Navn]</p>
+                {footer.map((field, index) => (
+                <div key={index} className="flex">
+                    <span>{field.value}</span>
+                </div>
+            ))}
             </div>
         </div>
         <div className="flex justify-center">
