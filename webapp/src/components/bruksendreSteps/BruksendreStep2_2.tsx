@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
-import Dispensasjon from '../Dispenasjon';
+import Dispensasjon from '../Dispensasjon';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 
 

@@ -17,7 +17,7 @@ const buildingInputs = [
   { name: 'gesimshøyde', label: 'Gesimshøyde:', placeholder: 'F.eks. 3.5', unit: 'meter' },
   { name: 'distance_va', label: 'Avstand til VA-ledninger:', placeholder: 'F.eks. 4', unit: 'meter' },
   { name: 'distance_high_voltage_lines', label: 'Avstand til strømkabler:', placeholder: 'F.eks. 3', unit: 'meter' },
-  { name: 'road_center', label: 'Avstand til vei:', placeholder: 'F.eks. 5', unit: 'meter' },
+  { name: 'distance_road', label: 'Avstand til vei:', placeholder: 'F.eks. 5', unit: 'meter' },
 ];
 
 // Distance measurement inputs
@@ -86,6 +86,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
       (data.size?.trim() ?? '') !== '' &&
       (data.mønehøyde?.trim() ?? '') !== '' &&
       (data.gesimshøyde?.trim() ?? '') !== '' &&
+      (data.distance_road?.trim() ?? '') !== '' &&
       
       // Distance measurements
       (data.road_center?.trim() ?? '') !== '' &&

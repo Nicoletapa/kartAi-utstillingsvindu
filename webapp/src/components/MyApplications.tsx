@@ -222,7 +222,7 @@ const MyApplications = () => {
       }
       
       toast.success("Søknad opprettet");
-      router.push(`/atlas-app/i-soknad?id=${data.applicationID}`);
+      router.push(`/atlas-app/i-soknad/${data.applicationID}/applicant-details`);
     },
     onError: (error) => {
       setIsCreating(false);
