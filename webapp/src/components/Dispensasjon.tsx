@@ -63,7 +63,7 @@ const Dispensasjon = ({
           sokerAdresse: appData.application_fields.find(field => field.fieldName === "sokerAdresse")?.fieldValue,
           eiendomAdresse: appData.application_fields.find(field => field.fieldName === "eiendomAdresse")?.fieldValue,
           gbnr: appData.application_fields.find(field => field.fieldName === "gbnr")?.fieldValue,
-          tiltakType: appData.application_fields.find(field => field.fieldName === "tiltakType")?.fieldValue,
+          tiltakType: appData.applicationType,
           storrelse: Number(appData.application_fields.find(field => field.fieldName === "fields.distances.size")?.fieldValue) || undefined,
           materiale: appData.application_fields.find(field => field.fieldName === "materiale")?.fieldValue,
           hoyde: Number(appData.application_fields.find(field => field.fieldName === "fields.distances.mønehøyde")?.fieldValue) || undefined,

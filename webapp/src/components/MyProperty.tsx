@@ -158,8 +158,8 @@ const MyProperty = () => {
 
   const propertyData: FieldDisplay[] = [
     { label: "Adresse:", value: formData.property.address || "Ikke angitt" },
-    { label: "Gårdsnr.:", value: formData.property.property_number || "Ikke angitt" },
-    { label: "Bruksnr.:", value: formData.property.usage_number || "Ikke angitt" },
+    { label: "Gårdsnr.:", value: userDetails?.gnr?.toString() || "Ikke angitt" },
+    { label: "Bruksnr.:", value: userDetails?.bnr?.toString() || "Ikke angitt" },
     { label: "Kommune:", value: formData.property.municipality || "Ikke angitt" },
     { label: "Planområde:", value: formData.property.plan_area || "Ikke angitt" },
     { label: "PlanID:", value: formData.property.plan_id || "Ikke angitt" },
