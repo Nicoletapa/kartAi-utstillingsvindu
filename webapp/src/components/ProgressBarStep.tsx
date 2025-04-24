@@ -27,6 +27,7 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { ApplicationType } from "@prisma/client";
+import SmallChatbot from "./SmallChatbot";
 
 // Update the interface to be more flexible
 interface StepComponentType {
@@ -376,7 +377,7 @@ export default function ProgressBarStep({
                 )}
             </div>
 
-            <div className="flex justify-between mt-8 gap-4 mb-8">
+            <div className="flex justify-between mx-20 gap-4 mt-8 mb-8">
                 <Button
                     onClick={handlePrev}
                     className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
@@ -409,6 +410,7 @@ export default function ProgressBarStep({
                 </div>
             </div>
         </div>
+        <SmallChatbot />
         </div>
         
     );

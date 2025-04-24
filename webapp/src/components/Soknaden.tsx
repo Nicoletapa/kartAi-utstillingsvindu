@@ -65,7 +65,7 @@ const Soknaden = ({
     }, [appData]);
 
     const byggInfoFields = [
-        { label: "Tiltakstype:", value: application.applicationType },
+        { label: "Tiltakstype:", value: application?.applicationType },
         { label: "Adresse:", value: applicationData.adresse || "Rådhusgata 18" },
         { label: "Kommune:", value: applicationData.kommune || "Kristiansand" },
         { label: "Tiltakshaver:", value: `${users?.name}, ${users?.address}, ${users?.postalCode} ${users?.postalArea}` },

@@ -6,6 +6,7 @@ import { GeistSans } from "geist/font/sans";
 import AtlasSidebar from "~/components/AtlasSidebar";
 import { SendAppNow } from "~/components/SendAppNow";
 import FrontPage from "~/components/FrontPage";
+import SmallChatbot from "~/components/SmallChatbot";
 
 
 export default function AtlasPage() {
@@ -14,6 +15,7 @@ export default function AtlasPage() {
       <AtlasSidebar>
         <FrontPage />
         <SendAppNow />
+        <SmallChatbot />
       </AtlasSidebar>
         
         <Link

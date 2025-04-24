@@ -1,5 +1,6 @@
 import AtlasSidebar from "~/components/AtlasSidebar"
 import MyApplications from "~/components/MyApplications"
+import SmallChatbot from "~/components/SmallChatbot"
 
 
 export default function ApplicationsPage() {
@@ -8,6 +9,7 @@ export default function ApplicationsPage() {
       <div>
         <MyApplications />
       </div>
+      <SmallChatbot />
       </AtlasSidebar>
     );
   }

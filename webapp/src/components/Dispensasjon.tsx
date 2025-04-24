@@ -42,7 +42,7 @@ const Dispensasjon = ({
   const [applicationData, setApplicationData] = useState<ApplicationData>({});
   
   const { data: appData } = api.application.getApplication.useQuery(
-    { applicationID: application.applicationID },
+    { applicationID: application?.applicationID },
     { enabled: true } 
   );
 
@@ -82,7 +82,7 @@ const Dispensasjon = ({
     { value: applicationData.postInfo || "4604, Kristiansand"},
     { value: applicationData.telefon || "38 07 50 00"},
     { value: applicationData.epost || "post@kristiansand.kommune.no"},
-    { label: "Saksnummer:", value: application.applicationID || "2024/001" },
+    { label: "Saksnummer:", value: application?.applicationID || "2024/001" },
     { label: "Dato:", value: new Date().toLocaleDateString('no-NO') },
   ]
 
