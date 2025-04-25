@@ -7,16 +7,12 @@ import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "~/lib/utils";
 
-// Import all step components
-
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
     Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
     Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
 } from "./steps"
 
-
-// Import bruksendre step components
 import {
   BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
@@ -32,7 +28,6 @@ import SmallChatbot from "./SmallChatbot";
 interface StepComponentType {
     onValidityChange?: (isValid: boolean) => void;
     applicationID?: number;
-    [key: string]: any;
 }
 type StepComponentsType = {
     [key: number]: {
