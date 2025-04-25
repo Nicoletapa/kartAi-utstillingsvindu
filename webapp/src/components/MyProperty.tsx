@@ -21,6 +21,9 @@ interface FieldDisplay {
 interface Property {
   id: string;
   address: string;
+  gnr: number;
+  bnr: number;
+  postalArea: string;
 }
 
 const MAX_ZOOM = 19;
@@ -40,9 +43,9 @@ const MyProperty = () => {
   const [formData, setFormData] = useState({
     property: {
       address: "",
-      property_number: "",
-      usage_number: "",
-      municipality: "",
+      gnr: "",
+      bnr: "",
+      postalArea: "",
       plan_area: "",
       plan_id: "",
     },
@@ -93,9 +96,15 @@ const MyProperty = () => {
     const selected = properties.find((p) => p.id === propertyId);
     if (selected) {
       setFormData((prev) => ({
-        ...prev,
-        property: { ...prev.property, address: selected.address },
-      }));
+              ...prev,
+              property: { 
+                ...prev.property, 
+                address: selected.address,
+                postalArea: selected.postalArea,
+                gnr: selected.gnr.toString(),
+                bnr: selected.bnr.toString(),
+               },
+            }));
     }
   };
 
@@ -151,16 +160,20 @@ const MyProperty = () => {
   useEffect(() => {
     if (userDetails) {
       setProperties([
-        { id: "1", address: userDetails.address || "Hovedgata 1, 0123 Oslo" },
+        { 
+          id: userDetails.id, address: userDetails.address || "Hovedgata 1, 0123 Oslo", 
+          postalArea: userDetails.postalArea || "Ikke angitt",
+          gnr: userDetails.gnr || 0, bnr: userDetails.bnr || 0, 
+        },
       ]);
     }
   }, [userDetails]);
 
   const propertyData: FieldDisplay[] = [
     { label: "Adresse:", value: formData.property.address || "Ikke angitt" },
-    { label: "Gårdsnr.:", value: userDetails?.gnr?.toString() || "Ikke angitt" },
-    { label: "Bruksnr.:", value: userDetails?.bnr?.toString() || "Ikke angitt" },
-    { label: "Kommune:", value: formData.property.municipality || "Ikke angitt" },
+    { label: "Gårdsnr.:", value: formData.property.gnr || "Ikke angitt" },
+    { label: "Bruksnr.:", value: formData.property.bnr || "Ikke angitt" },
+    { label: "Kommune:", value: formData.property.postalArea || "Ikke angitt" },
     { label: "Planområde:", value: formData.property.plan_area || "Ikke angitt" },
     { label: "PlanID:", value: formData.property.plan_id || "Ikke angitt" },
   ];

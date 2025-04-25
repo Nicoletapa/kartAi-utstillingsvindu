@@ -10,74 +10,66 @@ import { usePropertySearch } from '~/hooks/usePropertySearch'
 import clsx from 'clsx'
 
 const SmallChatbot = () => {
-    const [showChatbot, setShowChatbot] = useState(false)
-    const [isVisible, setIsVisible] = useState(false)
-    const [expanded, setExpanded] = useState(false)
+    const [showChatbot, setShowChatbot] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
-    const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null)
-    const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null)
-
+    const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
+    const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
+    
     const { userData } = usePropertySearch()
-    const [mapReady, setMapReady] = useState(false)
 
-    const mapInstance = useRef<{
-        map: Map | null
-        ready: boolean
-        containerId: string | null
-    }>({
+    const [mapReady, setMapReady] = useState(false);
+
+
+   const mapInstance = useRef<{ map: Map | null; ready: boolean; containerId: string | null; }>({
         map: null,
         ready: false,
         containerId: null,
-    })
+    });
 
-    const [mapContainerId] = useState(() => `map-container-${Math.random().toString(36).substr(2, 9)}`)
+    const [mapContainerId] = useState(() => `map-container-${Math.random().toString(36).substr(2, 9)}`);
 
     const handleMapReady = useCallback((map: Map) => {
         if (!mapInstance.current.map) {
-            mapInstance.current = { map, ready: true, containerId: mapContainerId }
+            mapInstance.current = { map, ready: true, containerId: mapContainerId };
         }
     }, [mapContainerId])
 
     const handleCloseChat = () => {
-        setIsVisible(false)
-        setTimeout(() => {
-            setShowChatbot(false)
-            setExpanded(false)
-        }, 300) // match transition duration
+        setExpanded(false);
+        setShowChatbot(false);
     }
 
     useEffect(() => {
         return () => {
             if (mapInstance.current.map) {
                 try {
-                    const container = document.getElementById(mapContainerId)
+                    const container = document.getElementById(mapContainerId);
                     if (container && (container as any)._leaflet_map) {
-                        mapInstance.current.map.remove()
+                        mapInstance.current.map.remove();
                     }
                 } catch (e) {
-                    console.warn('Map cleanup error:', e)
+                    console.warn('Map cleanup error:', e);
                 } finally {
                     mapInstance.current = {
-                        map: null,
+                        map:null,
                         ready: false,
                         containerId: null,
                     }
                 }
             }
         }
-    }, [mapContainerId])
+    })
 
     const handleToggle = () => {
+        setShowChatbot(prev => !prev)
         if (showChatbot) {
-            handleCloseChat()
-        } else {
-            setShowChatbot(true)
-            setTimeout(() => setIsVisible(true), 10) // allow DOM to mount before animating
+            setExpanded(false)
         }
     }
 
     const handleExpandToggle = () => {
-        setExpanded(prev => !prev)
+        setExpanded(prev => !prev);
     }
 
     const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
@@ -87,33 +79,25 @@ const SmallChatbot = () => {
 
     return (
         <div>
-            <button
-                onClick={handleToggle}
+            <button 
+                onClick={handleToggle} 
                 className='fixed right-10 bottom-14 h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer z-30'
             >
                 <Bot size={30} className='text-white' />
             </button>
 
             {showChatbot && (
-                <div
-                    className={clsx(
-                        'fixed flex mb-2 bottom-28 right-10 z-40 transition-all duration-300',
-                        expanded ? 'w-[900px]' : 'w-[350px]',
-                        isVisible
-                            ? 'opacity-100 scale-100'
-                            : 'opacity-0 scale-95 pointer-events-none',
-                        'transform transition-all ease-out duration-300'
-                    )}
-                >
-                    <div
-                        className={clsx(
-                            'h-[500px] transition-all duration-300',
-                            expanded ? 'w-[350px]' : 'w-full'
-                        )}
-                    >
+                <div className={clsx(
+                    'fixed flex mb-2 bottom-28 right-10 z-40 transition-all duration-300',
+                    expanded ? 'w-[900px]' : 'w-[350px]'
+                )}>
+                    <div className={clsx(
+                        'h-[500px] transition-all duration-300',
+                        expanded ? 'w-[350px]' : 'w-full'
+                    )}>
                         <div className='relative h-full bg-white rounded-l-lg rounded-r-none shadow-lg'>
-                            <button
-                                onClick={handleExpandToggle}
+                            <button 
+                                onClick={handleExpandToggle} 
                                 className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 left-2'
                             >
                                 {expanded ? (
@@ -122,13 +106,13 @@ const SmallChatbot = () => {
                                     <Maximize2 size={20} className='text-white' />
                                 )}
                             </button>
-                            <button
-                                onClick={handleCloseChat}
+                            <button 
+                                onClick={handleCloseChat} 
                                 className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 right-2'
                             >
                                 <X size={20} className='text-white' />
                             </button>
-                            <PlanPrat
+                            <PlanPrat 
                                 onClose={handleCloseChat}
                                 mapRef={mapInstance}
                                 lastDrawnShape={lastDrawnShape}
@@ -142,8 +126,8 @@ const SmallChatbot = () => {
 
                     {expanded && (
                         <div id={mapContainerId} className='w-[60%] h-[500px] shadow-lg rounded-r-lg overflow-hidden'>
-                            <TiltaksAidMap
-                                onMapReady={handleMapReady}
+                            <TiltaksAidMap 
+                                onMapReady={handleMapReady} 
                                 onShapeDrawn={handleShapeDrawn}
                                 userGnr={userData?.gnr}
                                 userBnr={userData?.bnr}
