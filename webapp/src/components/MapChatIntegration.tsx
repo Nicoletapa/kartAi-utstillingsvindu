@@ -7,8 +7,7 @@ import type { SpatialAnalysisResult } from '~/utils/propertyUtils';
 import { usePropertySearch } from '~/hooks/usePropertySearch';
 
 export function MapChatIntegration() {
-  // Shared state between map and chat
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<{ map: Map | null; ready: boolean }>({ map: null, ready: false });
   const [mapReady, setMapReady] = useState(false);
   const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
   const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
@@ -18,8 +17,8 @@ export function MapChatIntegration() {
   
   
   const handleMapReady = useCallback((map: Map) => {
-    if (mapRef.current) return; 
-    mapRef.current = map;
+    if (mapRef.current.map) return; 
+    mapRef.current = { map, ready: true };
     setMapReady(true);
   }, []);
   
@@ -36,6 +35,9 @@ export function MapChatIntegration() {
           lastDrawnShape={lastDrawnShape}
           spatialAnalysis={spatialAnalysis}
           mapReady={mapReady}
+          onClose={() => console.log('PlanPrat closed')}
+          disableTopRightRadius={true}
+          disableBottomRightRadius={true}
         />
       </div>
       

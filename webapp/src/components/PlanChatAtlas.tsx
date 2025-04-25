@@ -7,10 +7,13 @@ import { SendHorizonal } from 'lucide-react';
 import { useSession} from "next-auth/react"
 
 interface PlanPratProps {
-  mapRef?: React.MutableRefObject<Map | null>;
+  mapRef?: React.MutableRefObject<{ map: Map | null; ready: boolean }>;
   lastDrawnShape?: GeoJSON.Feature | null;
   spatialAnalysis?: SpatialAnalysisResult | null;
   mapReady?: boolean;
+  onClose: () => void;
+  disableTopRightRadius?: boolean;
+  disableBottomRightRadius?: boolean;
 }
 interface GuideButton {
   title: string;
@@ -19,7 +22,7 @@ interface GuideButton {
 }
 
 
-export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = false }: PlanPratProps) {
+export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = false, onClose, disableBottomRightRadius, disableTopRightRadius }: PlanPratProps) {
   const { data: session } = useSession();
   const [error, setError] = useState("");
   const [text, setText] = useState<string>("");
@@ -67,8 +70,15 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
 
   useEffect(() => {
     if (mapRef?.current && mapReady && !mapCenterLogged.current) {
-      console.log("Map center: ", mapRef.current.getCenter());
-      mapCenterLogged.current = true;
+      try {
+        const center = mapRef.current?.map?.getCenter?.();
+        if (center) {
+          console.log("Map center: ", center);
+          mapCenterLogged.current = true;
+        }
+      } catch (error) {
+        console.error("Error accessing map: ", error)
+      }
       // Can control the map here, e.g.,
       // mapRef.current.setView([latitude, longitude], zoom);
     }
@@ -90,6 +100,44 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       setText("");
     }
   }
+
+  useEffect(() => {
+    // More robust map access check
+    const checkMap = async () => {
+        if (!mapRef?.current?.map || !mapRef.current.ready) return;
+        
+        try {
+            // Verify map container exists in DOM
+            const container = mapRef.current.map.getContainer();
+            if (!document.body.contains(container)) {
+                console.warn('Map container not in DOM');
+                return;
+            }
+
+            // Safe map access
+            await new Promise(resolve => {
+                const check = () => {
+                    try {
+                        const center = mapRef.current?.map?.getCenter();
+                        if (center && center.lat !== undefined) {
+                            console.log("Map center:", center);
+                            mapCenterLogged.current = true;
+                            resolve(true);
+                        }
+                    } catch (e) {
+                        console.warn('Map not ready yet, retrying...');
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        } catch (error) {
+            console.error("Safe map access error:", error);
+        }
+    };
+
+    checkMap();
+}, [mapRef, mapReady]);
 
  
   const containsPropertyReference = (text: string): boolean => {
@@ -151,9 +199,11 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       
       // Add map view context ONLY if property-related
       if (mapRef?.current && mapReady && includeCoordinates) {
-        const center = mapRef.current.getCenter();
-        const zoom = mapRef.current.getZoom();
-        enhancedQuery += ` [Map context: User is viewing map at coordinates ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}, zoom level ${zoom}]`;
+        const center = mapRef.current.map?.getCenter();
+        const zoom = mapRef.current.map?.getZoom();
+        if (center) {
+          enhancedQuery += ` [Map context: User is viewing map at coordinates ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}, zoom level ${zoom}]`;
+        }
       }
       
       const response = await utils.planprat.fetchResponse.fetch({
@@ -301,9 +351,15 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   };
 
   return (
-    <section className="rounded-l-lg shadow-lg min-h-[500px]">
-      <div className="w-full bg-kartAI-blue pb-3 pt-1 text-center text-white rounded-tl-lg">
-        <h1>PlanChat</h1>
+    <div className={`bg-white h-[500px] flex flex-col shadow-lg
+      rounded-tl-lg 
+      ${disableTopRightRadius ? '' : 'rounded-tr-lg'}
+      ${disableBottomRightRadius ? '' : 'rounded-br-lg'}
+      rounded-bl-lg`}>
+      <div className={`w-full bg-kartAI-blue shadow-lg pb-3 pt-1 text-center text-white rounded-tl-lg ${
+    disableTopRightRadius ? '' : 'rounded-tr-lg'
+  }`}>
+        <h1>Chat</h1>
         
         {session && session.user && (
           <p className="text-sm font-medium">Din adresse: {session.user.address}</p>
@@ -366,6 +422,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   </button>
 </div>  
       </div>
-    </section>
+    </div>
   );
 }

@@ -55,7 +55,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
   const tooltip = UIComponents.useTooltip();
   
   const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'bruksendring');
-  const { userData, searchInput, setSearchInput, errorMessage, setErrorMessage } = usePropertySearch();
+  const { userData } = usePropertySearch();
   
   const mapRef = useRef<Map | null>(null);
   
@@ -164,13 +164,13 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
           <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400">
             <div className='overflow-hidden max-h-96 no-rounded-map relative z-0'>
               <TiltaksAidMap 
-              onMapReady={handleMapReady}
-              onShapeDrawn={handleShapeDrawn}
-              userGnr={userData?.gnr}
-              userBnr={userData?.bnr}
-              userFnr={userData?.fnr}
-              userSnr={userData?.snr}
-              autoZoom={true}
+                onMapReady={handleMapReady}
+                onShapeDrawn={handleShapeDrawn}
+                userGnr={userData?.gnr}
+                userBnr={userData?.bnr}
+                userFnr={userData?.fnr}
+                userSnr={userData?.snr}
+                autoZoom={true}
               />
             </div>
           </div>

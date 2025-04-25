@@ -26,14 +26,17 @@ type StepComponentsType = {
   };
 };
 
+
+
 export default function SjekklisteSoknad({ currentStep, currentSubstep, applicationID }: SjekklisteSoknadProps) { 
   const sjekkliste: Record<number, string[]> = {
-    1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
+    1: ["Kryss av de nødvendige endringene du skal gjøre", "Skriv inn en detaljert beskrivelse av det du skal gjøre", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
     2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte","Last opp andre nødvendige vedlegg"],
     3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
     4: ["Sørg for at søknaden er korrekt. Du kan sende byggesøknaden dersom alt er til dine behov"],
     5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
   };
+  
   const pathname = usePathname();
   const router = useRouter();
 
@@ -113,7 +116,7 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep, applicat
   const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
 
   const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
-
+  
   return (
     <div className="rounded-lg shadow-md p-4 min-w-72 h-full max-w-80 bg-blue-100 border-2 border-blue-200">
       <h2 className="text-lg font-semibold">

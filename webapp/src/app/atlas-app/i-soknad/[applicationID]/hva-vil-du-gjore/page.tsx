@@ -14,6 +14,7 @@ import { PropertySearchBar } from "~/components/map/PropertySearchBar";
 import { searchProperty as fetchProperty } from "~/utils/propertyUtils";
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
+import SmallChatbot from "~/components/SmallChatbot";
 
 
 interface PageProps {
@@ -528,7 +529,9 @@ const Page: React.FC<PageProps> = ({
                     <ArrowRight className="w-5 h-5 transition-transform duration-300" />
                 </Button>
             </div>
+            <SmallChatbot /> 
         </div>
+
     );
 };
 

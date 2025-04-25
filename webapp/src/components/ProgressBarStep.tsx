@@ -7,16 +7,12 @@ import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "~/lib/utils";
 
-// Import all step components
-
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
     Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
     Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
 } from "./steps"
 
-
-// Import bruksendre step components
 import {
   BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
@@ -27,15 +23,12 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { ApplicationType } from "@prisma/client";
+import SmallChatbot from "./SmallChatbot";
 
-// Update the interface to be more flexible
 interface StepComponentType {
     onValidityChange?: (isValid: boolean) => void;
     applicationID?: number;
-    [key: string]: any; // Allow additional props
 }
-
-// Update the type definition
 type StepComponentsType = {
     [key: number]: {
         [key: number]: React.ComponentType<any>;
@@ -54,18 +47,15 @@ export default function ProgressBarStep({
     const router = useRouter();
     const pathname = usePathname();
     
-    // Application type detection
     const isByggeorRive = pathname.includes('/bygge-eller-rive');
     const isBruksendre = pathname.includes('/bruksendring');
     
-    // If an external step is provided, use it instead of determining from pathname
     const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep || 0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
     const [formData, setFormData] = useState<Record<string, any>>({});
 
-    // Define step components based on application type
     const stepComponents: StepComponentsType = isByggeorRive ? {
         1: {
             0: Step1_0,
@@ -124,7 +114,6 @@ export default function ProgressBarStep({
         }
     };
 
-    // Define steps based on the step components
     const steps = [
         { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
         { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
@@ -134,14 +123,23 @@ export default function ProgressBarStep({
         { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
     ];
 
-    // Define checklist tasks
-    const sjekkliste: Record<number, string[]> = {
-        1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
+    const sjekklisteBruksendre: Record<number, string[]> = {
+        1: ["Kryss av de nødvendige endringene du skal gjøre", "Skriv inn en detaljert beskrivelse av det du skal gjøre", "Besvar om tiltaket følger regulerings-/kommuneplanen", "Skriv inn avstanden til nabogrensen", "Besvar om bruksendringene kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre til en ny/endret avkjøring"],
         2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
         3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
-        4: ["Sørg for at søknaden er korrekt. Du kan sende byggesøknaden dersom alt er til dine behov"],
+        4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
         5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
     };
+
+    const sjekklisteByggeEllerRive: Record<number, string[]> = {
+        1: ["Kryss av for hvilke(n) plan(er) gjelder for din eiendom", "Kryss av for om du trenger dispensasjon elle andre tillatelser", "Fyll inn alle nødvendige felt med detaljer til det du skal bygge", "Fyll inn feltene for utnyttningsgrad", "Besvar om prosjektet kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre itl en ny/endret avkjøring", "Besvar om tiltaket er i samsvar med gjeldene plan"],
+        2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
+        3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
+        4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
+        5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
+    }
+
+    const currentChecklist = isBruksendre ? sjekklisteBruksendre : sjekklisteByggeEllerRive;
 
     const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
@@ -294,7 +292,7 @@ export default function ProgressBarStep({
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
 
     const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
-    const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
+    const currentTasks = currentStep <= 5 ? currentChecklist[currentStep] ?? [] : [];
     const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
     const handleBackToMain= () => {
@@ -307,7 +305,6 @@ export default function ProgressBarStep({
         }
     };
 
-    // Render checklist component
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
         
@@ -318,11 +315,9 @@ export default function ProgressBarStep({
                 </h2>
                 <ul className="list-disc pl-3 space-y-2 mt-3">
                     {currentTasks.map((task, index) => {
-                        const isVisible = currentStep === 1 
-                            ? true 
-                            : currentStep === 2 
-                                ? index < currentSubstep + 2 
-                                : index <= currentSubstep;
+                        const isVisible = isBruksendre
+                            ? bruksendreVisibilityLogic(currentStep, currentSubstep, index)
+                            : byggeEllerRiveVisibilityLogic(currentStep, currentSubstep, index);
                         const isCompleted = completedTasks[index];
 
                         return (
@@ -348,6 +343,29 @@ export default function ProgressBarStep({
                 </ul>
             </div>
         );
+    };
+
+    const bruksendreVisibilityLogic = (step: number, substep: number, index: number) => {
+        if (step === 1) {
+            return substep === 0 ? index < 2 : true;
+        }
+        if (step === 4) {
+            return substep === 0 ? index === 0 : true;
+        }
+        return index <= substep;
+    };
+
+    const byggeEllerRiveVisibilityLogic = (step: number, substep: number, index: number) => {
+        if (step === 1) {
+            return substep === 0 ? index < 3 : true;
+        }
+        if (step === 4) {
+            return substep === 0 ? index === 0 : true;
+        }
+        if (step === 2) {
+            return index < substep + 2;
+        }
+        return index <= substep;
     };
 
     return (
@@ -376,7 +394,7 @@ export default function ProgressBarStep({
                 )}
             </div>
 
-            <div className="flex justify-between mt-8 gap-4 mb-8">
+            <div className="flex justify-between mx-20 gap-4 mt-8 mb-8">
                 <Button
                     onClick={handlePrev}
                     className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
@@ -409,6 +427,7 @@ export default function ProgressBarStep({
                 </div>
             </div>
         </div>
+        <SmallChatbot />
         </div>
         
     );
