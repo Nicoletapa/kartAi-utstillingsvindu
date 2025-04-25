@@ -12,6 +12,7 @@ import clsx from 'clsx'
 const SmallChatbot = () => {
     const [showChatbot, setShowChatbot] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    const [isVisible, setIsVisible] = useState(false)
 
     const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
     const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
@@ -36,8 +37,11 @@ const SmallChatbot = () => {
     }, [mapContainerId])
 
     const handleCloseChat = () => {
-        setExpanded(false);
-        setShowChatbot(false);
+        setIsVisible(false)
+        setTimeout(() => {
+            setShowChatbot(false)
+            setExpanded(false)
+        }, 300)
     }
 
     useEffect(() => {
@@ -62,9 +66,11 @@ const SmallChatbot = () => {
     })
 
     const handleToggle = () => {
-        setShowChatbot(prev => !prev)
         if (showChatbot) {
-            setExpanded(false)
+            handleCloseChat()
+        } else {
+            setShowChatbot(true)
+            setTimeout(() => setIsVisible(true), 10)
         }
     }
 
@@ -87,10 +93,16 @@ const SmallChatbot = () => {
             </button>
 
             {showChatbot && (
-                <div className={clsx(
+                <div
+                className={clsx(
                     'fixed flex mb-2 bottom-28 right-10 z-40 transition-all duration-300',
-                    expanded ? 'w-[900px]' : 'w-[350px]'
-                )}>
+                    expanded ? 'w-[900px]' : 'w-[350px]',
+                    isVisible
+                        ? 'opacity-100 scale-100'
+                        : 'opacity-0 scale-95 pointer-events-none',
+                    'transform transition-all ease-out duration-300'
+                )}
+            >
                     <div className={clsx(
                         'h-[500px] transition-all duration-300',
                         expanded ? 'w-[350px]' : 'w-full'
