@@ -367,6 +367,19 @@ const TiltaksAidMap = ({
                 zoomOffset={-1}
               />
             </Overlay>
+            <Overlay  name="Kommuneplan">
+              <WMSTileLayer
+                url="https://wms.geonorge.no/skwms1/wms.kommuneplaner?request=GetCapabilities&service=WMS"
+                layers="KOMMUNEPLANER_WMS"
+                format="image/png"
+                transparent={true}
+                version="1.3.0"
+                maxZoom={MAX_ZOOM}
+                tileSize={512}
+                zoomOffset={-1}
+              />
+            </Overlay>
+            
           </LayersControl>
         </MapContainer>
       </div>

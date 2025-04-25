@@ -4,7 +4,7 @@ from langchain.schema import Document
 
 from langchain_chroma import Chroma 
 
-from generator import embedder
+from src.generator import embedder
 
 import os
 import shutil
@@ -26,8 +26,10 @@ def generate_data_store():
 
 
 def load_documents():
-    loader = DirectoryLoader(DATA_PATH, glob="**/*.[pt][dx][ft]")
+    loader = DirectoryLoader(DATA_PATH, glob="**/*.*", use_multithreading=True, show_progress=True)
     documents = loader.load()
+    print(f"Loaded {len(documents)} documents from {DATA_PATH}") 
+
     return documents
 
 

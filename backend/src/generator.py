@@ -3,7 +3,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 
-from configuration import (
+from src.configuration import (
    AZURE_EMBEDDING_API_KEY,  
     AZURE_EMBEDDING_DEPLOYMENT_NAME,
     AZURE_EMBEDDING_DEPLOYMENT_VERSION,
