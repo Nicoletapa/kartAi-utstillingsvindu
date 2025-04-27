@@ -342,7 +342,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[0].map((item) => (
+        {environmentalConflictGroups[0]!.map((item) => ( 
           <RadioGroup
             key={item.name}
             name={item.name}
@@ -358,7 +358,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[1].map((item) => (
+        {environmentalConflictGroups[1]!.map((item) => ( // Add non-null assertion operator (!)
           <RadioGroup
             key={item.name}
             name={item.name}
