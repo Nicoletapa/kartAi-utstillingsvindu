@@ -21,18 +21,14 @@ import Step6_1 from "./steps/Step6_1";
 import Step6_2 from "./steps/Step6_2";
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
-import { ApplicationType } from "@prisma/client";
+import type { ApplicationType } from "@prisma/client";
 
 interface StepComponentType {
     onValidityChange: (isValid: boolean) => void;
     applicationID?: number;
 }
 
-type StepComponentsType = {
-    [key: number]: {
-        [key: number]: React.ComponentType<StepComponentType>;
-    };
-};
+type StepComponentsType = Record<number, Record<number, React.ComponentType<StepComponentType>>>;
 
 const stepComponents: StepComponentsType = {
     0: {
@@ -65,13 +61,13 @@ const stepComponents: StepComponentsType = {
 };
 
 export const steps = [
-    { title: "Søker og eiendom", totalSubsteps: Object.keys(stepComponents[0] || {}).length },
-    { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
-    { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
-    { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
-    { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
-    { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
-    { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+    { title: "Søker og eiendom", totalSubsteps: Object.keys(stepComponents[0] ?? {}).length },
+    { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] ?? {}).length },
+    { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] ?? {}).length },
+    { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] ?? {}).length },
+    { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] ?? {}).length },
+    { title: "Status", totalSubsteps: Object.keys(stepComponents[5] ?? {}).length },
+    { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] ?? {}).length },
 ];
 interface ProgressBarStepProps {
     applicationID?: number;
@@ -126,12 +122,11 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
 
         // Check validity of Step1_0 form data using optional chaining
         const isStep1Valid =
-            fieldsMap['description']?.trim() !== '' &&
-            fieldsMap['area_purpose']?.trim() !== '' &&
+            fieldsMap.description?.trim() !== '' &&
+            fieldsMap.area_purpose?.trim() !== '' &&
             fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
             fieldsMap['distances.mønehøyde']?.trim() !== '' &&
             fieldsMap['distances.gesimshøyde']?.trim() !== '';
-
         setIsStep1_0Valid(isStep1Valid);
 
         // Check validity of Step_applicant_details form data
@@ -211,7 +206,7 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
             // This will trigger the application data loading effect in Step_applicant_details
             void refetchApplication();
         }
-    }, [currentStep, currentSubstep]);
+    }, [currentStep, currentSubstep, refetchApplication]);
 
     const handlePrev = () => {
         if (currentOverallStep === 0) {
@@ -243,7 +238,7 @@ export default function ProgressBarStep({ applicationID }: ProgressBarStepProps)
 
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 0;
 
-    const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] || null;
+    const CurrentStepComponent = stepComponents[currentStep - 1]?.[currentSubstep] ?? null;
 
     // Update to check all step validations
     const isNextButtonDisabled =

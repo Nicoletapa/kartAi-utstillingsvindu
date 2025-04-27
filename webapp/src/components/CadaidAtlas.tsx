@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 
 import Results from "./Results";
 import type { Detection } from "~/types/detection";
@@ -269,14 +269,20 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
 
   useEffect(() => {
     if (fullSizeImage?.startsWith('data:image/')) {
-      const blob = fetch(fullSizeImage)
-        .then(res => res.blob())
-        .then(blob => URL.createObjectURL(blob));
-      blob.then(setImageSrc);
-  } else {
-    setImageSrc(fullSizeImage);
-  }
-}, [fullSizeImage]);
+      void (async () => {
+        try {
+          const response = await fetch(fullSizeImage);
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          setImageSrc(objectUrl);
+        } catch (error) {
+          console.error("Error loading full-size image:", error);
+        }
+      })();
+    } else {
+      setImageSrc(fullSizeImage);
+    }
+  }, [fullSizeImage]);
 
   return (
     <div className="flex min-h-screen p-6 flex-col md:flex-row" data-cy="main-container">

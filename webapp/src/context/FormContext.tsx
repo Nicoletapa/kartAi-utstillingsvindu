@@ -7,6 +7,20 @@ export interface FormDataType {
   property: PropertyDetails;
 }
 
+// Define the default form data to be reused
+const defaultFormData: FormDataType = {
+  applicant: { name: '', email: '', phone: '' },
+  property: {
+    address: '',
+    property_number: '',
+    usage_number: '',
+    lease_number: '',
+    section_number: '',
+    postal_code: '',
+    municipality: '', 
+  }
+};
+
 // Define the context type
 type FormContextType = {
   applicantFormData: FormDataType;
@@ -15,31 +29,23 @@ type FormContextType = {
 
 // Create context with default values from applicationForm types
 const FormContext = createContext<FormContextType>({
-  applicantFormData: {
-    applicant: { name: '', email: '', phone: '' },
-    property: {
-      address: '',
-      property_number: '',
-      usage_number: '',
-      lease_number: '',
-      section_number: '',
-      postal_code: '',
-      municipality: '', 
-    }
-  },
-  updateApplicantFormData: () => {},
+  applicantFormData: defaultFormData,
+  // Fix the empty function error by providing a no-op implementation
+  updateApplicantFormData: () => { /* This is intentionally empty */ },
 });
 
 // Create provider component
 export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   // Use localStorage to persist data between page refreshes
-  const [applicantFormData, setApplicantFormData] = useState(() => {
+  const [applicantFormData, setApplicantFormData] = useState<FormDataType>(() => {
     // Try to load from localStorage first
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('applicantFormData');
       if (savedData) {
         try {
-          return JSON.parse(savedData);
+          // Add proper type checking for parsed JSON
+          const parsedData = JSON.parse(savedData) as FormDataType;
+          return parsedData;
         } catch (e) {
           console.error('Failed to parse saved form data', e);
         }
@@ -47,22 +53,14 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
     }
     
     // Default empty state if no saved data
-    return {
-      applicant: { name: '', email: '', phone: '' },
-      property: {
-        address: '',
-        property_number: '',
-        usage_number: '',
-        lease_number: '',
-        section_number: '',
-        postal_code: '',
-        municipality: '',
-      }
-    };
+    return defaultFormData;
   });
 
   const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    const newData = typeof data === 'function' ? data(applicantFormData) : data;
+    const newData = typeof data === 'function' 
+      ? (data as (prevData: FormDataType) => FormDataType)(applicantFormData) 
+      : data;
+    
     setApplicantFormData(newData);
     
     // Save to localStorage

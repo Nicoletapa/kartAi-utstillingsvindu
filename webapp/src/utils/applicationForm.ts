@@ -109,7 +109,6 @@ type ApplicantDetails = z.infer<typeof ApplicantDetailsSchema>;
 type DistancesDetails  = z.infer<typeof DistancesSmaProsjekterSchema>;
 type AttachmentsDetails = z.infer<typeof AttachmentsSchema>;
 type RequirementsDetails = z.infer<typeof RequirementsSchema>;
-type PermissionsDetails = z.infer<typeof Permissions>;
 type AccessChangesDetails = z.infer<typeof AccessChanges>;
 
 const FormSchemaSmaProsjekter = z.object({
@@ -252,9 +251,9 @@ function mergeUserDataWithDefaults(sessionUser: SimplifiedUser): ApplicantDetail
   if (!sessionUser) return defaults;
   
   return {
-    name: sessionUser.name || defaults.name,
-    email: sessionUser.email || defaults.email,
-    phone: sessionUser.phone || defaults.phone,
+    name: sessionUser.name ?? defaults.name,
+    email: sessionUser.email ?? defaults.email,
+    phone: sessionUser.phone ?? defaults.phone,
   };
 }
 
@@ -264,13 +263,13 @@ function mergePropertyDataWithDefaults(sessionUser: SimplifiedUser): PropertyDet
   if (!sessionUser) return defaults;
   
   return {
-    address: sessionUser.address || defaults.address,
-    property_number: sessionUser.property_number || defaults.property_number,
-    usage_number: sessionUser.usage_number || defaults.usage_number,
-    postal_code: sessionUser.postal_code || defaults.postal_code,
-    municipality: sessionUser.municipality || defaults.municipality,
-    lease_number: sessionUser.lease_number || defaults.lease_number,
-    section_number: sessionUser.section_number || defaults.section_number
+    address: sessionUser.address ?? defaults.address,
+    property_number: sessionUser.property_number ?? defaults.property_number,
+    usage_number: sessionUser.usage_number ?? defaults.usage_number,
+    postal_code: sessionUser.postal_code ?? defaults.postal_code,
+    municipality: sessionUser.municipality ?? defaults.municipality,
+    lease_number: sessionUser.lease_number ?? defaults.lease_number,
+    section_number: sessionUser.section_number ?? defaults.section_number
   };
 }
 

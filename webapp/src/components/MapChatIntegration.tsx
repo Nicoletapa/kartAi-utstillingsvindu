@@ -25,7 +25,7 @@ export function MapChatIntegration() {
   
   const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
     setLastDrawnShape(shape);
-    setSpatialAnalysis(analysis || null);
+    setSpatialAnalysis(analysis ?? null);
   }, []);
   
   return (

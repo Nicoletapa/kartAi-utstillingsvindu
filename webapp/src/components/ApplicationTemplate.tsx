@@ -130,7 +130,7 @@ export function ApplicationTemplate({
         
         setIsCreating(true);
         
-        const appType = selectedParentType as ApplicationType;
+        const appType = selectedParentType;
         
         await createApplication.mutateAsync({
             applicationType: appType,

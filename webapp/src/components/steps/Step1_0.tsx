@@ -31,40 +31,6 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
     { applicationID: applicationID ?? 0 },
     { enabled: !!applicationID }
   );
-  
-  // Load data from application
-  useEffect(() => {
-    if (!application?.application_fields?.length) return;
-    
-    // Create a map of field names to values
-    const fieldsMap: Record<string, string> = {};
-    application.application_fields.forEach(field => {
-        fieldsMap[field.fieldName] = field.fieldValue;
-    });
-    
-    // Update form data based on loaded fields
-    const updatedFormData = {
-        description: fieldsMap['description'] || '',
-        area_purpose: fieldsMap['area_purpose'] || '',
-        distances: {
-            neighbor_boundary: fieldsMap['distances.neighbor_boundary'] || '',
-            road_center: fieldsMap['distances.road_center'] || '',
-            nearest_building: fieldsMap['distances.nearest_building'] || '',
-            distance_train_tracks: fieldsMap['distances.distance_train_tracks'] || '',
-            distance_water_sewer_pipes: fieldsMap['distances.distance_water_sewer_pipes'] || '',
-            distance_high_voltage_lines: fieldsMap['distances.distance_high_voltage_lines'] || '',
-            distance_va: fieldsMap['distances.distance_va'] || '',
-            mønehøyde: fieldsMap['distances.mønehøyde'] || '',
-            gesimshøyde: fieldsMap['distances.gesimshøyde'] || '',
-            in_flood_risk_area: fieldsMap['distances.in_flood_risk_area'] || 'No',
-            protected_species_present: fieldsMap['distances.protected_species_present'] || 'No',
-            cultural_heritage_site: fieldsMap['distances.cultural_heritage_site'] || 'No'
-        }
-    };
-    
-    setFormData(updatedFormData);
-    checkFormValidity(updatedFormData);
-  }, [application]);
 
   // Simplified tooltip handling
   const handleTooltip = (box: string | null) => setHoveredBox(box);
@@ -83,6 +49,40 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
     onValidityChange(isValid);
     return isValid;
   }, [formData, onValidityChange]);
+
+  // Load data from application
+  useEffect(() => {
+    if (!application?.application_fields?.length) return;
+    
+    // Create a map of field names to values
+    const fieldsMap: Record<string, string> = {};
+    application.application_fields.forEach(field => {
+        fieldsMap[field.fieldName] = field.fieldValue;
+    });
+    
+    // Update form data based on loaded fields
+    const updatedFormData = {
+        description: fieldsMap.description ?? '',
+        area_purpose: fieldsMap.area_purpose ?? '',
+        distances: {
+            neighbor_boundary: fieldsMap['distances.neighbor_boundary'] ?? '',
+            road_center: fieldsMap['distances.road_center'] ?? '',
+            nearest_building: fieldsMap['distances.nearest_building'] ?? '',
+            distance_train_tracks: fieldsMap['distances.distance_train_tracks'] ?? '',
+            distance_water_sewer_pipes: fieldsMap['distances.distance_water_sewer_pipes'] ?? '',
+            distance_high_voltage_lines: fieldsMap['distances.distance_high_voltage_lines'] ?? '',
+            distance_va: fieldsMap['distances.distance_va'] ?? '',
+            mønehøyde: fieldsMap['distances.mønehøyde'] ?? '',
+            gesimshøyde: fieldsMap['distances.gesimshøyde'] ?? '',
+            in_flood_risk_area: fieldsMap['distances.in_flood_risk_area'] ?? 'No',
+            protected_species_present: fieldsMap['distances.protected_species_present'] ?? 'No',
+            cultural_heritage_site: fieldsMap['distances.cultural_heritage_site'] ?? 'No'
+        }
+    };
+    
+    setFormData(updatedFormData);
+    checkFormValidity(updatedFormData);
+  }, [application, checkFormValidity]);
 
   // Input change handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -108,36 +108,6 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
     // Mark as dirty (which triggers save)
     setIsDirty(true);
   };
-
-  // Auto-save changes
-  useEffect(() => {
-    if (!isDirty || !applicationID) return;
-    
-    setSaveStatus('saving');
-    
-    const saveTimeout = setTimeout(() => {
-      saveChangesToDatabase()
-        .then(() => {
-          setSaveStatus('saved');
-          
-          // Show toast only occasionally (20% of saves)
-          if (Math.random() < 0.2) {
-            toast.success("Endringer lagret", {
-              duration: 2000,
-              position: "bottom-right",
-              id: "save-toast", 
-            });
-          }
-        })
-        .catch((error) => {
-          setSaveStatus('error');
-          toast.error(`Feil ved lagring: ${error.message}`);
-        });
-    }, 800); // Reduced from 1000ms
-    
-    return () => clearTimeout(saveTimeout);
-  }, [formData, isDirty, applicationID]);
-  
   // Save changes to database - optimized with parallel saving
   const saveChangesToDatabase = async () => {
     if (!applicationID) return false;
@@ -185,6 +155,36 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
       throw error;
     }
   };
+  // Auto-save changes
+  useEffect(() => {
+    if (!isDirty || !applicationID) return;
+    
+    setSaveStatus('saving');
+    
+    const saveTimeout = setTimeout(() => {
+      saveChangesToDatabase()
+        .then(() => {
+          setSaveStatus('saved');
+          
+          // Show toast only occasionally (20% of saves)
+          if (Math.random() < 0.2) {
+            toast.success("Endringer lagret", {
+              duration: 2000,
+              position: "bottom-right",
+              id: "save-toast", 
+            });
+          }
+        })
+        .catch((error) => {
+          setSaveStatus('error');
+          toast.error(`Feil ved lagring: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
+        });
+    }, 800); // Reduced from 1000ms
+    
+    return () => clearTimeout(saveTimeout);
+  }, [formData, isDirty, applicationID, saveChangesToDatabase]);
+  
+
 
   // Show loading if fetching application data
   if (isLoadingApplication && applicationID) {
@@ -264,7 +264,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="number"
                   name="distances.mønehøyde"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.mønehøyde || ''}
+                  value={formData.distances.mønehøyde ?? ''}
                   onChange={handleInputChange}
                   required
                 />
@@ -277,7 +277,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="number"
                   name="distances.gesimshøyde"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.gesimshøyde || ''}
+                  value={formData.distances.gesimshøyde ?? ''}
                   onChange={handleInputChange}
                   required
                 />
@@ -290,7 +290,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="number"
                   name="distances.neighbor_boundary"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.neighbor_boundary || ''}
+                  value={formData.distances.neighbor_boundary ?? ''}
                   onChange={handleInputChange}
                   required
                 />
@@ -303,7 +303,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="text"
                   name="distances.distance_train_tracks"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.distance_train_tracks || ''}
+                  value={formData.distances.distance_train_tracks ?? ''}
                   onChange={handleInputChange}
                 />
                 <span className="ml-2 text-sm">meter</span>
@@ -315,7 +315,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="text"
                   name="distances.distance_water_sewer_pipes"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.distance_water_sewer_pipes || ''}
+                  value={formData.distances.distance_water_sewer_pipes ?? ''}
                   onChange={handleInputChange}
                 />
                 <span className="ml-2 text-sm">meter</span>
@@ -327,7 +327,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="text"
                   name="distances.distance_high_voltage_lines"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.distance_high_voltage_lines || ''}
+                  value={formData.distances.distance_high_voltage_lines ?? ''}
                   onChange={handleInputChange}
                 />
                 <span className="ml-2 text-sm">meter</span>
@@ -339,7 +339,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, onValidityChange }) =>
                   type="text"
                   name="distances.distance_va"
                   className="text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
-                  value={formData.distances.distance_va || ''}
+                  value={formData.distances.distance_va ?? ''}
                   onChange={handleInputChange}
                 />
                 <span className="ml-2 text-sm">meter</span>

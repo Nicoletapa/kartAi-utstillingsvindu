@@ -56,6 +56,8 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       
       setShapeContext(description);
       
+      // Display context in UI if needed
+      document.title = `PlanChat - ${description.substring(0, 20)}...`;
       
       setChatItems((prevChatItems) => [
         { text: `System: ${description} Ask me about it!`, isUser: false },
@@ -86,10 +88,14 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
 
   const handleSendMessage = () => {
     if (!isTyping && text.trim() !== "") {
-      handleSubmit();
-      setText("");
+      try {
+        // Add void operator to acknowledge the promise is intentionally not awaited
+        void handleSubmit();
+      } catch(error) {
+        setText("");
+      }
     }
-  }
+  };
 
  
   const containsPropertyReference = (text: string): boolean => {
@@ -252,7 +258,7 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
           );
           
           // Check if this is a list item
-          if (formattedText.match(/^[-*•] /)) {
+          if (RegExp(/^[-*•] /).exec(formattedText)) {
             return (
               <ul key={idx} className="list-disc ml-6 mb-3">
                 {formattedText.split(/\n/).map((item, i) => {
@@ -270,8 +276,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   };
 
   const renderGuideButtons = (guides: GuideButton[]) => {
-    if (!guides || guides.length === 0) return null;
-    
     return (
       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="text-sm font-semibold mb-2 text-blue-800">Relevante veivisere:</h4>
@@ -340,7 +344,12 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
               }
               key={index}
             >
-              {chatItem.text}
+              {chatItem.isUser ? chatItem.text : formatText(chatItem.text)}
+              
+              {/* Add guide buttons if available */}
+              {!chatItem.isUser && chatItem.guides && chatItem.guides.length > 0 && (
+                renderGuideButtons(chatItem.guides)
+              )}
             </li>
           ))}
         </ul>

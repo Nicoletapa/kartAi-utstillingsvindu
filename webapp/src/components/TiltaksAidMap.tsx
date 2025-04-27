@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
 import * as L from 'leaflet';
@@ -9,12 +9,14 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 //import { PropertySearchBar } from './map/PropertySearchBar';
 import { 
-  SpatialAnalysisResult, 
+   
   analyzeSpatialRelationship,
   formatPropertyNumber,
   searchProperty as fetchProperty
 } from '~/utils/propertyUtils';
 import { usePropertySearch } from '~/hooks/usePropertySearch';
+
+import type { SpatialAnalysisResult } from '~/utils/propertyUtils';
 
 const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
@@ -172,36 +174,7 @@ const TiltaksAidMap = ({
   // Add ref to track logging status
   const loggedPropertyData = useRef(false);
 
-  // Force a search when user property data changes
-  useEffect(() => {
-    if (autoZoomSuccessful || !userGnr || !userBnr) return;
-    
-    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
-    if (propertyNumber) {
-      setSearchInput(propertyNumber);
-      
-      if (mapReady && !autoZoomAttempted) {
-        setAutoZoomAttempted(true);
-        handlePropertySearch(propertyNumber);
-      }
-    }
-  }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful]);
-
-  // Auto-zoom effect
-  useEffect(() => {
-    if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
-    
-    if (!userGnr || !userBnr) return;
-
-    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
-    if (propertyNumber) {
-      setAutoZoomAttempted(true);
-      handlePropertySearch(propertyNumber);
-    }
-  }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful]);
-
-  // Handle property search
-  const handlePropertySearch = async (propertyNumberToSearch: string = searchInput) => {
+  const handlePropertySearch = useCallback(async (propertyNumberToSearch: string = searchInput) => {
     const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
     
     if (!data || data.length === 0) {
@@ -213,7 +186,7 @@ const TiltaksAidMap = ({
       if (propertyBoundary && mapRef.current) {
         mapRef.current.removeLayer(propertyBoundary);
       }
-
+  
       // Convert the property data to a GeoJSON feature with ID
       const propertyFeature = {
         type: 'Feature',
@@ -223,7 +196,7 @@ const TiltaksAidMap = ({
           matrikkelnummer: data[0]?.matrikkelnummer
         }
       } as GeoJSON.Feature;
-
+  
       // Replace setter with direct assignment to a local constant to prevent unused state
       const currentPropertyData = data[0] ?? null;
       
@@ -234,7 +207,7 @@ const TiltaksAidMap = ({
       }
       
       setPropertyBoundaries([propertyFeature]);
-
+  
       const newBoundary = L.geoJSON(data[0]?.geom, {
         style: {
           color: 'blue',
@@ -242,7 +215,7 @@ const TiltaksAidMap = ({
           fillOpacity: 0.1
         }
       });
-
+  
       if (mapRef.current) {
         newBoundary.addTo(mapRef.current);
         
@@ -253,11 +226,41 @@ const TiltaksAidMap = ({
         
         setAutoZoomSuccessful(true);
       }
-
+  
       setPropertyBoundary(newBoundary);
       setErrorMessage(null);
     }
-  };
+  }, [mapRef, propertyBoundary, searchInput, setErrorMessage, setPropertyBoundaries, setPropertyBoundary, setAutoZoomSuccessful]);
+
+  // Force a search when user property data changes
+  useEffect(() => {
+    if (autoZoomSuccessful || !userGnr || !userBnr) return;
+    
+    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+    if (propertyNumber) {
+      setSearchInput(propertyNumber);
+      
+      if (mapReady && !autoZoomAttempted) {
+        setAutoZoomAttempted(true);
+        void handlePropertySearch(propertyNumber); // Add void to acknowledge floating promise
+      }
+    }
+  }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful, setSearchInput, handlePropertySearch]);
+
+  // Auto-zoom effect
+  useEffect(() => {
+    if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
+    
+    if (!userGnr || !userBnr) return;
+
+    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+    if (propertyNumber) {
+      setAutoZoomAttempted(true);
+      void handlePropertySearch(propertyNumber); // Add void to acknowledge floating promise
+    }
+  }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch]);
+
+
 
   const MapEvents = () => {
     const map = useMap();
@@ -270,15 +273,18 @@ const TiltaksAidMap = ({
       mapReadyCallbackFired.current = true;
       
       if (stableOnMapReady) {
-        stableOnMapReady(map);
+        try {
+          stableOnMapReady(map);
+        } catch(error) {
+          console.error('Error in onMapReady callback:', error);
+        }
       }
       
-    
       if (searchInput && !autoZoomAttempted && !autoZoomSuccessful && userGnr && userBnr) {
         setAutoZoomAttempted(true);
-        handlePropertySearch(searchInput);
+        void handlePropertySearch(searchInput); // Add void to acknowledge floating promise
       }
-    }, [map]);
+    }, [map, searchInput, autoZoomAttempted, autoZoomSuccessful, userGnr, userBnr]);
     
     return null;
   };

@@ -22,7 +22,8 @@ const MyApplications = () => {
   const deleteApplication = api.application.deleteApplication.useMutation({
     onSuccess: () => {
       toast.success("Application deleted successfully");
-      refetch();
+      // Fix the floating promise by adding void operator
+      void refetch();
     },
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
@@ -106,7 +107,7 @@ const MyApplications = () => {
             <div key={application.applicationID} className="border rounded-md p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between">
                 <h2 className="text-lg font-semibold">
-                  {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}
+                  {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType ]}
                 </h2>
                 <span className={`px-2 py-1 rounded text-sm ${getStatusBadgeStyle(application.status)}`}>
                   {application.status}
@@ -148,8 +149,8 @@ const MyApplications = () => {
         </div>
       ) : (
         <div className="bg-gray-50 p-6 text-center rounded-md">
-          <p className="text-gray-500">You don't have any applications yet.</p>
-          <p className="mt-4">Click "Create New Application" to get started.</p>
+          <p className="text-gray-500">You don&apos;t have any applications yet.</p>
+          <p className="mt-4">Click &quot;Create New Application&quot; to get started.</p>
         </div>
       )}
     </div>

@@ -109,18 +109,18 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     
     const newFormData: FormDataType = {
       applicant: {
-        name: fieldsMap['applicant.name'] || '',
-        email: fieldsMap['applicant.email'] || '',
-        phone: fieldsMap['applicant.phone'] || '',
+        name: fieldsMap['applicant.name'] ?? '',
+        email: fieldsMap['applicant.email'] ?? '',
+        phone: fieldsMap['applicant.phone'] ?? '',
       },
       property: {
-        address: fieldsMap['property.address'] || '',
-        property_number: fieldsMap['property.property_number'] || '',
-        usage_number: fieldsMap['property.usage_number'] || '',
-        lease_number: fieldsMap['property.lease_number'] || '',
-        section_number: fieldsMap['property.section_number'] || '',
-        postal_code: fieldsMap['property.postal_code'] || '',
-        municipality: fieldsMap['property.municipality'] || '',
+        address: fieldsMap['property.address'] ?? '',
+        property_number: fieldsMap['property.property_number'] ?? '',
+        usage_number: fieldsMap['property.usage_number'] ?? '',
+        lease_number: fieldsMap['property.lease_number'] ?? '',
+        section_number: fieldsMap['property.section_number'] ?? '',
+        postal_code: fieldsMap['property.postal_code'] ?? '',
+        municipality: fieldsMap['property.municipality'] ?? '',
       }
     };
     
@@ -156,7 +156,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
           });
         }
       }).catch(error => {
-        toast.error(`Feil ved lagring: ${error.message}`);
+        toast.error(`Feil ved lagring: ${error instanceof Error ? error.message : 'Ukjent feil'}`);
       });
     }, 1000);
     
@@ -182,54 +182,54 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'applicant.name',
-          fieldValue: formData.applicant.name || '',
+          fieldValue: formData.applicant.name ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'applicant.email',
-          fieldValue: formData.applicant.email || '',
+          fieldValue: formData.applicant.email ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'applicant.phone',
-          fieldValue: formData.applicant.phone || '',
+          fieldValue: formData.applicant.phone ?? '',
         }),
         
         // Property fields
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.address',
-          fieldValue: formData.property.address || '',
+          fieldValue: formData.property.address ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.property_number',
-          fieldValue: formData.property.property_number || '',
+          fieldValue: formData.property.property_number ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.usage_number',
-          fieldValue: formData.property.usage_number || '',
+          fieldValue: formData.property.usage_number ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.lease_number',
-          fieldValue: formData.property.lease_number || '',
+          fieldValue: formData.property.lease_number ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.section_number',
-          fieldValue: formData.property.section_number || '',
+          fieldValue: formData.property.section_number ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.postal_code',
-          fieldValue: formData.property.postal_code || '',
+          fieldValue: formData.property.postal_code ?? '',
         }),
         addApplicationField.mutateAsync({
           applicationID,
           fieldName: 'property.municipality',
-          fieldValue: formData.property.municipality || '',
+          fieldValue: formData.property.municipality ?? '',
         }),
       ];
       
@@ -272,7 +272,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="name"
               name="name"
-              value={formData.applicant.name || ''}
+              value={formData.applicant.name ?? ''}
               onChange={(e) => handleInputChange(e, 'applicant')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="Ola Nordmann"
@@ -288,7 +288,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="email"
               id="email"
               name="email"
-              value={formData.applicant.email || ''}
+              value={formData.applicant.email ?? ''}
               onChange={(e) => handleInputChange(e, 'applicant')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="ola.nordmann@example.com"
@@ -304,7 +304,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="tel"
               id="phone"
               name="phone"
-              value={formData.applicant.phone || ''}
+              value={formData.applicant.phone ?? ''}
               onChange={(e) => handleInputChange(e, 'applicant')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="99887766"
@@ -326,7 +326,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="address"
               name="address"
-              value={formData.property.address || ''}
+              value={formData.property.address ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="Eksempelveien 1"
@@ -342,7 +342,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="postal_code"
               name="postal_code"
-              value={formData.property.postal_code || ''}
+              value={formData.property.postal_code ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="1234"
@@ -357,7 +357,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="municipality"
               name="municipality"
-              value={formData.property.municipality || ''}
+              value={formData.property.municipality ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="Eksempelby"
@@ -372,7 +372,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="property_number"
               name="property_number"
-              value={formData.property.property_number || ''}
+              value={formData.property.property_number ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="123"
@@ -388,7 +388,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="usage_number"
               name="usage_number"
-              value={formData.property.usage_number || ''}
+              value={formData.property.usage_number ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="45"
@@ -404,7 +404,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="lease_number"
               name="lease_number"
-              value={formData.property.lease_number || ''}
+              value={formData.property.lease_number ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="0"
@@ -419,7 +419,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
               type="text"
               id="section_number"
               name="section_number"
-              value={formData.property.section_number || ''}
+              value={formData.property.section_number ?? ''}
               onChange={(e) => handleInputChange(e, 'property')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="0"
