@@ -8,7 +8,44 @@ import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import { useState } from "react";
 
+
 type ApplicationStatus = 'Sendt' | 'Ferdig_behandlet' | 'Pabegynt' | string;
+
+const MyApplications = () => {
+  const router = useRouter();
+  
+  // Data fetching
+  const { 
+    data: applications, 
+    isLoading, 
+    error, 
+    refetch
+  } = api.application.getAllApplications.useQuery();
+  
+  // Delete mutation
+  const deleteApplication = api.application.deleteApplication.useMutation({
+    onSuccess: () => {
+      toast.success("Application deleted successfully");
+      // Fix the floating promise by adding void operator
+      void refetch();
+    },
+    onError: (error) => {
+      toast.error(`Error: ${error.message}`);
+    }
+  });
+  
+  // Navigation handler
+  const handleCreateNewApplication = () => {
+    router.push('/atlas-app/SoknadTest/new');
+  };
+  
+  // Delete handler with confirmation
+  const handleDeleteApplication = (applicationID: number) => {
+    if (confirm("Are you sure you want to delete this application? This cannot be undone.")) {
+      deleteApplication.mutate({ applicationID });
+    }
+  };
+
 
 const ApplicationModal = ({ onClose }: { onClose: () => void }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={onClose}>
@@ -295,6 +332,7 @@ const MyApplications = () => {
       {applications && applications.length > 0 ? (
         <div className="space-y-4 px-6 py-6 rounded-lg md:mx-20 bg-white">
           {applications.map((application) => (
+//<<<<<<< HEAD
             <ApplicationCard
               key={application.applicationID}
               application={application}
@@ -310,6 +348,55 @@ const MyApplications = () => {
         <div className="bg-gray-100 p-6 text-center rounded-md md:mx-20">
           <p className="text-gray-500">Du har ingen søknader enda.</p>
           <p className="mt-4">Trykk på <span className="font-medium">"Lag ny Byggesøknad"</span> for å starte.</p>
+{/* ======= */}
+            <div key={application.applicationID} className="border rounded-md p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between">
+                <h2 className="text-lg font-semibold">
+                  {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType ]}
+                </h2>
+                <span className={`px-2 py-1 rounded text-sm ${getStatusBadgeStyle(application.status)}`}>
+                  {application.status}
+                </span>
+              </div>
+              
+              <div className="mt-2 text-sm text-gray-500">
+                <p>Submitted: {formatDate(application.submissionDate)}</p>
+                <p>Last updated: {formatDate(application.updatedDate)}</p>
+              </div>
+              
+              <div className="mt-3 flex justify-between">
+                <a 
+                  href={`/atlas-app/i-soknad/${application.applicationID}`} 
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  View details →
+                </a>
+
+                <button
+                  onClick={() => handleDeleteApplication(application.applicationID)}
+                  disabled={deleteApplication.isPending && deleteApplication.variables?.applicationID === application.applicationID}
+                  className={`text-red-500 hover:text-red-700 p-1 rounded transition-colors ${
+                    deleteApplication.isPending && deleteApplication.variables?.applicationID === application.applicationID 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : ''
+                  }`}
+                  title="Delete application"
+                >
+                  {deleteApplication.isPending && deleteApplication.variables?.applicationID === application.applicationID ? (
+                    <div className="w-4 h-4 border-t-2 border-red-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-gray-50 p-6 text-center rounded-md">
+          <p className="text-gray-500">You don&apos;t have any applications yet.</p>
+          <p className="mt-4">Click &quot;Create New Application&quot; to get started.</p>
+{/* >>>>>>> origin/feature/vm */}
         </div>
       )}
     </div>

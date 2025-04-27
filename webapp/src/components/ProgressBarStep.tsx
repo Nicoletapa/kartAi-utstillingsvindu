@@ -22,20 +22,20 @@ import {
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
-import { ApplicationType } from "@prisma/client";
+
 import SmallChatbot from "./SmallChatbot";
+import type { ApplicationType } from "@prisma/client";
+
 
 interface StepComponentType {
     onValidityChange?: (isValid: boolean) => void;
     applicationID?: number;
 }
-type StepComponentsType = {
-    [key: number]: {
-        [key: number]: React.ComponentType<any>;
-    };
-};
+
+type StepComponentsType = Record<number, Record<number, React.ComponentType<StepComponentType>>>;
 
 export interface ProgressBarStepProps {
+
     applicationID?: number;
     currentStep?: number;
 }
@@ -185,12 +185,11 @@ export default function ProgressBarStep({
         }
 
         const isStep1Valid =
-            fieldsMap['description']?.trim() !== '' &&
-            fieldsMap['area_purpose']?.trim() !== '' &&
+            fieldsMap.description?.trim() !== '' &&
+            fieldsMap.area_purpose?.trim() !== '' &&
             fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
             fieldsMap['distances.mønehøyde']?.trim() !== '' &&
             fieldsMap['distances.gesimshøyde']?.trim() !== '';
-
         setIsStep1_0Valid(isStep1Valid);
     }, [application]);
 

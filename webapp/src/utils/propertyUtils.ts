@@ -63,7 +63,7 @@ export function analyzeSpatialRelationship(
       try {
         // For point features
         if (drawnShape.geometry.type === 'Point') {
-          const pointCoords = turf.point(drawnShape.geometry.coordinates) as GeoJSON.Feature<GeoJSON.Point>;
+          const pointCoords = turf.point(drawnShape.geometry.coordinates) ;
           
           if (property.geometry.type === 'Polygon' || property.geometry.type === 'MultiPolygon') {
             const polygonFeature = property as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
@@ -98,8 +98,8 @@ export function analyzeSpatialRelationship(
         // Calculate distance if not within property
         if (!isWithinProperty && property.geometry) {
           try {
-            const drawnShapeCenter = turf.centerOfMass(drawnShape) as GeoJSON.Feature<GeoJSON.Point>;
-            const propertyCenter = turf.centerOfMass(property) as GeoJSON.Feature<GeoJSON.Point>;
+            const drawnShapeCenter = turf.centerOfMass(drawnShape) ;
+            const propertyCenter = turf.centerOfMass(property) ;
             
             const distance = turf.distance(
               drawnShapeCenter,

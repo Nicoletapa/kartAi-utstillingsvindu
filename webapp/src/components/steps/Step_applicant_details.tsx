@@ -91,6 +91,40 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
 
   // Form validation
 
+  // Load data from application
+  useEffect(() => {
+    if (!application?.application_fields || 
+        formData.applicant.name || 
+        formData.property.address || 
+        formData.property.property_number) {
+      return;
+    }
+    
+    const fieldsMap: Record<string, string> = {};
+    application.application_fields.forEach(field => {
+      fieldsMap[field.fieldName] = field.fieldValue;
+    });
+    
+    const newFormData: FormDataType = {
+      applicant: {
+        name: fieldsMap['applicant.name'] ?? '',
+        email: fieldsMap['applicant.email'] ?? '',
+        phone: fieldsMap['applicant.phone'] ?? '',
+      },
+      property: {
+        address: fieldsMap['property.address'] ?? '',
+        property_number: fieldsMap['property.property_number'] ?? '',
+        usage_number: fieldsMap['property.usage_number'] ?? '',
+        lease_number: fieldsMap['property.lease_number'] ?? '',
+        section_number: fieldsMap['property.section_number'] ?? '',
+        postal_code: fieldsMap['property.postal_code'] ?? '',
+        municipality: fieldsMap['property.municipality'] ?? '',
+      }
+    };
+    
+    setFormData(newFormData);
+    checkFormValidity(newFormData);
+  }, [application]);
 
 // In your component, use this effect instead:
 useEffect(() => {

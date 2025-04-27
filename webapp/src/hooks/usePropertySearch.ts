@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { PropertyIdentifiers, formatPropertyNumber, searchProperty } from '~/utils/propertyUtils';
+import {  formatPropertyNumber, searchProperty } from '~/utils/propertyUtils';
+import type { PropertyIdentifiers } from '~/utils/propertyUtils';
 
 export function usePropertySearch() {
   const { data: session, status } = useSession();
