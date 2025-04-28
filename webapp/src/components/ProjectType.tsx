@@ -5,16 +5,16 @@ import { Map } from "leaflet";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation"; 
-import { Button } from "../../../../../components/ui/button";
-import { api } from "~/trpc/react"; 
+import { Button } from "../components/ui/button";
+import { api } from "~/trpc/react";
 import { ApplicationType } from "@prisma/client";
 import { toast } from "react-hot-toast"; 
-import TiltaksAidMap from "~/components/TiltaksAidMap";
-import { PropertySearchBar } from "~/components/map/PropertySearchBar";
-import { searchProperty as fetchProperty } from "~/utils/propertyUtils";
-import { usePropertySearch } from "~/hooks/usePropertySearch";
-import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
-import SmallChatbot from "~/components/SmallChatbot";
+import TiltaksAidMap from "../components/TiltaksAidMap";
+import { PropertySearchBar } from "../components/map/PropertySearchBar";
+import { searchProperty as fetchProperty } from "../utils/propertyUtils";
+import { usePropertySearch } from "../hooks/usePropertySearch";
+import type { SpatialAnalysisResult } from "../utils/propertyUtils";
+import SmallChatbot from "../components/SmallChatbot";
 
 
 interface PageProps {
@@ -62,7 +62,7 @@ const checkboxOptions = {
     ]
 };
 
-const Page: React.FC<PageProps> = ({ 
+const ProjectType: React.FC<PageProps> = ({ 
   formData: externalFormData, 
   setFormData: externalSetFormData, 
   onValidityChange = () => {}, 
@@ -535,4 +535,4 @@ const Page: React.FC<PageProps> = ({
     );
 };
 
-export default Page;
+export default ProjectType;

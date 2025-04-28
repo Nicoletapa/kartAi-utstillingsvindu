@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z, ZodTypeAny } from "zod"; // Import ZodTypeAny
 
 // =============== CONSTANTS ===============
 
@@ -119,7 +119,7 @@ const baseSchema = z.object({
 });
 
 // Helper function to create consistent form schemas
-function createFormSchema(specificFields) {
+function createFormSchema(specificFields: Record<string, ZodTypeAny>) { // Add type annotation
   return z.object({
     title: z.string().optional(),
     fields: baseSchema.extend(specificFields).optional()
