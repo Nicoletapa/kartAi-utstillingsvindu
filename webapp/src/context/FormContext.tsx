@@ -7,19 +7,6 @@ export interface FormDataType {
   property: PropertyDetails;
 }
 
-// Define the default form data to be reused
-const defaultFormData: FormDataType = {
-  applicant: { name: '', email: '', phone: '' },
-  property: {
-    address: '',
-    property_number: '',
-    usage_number: '',
-    lease_number: '',
-    section_number: '',
-    postal_code: '',
-    municipality: '', 
-  }
-};
 
 // Define the context type
 type FormContextType = {

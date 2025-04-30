@@ -25,7 +25,7 @@ import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 
 import SmallChatbot from "./SmallChatbot";
-import type { ApplicationType } from "@prisma/client";
+
 
 
 interface CommonStepProps<TFormData = Record<string, unknown>> {
