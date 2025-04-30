@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react'
 
-interface ChecklistSection {
+interface ChecklistSectionData { // Renamed to avoid conflict if needed elsewhere
   title: string;
   items: string[];
 }
 
 interface ChecklistData {
-  for: ChecklistSection[];
-  under: ChecklistSection[];
-  etter: ChecklistSection[];
+  for: ChecklistSectionData[];
+  under: ChecklistSectionData[];
+  etter: ChecklistSectionData[];
 }
 
 const checklistData: ChecklistData = {
@@ -80,12 +80,12 @@ interface CustomCheckboxProps {
 }
 
 const CustomCheckbox = ({ checked, onChange }: CustomCheckboxProps) => (
-  <div 
+  <div
     className={`
       relative top-[3px]
       inline-flex shrink-0 items-center justify-center
       w-5 h-5 min-w-[20px] min-h-[20px]
-      border-2 rounded 
+      border-2 rounded
       transition-colors duration-200 ease-in-out
       cursor-pointer select-none
       ${checked ? 'bg-kartAI-blue border-kartAI-blue' : 'border-gray-300 bg-white'}
@@ -95,17 +95,17 @@ const CustomCheckbox = ({ checked, onChange }: CustomCheckboxProps) => (
     aria-checked={checked}
   >
     {checked && (
-      <svg 
+      <svg
         className="w-[14px] h-[14px] text-white absolute"
-        viewBox="0 0 24 24" 
+        viewBox="0 0 24 24"
         stroke="currentColor"
         strokeWidth={3}
         fill="none"
       >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          d="M5 13l4 4L19 7" 
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 13l4 4L19 7"
         />
       </svg>
     )}
@@ -114,9 +114,9 @@ const CustomCheckbox = ({ checked, onChange }: CustomCheckboxProps) => (
 
 const ProgressBar = ({ progress }: { progress: number }) => (
   <div className='w-full bg-gray-200 rounded-full h-4'>
-    <div 
-      className='bg-kartAI-blue h-4 rounded-full transition-all duration-300 ease-in-out' 
-      style={{ width: `${progress}%` }} 
+    <div
+      className='bg-kartAI-blue h-4 rounded-full transition-all duration-300 ease-in-out'
+      style={{ width: `${progress}%` }}
     />
     <div className='text-sm text-gray-600 mt-2 text-center'>
       Fremdrift: {progress}%
@@ -124,14 +124,14 @@ const ProgressBar = ({ progress }: { progress: number }) => (
   </div>
 );
 
-const ChecklistItem = ({ 
-  item, 
-  checked, 
-  onChange 
-}: { 
-  item: string; 
-  checked: boolean; 
-  onChange: () => void 
+const ChecklistItem = ({
+  item,
+  checked,
+  onChange
+}: {
+  item: string;
+  checked: boolean;
+  onChange: () => void
 }) => (
   <label className='flex items-baseline gap-3 text-lg text-gray-700 min-h-[28px]'>
     <div className='flex-none'>
@@ -144,20 +144,21 @@ const ChecklistItem = ({
   </label>
 );
 
-const ChecklistSection = ({ 
-  section 
-}: { 
-  section: ChecklistSection 
-}) => (
-  <div>
-    <h3 className='text-xl font-semibold text-kartAI-blue mb-3'>{section.title}</h3>
-    <div className='space-y-3'>
-      {section.items.map((item, i) => (
-        <ChecklistItem key={i} item={item} checked={false} onChange={() => {}} />
-      ))}
-    </div>
-  </div>
-);
+// Remove the unused ChecklistSection component definition
+// const ChecklistSection = ({
+//   section
+// }: {
+//   section: ChecklistSectionData
+// }) => (
+//   <div>
+//     <h3 className='text-xl font-semibold text-kartAI-blue mb-3'>{section.title}</h3>
+//     <div className='space-y-3'>
+//       {section.items.map((item, i) => (
+//         <ChecklistItem key={i} item={item} checked={false} onChange={() => { /* Empty function caused error */ }} />
+//       ))}
+//     </div>
+//   </div>
+// );
 
 const ChecklistAtlas = () => {
   const [activeTab, setActiveTab] = useState<'for' | 'under' | 'etter'>('for');
@@ -170,18 +171,18 @@ const ChecklistAtlas = () => {
     }));
   };
 
-  const allItems = Object.values(checklistData).flatMap((section: ChecklistSection[]) => 
+  const allItems = Object.values(checklistData).flatMap((section: ChecklistSectionData[]) =>
     section.flatMap(sub => sub.items)
   );
   const checkedCount = Object.keys(checkedItems).filter(key => checkedItems[key]).length;
-  const progressPercent = Math.round((checkedCount / allItems.length) * 100);
+  const progressPercent = allItems.length > 0 ? Math.round((checkedCount / allItems.length) * 100) : 0; // Avoid division by zero
 
   return (
     <div className='p-4'>
       <h1 className="text-3xl pt-4 font-bold flex justify-center text-kartAI-blue mb-8">
         Sjekkliste
       </h1>
-      
+
       <p className="text-xl md:mx-20 px-6 mb-12 flex justify-center">
         Her finner du en oversikt over hvilke dokumenter og opplysninger som kreves for at søknaden din
         skal være komplett. <br /><br />
@@ -189,7 +190,7 @@ const ChecklistAtlas = () => {
         og Etter. Velg et av disse alternativene for å se sjekklisten for den fasen.
       </p>
       <p className='italic text-md md:mx-20 px-6 mb-4 flex justify-center'>
-        Dette er en interaktiv sjekkliste og er kun for at du skal ha en oversikt over det du trenger. 
+        Dette er en interaktiv sjekkliste og er kun for at du skal ha en oversikt over det du trenger.
         Antall bokser du krysser av har ingenting å si om du kan lage en byggesøknad eller ikke.
       </p>
 
@@ -199,8 +200,8 @@ const ChecklistAtlas = () => {
             key={cat}
             onClick={() => setActiveTab(cat)}
             className={`flex-1 text-xl text-center py-2 font-medium transition-all ${
-              activeTab === cat 
-                ? 'border-b-4 border-kartAI-blue text-kartAI-blue' 
+              activeTab === cat
+                ? 'border-b-4 border-kartAI-blue text-kartAI-blue'
                 : 'text-gray-400 hover:text-kartAI-blue'
             }`}
           >
@@ -222,8 +223,8 @@ const ChecklistAtlas = () => {
                 <ChecklistItem
                   key={i}
                   item={item}
-                  checked={checkedItems[item] || false}
-                  onChange={() => handleCheckboxChange(item)}
+                  checked={checkedItems[item] ?? false}
+                  onChange={() => handleCheckboxChange(item)} // Use the actual handler
                 />
               ))}
             </div>

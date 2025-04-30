@@ -1,14 +1,19 @@
 "use client";
 
 import React from "react";
+import dynamic from 'next/dynamic';
+
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
 import AtlasSidebar from "~/components/AtlasSidebar";
 import { SendAppNow } from "~/components/SendAppNow";
 import FrontPage from "~/components/FrontPage";
-import SmallChatbot from "~/components/SmallChatbot";
 
 
+const SmallChatbot = dynamic(() => import('~/components/SmallChatbot'), {
+  ssr: false,
+  
+});
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>

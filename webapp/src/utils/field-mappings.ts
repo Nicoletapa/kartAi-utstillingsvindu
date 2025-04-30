@@ -1,4 +1,4 @@
-import { SmaProsjekterFormData, BruksendringFormData } from '../types/formTypes';
+import type { SmaProsjekterFormData, BruksendringFormData } from '../types/formTypes';
 
 /**
  * Centralized field name mappings for the application
@@ -70,5 +70,5 @@ export function resolveFieldPath(
     
     const mappedField = (mappings as Record<string, string | undefined>)[fieldName];
     
-    return mappedField || fieldName;
+    return mappedField ?? fieldName;
   }

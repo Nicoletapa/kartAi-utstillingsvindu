@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 interface Step2_1Props {
   applicationID: number;
@@ -14,7 +14,7 @@ const Step2_1: React.FC<Step2_1Props> = ({ applicationID }) => {
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
 
-    saveField('progress.currentStep', '2_1');
+    void saveField('progress.currentStep', '2_1');
 
   return (
     <div className='relative lg:pl-32 max-w-3xl'>
@@ -51,7 +51,7 @@ const Step2_1: React.FC<Step2_1Props> = ({ applicationID }) => {
 
       <div className='border-4 rounded-lg border-blue-800 mt-4 p-4'>
           <h1 className='font-bold'>Hva må du gjøre?</h1>
-          <p>Du vil bli ført til dispensasjonssøknaden ved å trykke på knappen <b>"Søk om dispensasjon"</b> </p>
+          <p>Du vil bli ført til dispensasjonssøknaden ved å trykke på knappen <b>&quot;Søk om dispensasjon&quot;</b> </p>
       </div>
 
       <button className="w-full my-3 py-2 border-2 border-kartAI-blue rounded-lg text-kartAI-blue hover:bg-kartAI-blue hover:text-white duration-300">

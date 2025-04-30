@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import React, { useState } from 'react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface BruksendreStep3_0Props {
@@ -14,7 +14,7 @@ const BruksendreStep3_0: React.FC<BruksendreStep3_0Props> = ({ applicationID }) 
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
-  saveField('progress.currentStep', '3_0');
+  void saveField('progress.currentStep', '3_0');
 
 
   return (

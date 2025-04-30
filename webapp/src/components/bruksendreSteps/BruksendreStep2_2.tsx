@@ -23,7 +23,7 @@ const BruksendreStep2_2: React.FC<BruksendreStep2_2Props> = ({ applicationID }) 
 
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
-    saveField('progress.currentStep', '2_0');
+    void saveField('progress.currentStep', '2_0');
 
     // Show loading state or handle errors if necessary
     if (isLoadingApplication || isLoadingUser) {

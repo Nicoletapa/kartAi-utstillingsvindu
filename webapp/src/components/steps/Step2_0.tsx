@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import CadaidAtlas from '../CadaidAtlas';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 interface Step2_0Props {
   applicationID: number;
@@ -14,7 +14,7 @@ const Step2_0: React.FC<Step2_0Props> = ({ applicationID, onValidityChange }) =>
     onValidityChange(true);
   }, [onValidityChange]);
 
-  saveField('progress.currentStep', '2_0');
+  void saveField('progress.currentStep', '2_0');
 
 
   if (!applicationID) {

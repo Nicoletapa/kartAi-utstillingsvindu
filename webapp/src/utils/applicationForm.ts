@@ -1,4 +1,5 @@
-import { z, ZodTypeAny } from "zod"; // Import ZodTypeAny
+import { z  } from "zod"; // Import ZodTypeAny
+import type { ZodTypeAny } from "zod";
 
 // =============== CONSTANTS ===============
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react'
 import { Info } from 'lucide-react'
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
 
 interface BruksendreStep1_0Props {
@@ -63,9 +63,9 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
     if (Array.isArray(value)) {
-      saveField(fieldPath, JSON.stringify(value));
+     void saveField(fieldPath, JSON.stringify(value));
     } else {
-      saveField(fieldPath, value.toString());
+     void saveField(fieldPath, value.toString());
     }
   };
 

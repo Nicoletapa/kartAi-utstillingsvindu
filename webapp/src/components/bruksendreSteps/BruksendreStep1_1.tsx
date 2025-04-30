@@ -86,7 +86,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     
     console.log(`Saving field: ${name} with value: ${value}`);
     
-    saveField(name, value.toString());
+    void saveField(name, value.toString());
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -106,7 +106,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
   
     const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
       setLastDrawnShape(shape);
-      setSpatialAnalysis(analysis || null);
+      setSpatialAnalysis(analysis ?? null);
     }, []);
 
   const tooltips = {

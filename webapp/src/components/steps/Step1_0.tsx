@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { Info } from 'lucide-react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
 import TiltaksAidMap from '../TiltaksAidMap';
 import { Map } from "leaflet";
@@ -8,7 +8,7 @@ import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
 
 
-interface Step1_0Props {
+interface Step1_0Props  {
   applicationID: number;
   formData: {
     municipalPlan: boolean;
@@ -103,10 +103,16 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
         const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
         
         // Save using the resolved field path
-        if (Array.isArray(value)) {
-          saveField(fieldPath, JSON.stringify(value));
-        } else {
-          saveField(fieldPath, value.toString());
+        try {
+          if (Array.isArray(value)) {
+             void saveField(fieldPath, JSON.stringify(value));
+          } else {
+             void saveField(fieldPath, value.toString());
+          }
+          console.log(`Successfully saved field: ${name}`);
+        } catch (error) {
+          console.error(`Error saving field ${name}:`, error);
+          // Optionally: Add user feedback about the save error here
         }
       };
 
@@ -119,7 +125,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
         
           const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
             setLastDrawnShape(shape);
-            setSpatialAnalysis(analysis || null);
+            setSpatialAnalysis(analysis ?? null);
           }, []);
 
   return (

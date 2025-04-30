@@ -41,7 +41,7 @@ export const applicationRouter = createTRPCRouter({
           applicationType: input.applicationType,
         subTypeId: input.subTypeId,
         updatedDate: input.updatedDate ?? new Date(),
-        submissionDate: input.submissionDate, 
+        submissionDate: input.submissionDate, // Ensure this is passed through
         status: input.status || "Pabegynt",
         user: {
           connect: {

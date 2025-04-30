@@ -86,7 +86,7 @@ export const DocumentPreviewModal = ({ document, onClose }: DocumentPreviewModal
             </Dialog.Title>
             <div className="flex items-center space-x-4">
               <a
-                href={objectUrl || '#'}
+                href={objectUrl ?? '#'}
                 download={document.fileName}
                 className="text-gray-600 hover:text-gray-900"
                 title="Last ned"

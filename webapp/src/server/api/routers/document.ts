@@ -110,7 +110,7 @@ export const documentRouter = createTRPCRouter({
     documentId: z.number(),
     applicationID: z.number().optional()
   }))
-  .mutation(async ({ input, ctx }) => {
+  .mutation(async ({ input}) => {
     try {
       // First delete related validations
       await db.documentValidation.deleteMany({
@@ -141,7 +141,7 @@ export const documentRouter = createTRPCRouter({
     fileName: z.string(),
     applicationID: z.number().optional()
   }))
-  .mutation(async ({ input, ctx }) => {
+  .mutation(async ({ input }) => {
     // ... existing document verification code ...
     let tempFilePath: string | undefined; // Declare tempFilePath in a higher scope
 

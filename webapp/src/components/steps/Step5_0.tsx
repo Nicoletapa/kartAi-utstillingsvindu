@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface Step5_0Props {
@@ -19,7 +19,7 @@ const Step5_0: React.FC<Step5_0Props> = ({ applicationID }) => {
     setStatus("Søknaden din er under behandling.");
   }
 
-  saveField('progress.currentStep', '5_0');
+  void saveField('progress.currentStep', '5_0');
 
 
   return (
