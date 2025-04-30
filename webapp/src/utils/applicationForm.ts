@@ -1,4 +1,5 @@
-import { z, ZodTypeAny } from "zod"; // Import ZodTypeAny
+import { z  } from "zod"; // Import ZodTypeAny
+import type { ZodTypeAny } from "zod";
 
 // =============== CONSTANTS ===============
 
@@ -226,9 +227,9 @@ function mergeUserDataWithDefaults(sessionUser: SimplifiedUser): ApplicantDetail
   if (!sessionUser) return defaults;
   
   return {
-    name: sessionUser.name || defaults.name,
-    email: sessionUser.email || defaults.email,
-    phone: sessionUser.phone || defaults.phone,
+    name: sessionUser.name ?? defaults.name,
+    email: sessionUser.email ?? defaults.email,
+    phone: sessionUser.phone ?? defaults.phone,
   };
 }
 
@@ -238,13 +239,13 @@ function mergePropertyDataWithDefaults(sessionUser: SimplifiedUser): PropertyDet
   if (!sessionUser) return defaults;
   
   return {
-    address: sessionUser.address || defaults.address,
-    property_number: sessionUser.property_number || defaults.property_number,
-    usage_number: sessionUser.usage_number || defaults.usage_number,
-    postal_code: sessionUser.postal_code || defaults.postal_code,
-    municipality: sessionUser.municipality || defaults.municipality,
-    lease_number: sessionUser.lease_number || defaults.lease_number,
-    section_number: sessionUser.section_number || defaults.section_number
+    address: sessionUser.address ?? defaults.address,
+    property_number: sessionUser.property_number ?? defaults.property_number,
+    usage_number: sessionUser.usage_number ?? defaults.usage_number,
+    postal_code: sessionUser.postal_code ?? defaults.postal_code,
+    municipality: sessionUser.municipality ?? defaults.municipality,
+    lease_number: sessionUser.lease_number ?? defaults.lease_number,
+    section_number: sessionUser.section_number ?? defaults.section_number
   };
 }
 

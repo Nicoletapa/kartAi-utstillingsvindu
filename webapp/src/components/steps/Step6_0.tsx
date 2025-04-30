@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface Step6_0Props {
@@ -15,7 +15,7 @@ const Step6_0: React.FC<Step6_0Props> = ({ applicationID }) => {
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
 
-  saveField('progress.currentStep', '6_0');
+  void saveField('progress.currentStep', '6_0');
 
 
   return (

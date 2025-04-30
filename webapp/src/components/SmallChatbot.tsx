@@ -16,11 +16,8 @@ const SmallChatbot = () => {
 
     const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
     const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
-    
+
     const { userData } = usePropertySearch()
-
-    const [mapReady, setMapReady] = useState(false);
-
 
    const mapInstance = useRef<{ map: Map | null; ready: boolean; containerId: string | null; }>({
         map: null,
@@ -45,25 +42,33 @@ const SmallChatbot = () => {
     }
 
     useEffect(() => {
+        // Store the current map instance and container ID for cleanup
+        const mapToRemove = mapInstance.current.map;
+        const containerIdToRemove = mapInstance.current.containerId;
+
         return () => {
-            if (mapInstance.current.map) {
+            if (mapToRemove) {
                 try {
-                    const container = document.getElementById(mapContainerId);
-                    if (container && (container as any)._leaflet_map) {
-                        mapInstance.current.map.remove();
-                    }
+                    // Attempt to remove the map instance
+                    mapToRemove.remove();
+                    // Optionally, verify container cleanup if needed, but avoid internal properties like _leaflet_map
+                    // const container = document.getElementById(containerIdToRemove);
+                    // if (container) { /* potentially check classes or attributes if necessary */ }
                 } catch (e) {
                     console.warn('Map cleanup error:', e);
                 } finally {
-                    mapInstance.current = {
-                        map:null,
-                        ready: false,
-                        containerId: null,
+                    // Reset the ref only if it hasn't been reassigned
+                    if (mapInstance.current.map === mapToRemove) {
+                        mapInstance.current = {
+                            map: null,
+                            ready: false,
+                            containerId: null,
+                        };
                     }
                 }
             }
         }
-    })
+    }, []) // Dependency array is empty as we capture the initial map instance for cleanup
 
     const handleToggle = () => {
         if (showChatbot) {
@@ -80,7 +85,7 @@ const SmallChatbot = () => {
 
     const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
         setLastDrawnShape(shape)
-        setSpatialAnalysis(analysis || null)
+        setSpatialAnalysis(analysis ?? null) // Use nullish coalescing
     }, [])
 
     return (
@@ -124,12 +129,11 @@ const SmallChatbot = () => {
                             >
                                 <X size={20} className='text-white' />
                             </button>
-                            <PlanPrat 
+                            <PlanPrat
                                 onClose={handleCloseChat}
                                 mapRef={mapInstance}
                                 lastDrawnShape={lastDrawnShape}
                                 spatialAnalysis={spatialAnalysis}
-                                mapReady={mapReady}
                                 disableTopRightRadius={expanded}
                                 disableBottomRightRadius={expanded}
                             />
@@ -138,8 +142,8 @@ const SmallChatbot = () => {
 
                     {expanded && (
                         <div id={mapContainerId} className='w-[60%] h-[500px] shadow-lg rounded-r-lg overflow-hidden'>
-                            <TiltaksAidMap 
-                                onMapReady={handleMapReady} 
+                            <TiltaksAidMap
+                                onMapReady={handleMapReady}
                                 onShapeDrawn={handleShapeDrawn}
                                 userGnr={userData?.gnr}
                                 userBnr={userData?.bnr}

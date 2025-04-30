@@ -1,13 +1,13 @@
 "use client";
 
 import * as L from "leaflet";
-import { Map } from "leaflet";
+import type{ Map } from "leaflet";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation"; 
 import { Button } from "../components/ui/button";
 import { api } from "~/trpc/react";
-import { ApplicationType } from "@prisma/client";
+import type { ApplicationType } from "@prisma/client";
 import { toast } from "react-hot-toast"; 
 import TiltaksAidMap from "../components/TiltaksAidMap";
 import { PropertySearchBar } from "../components/map/PropertySearchBar";
@@ -62,9 +62,10 @@ const checkboxOptions = {
     ]
 };
 
-const ProjectType: React.FC<PageProps> = ({ 
-  formData: externalFormData, 
-  setFormData: externalSetFormData, 
+const ProjectType: React.FC<PageProps> = ({
+  formData: externalFormData,
+  setFormData: externalSetFormData,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   onValidityChange = () => {}, 
 }) => {
     const router = useRouter();
@@ -88,7 +89,7 @@ const ProjectType: React.FC<PageProps> = ({
     const mapRef = useRef<Map | null>(null);
     const loggedPropertyData = useRef(false);
     
-    const formData = externalFormData || internalFormData;
+    const formData = externalFormData ?? internalFormData;
     
     const { data: applicationData } = api.application.getApplication.useQuery(
         { applicationID },
@@ -106,7 +107,7 @@ const ProjectType: React.FC<PageProps> = ({
     
       const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
         setLastDrawnShape(shape);
-        setSpatialAnalysis(analysis || null);
+        setSpatialAnalysis(analysis ?? null);
       }, []);
 
     const updateApplication = api.application.updateApplication.useMutation({
@@ -325,9 +326,18 @@ const ProjectType: React.FC<PageProps> = ({
         } 
         
         setIsUpdating(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating application type:", error);
-        toast.error(`Error: ${error.message || 'Something went wrong'}`);
+        
+        // Type-safe error message handling
+        let errorMessage = 'Something went wrong';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'object' && error !== null && 'message' in error) {
+            errorMessage = String((error as { message: unknown }).message);
+        }
+        
+        toast.error(`Error: ${errorMessage}`);
         setIsUpdating(false);
     }
     };
@@ -367,7 +377,7 @@ const ProjectType: React.FC<PageProps> = ({
             }
         }
         
-        const description = applicationData?.application_fields?.find(f => f.fieldName === 'description')?.fieldValue || '';
+        const description = applicationData?.application_fields?.find(f => f.fieldName === 'description')?.fieldValue ?? '';
         updateFormData({ description });
     }, [applicationData]);
 
@@ -466,7 +476,7 @@ const ProjectType: React.FC<PageProps> = ({
                     <div className="mb-4">
                         <p className="text-sm mb-2">Hva vil du {selectedOption === "Bygge" ? "bygge" : "rive"}?</p>
                         <div className="flex gap-4">
-                            {checkboxOptions[selectedOption as keyof typeof checkboxOptions].map((option) => (
+                            {checkboxOptions[selectedOption ].map((option) => (
                                 <label key={option.value} className="flex items-start space-x-2 text-sm">
                                     <input
                                         type="checkbox"

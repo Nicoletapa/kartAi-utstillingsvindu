@@ -66,18 +66,18 @@ const Soknaden = ({
 
     const byggInfoFields = [
         { label: "Tiltakstype:", value: application?.applicationType },
-        { label: "Adresse:", value: applicationData.adresse || "Rådhusgata 18" },
-        { label: "Kommune:", value: applicationData.kommune || "Kristiansand" },
+        { label: "Adresse:", value: applicationData.adresse ?? "Rådhusgata 18" },
+        { label: "Kommune:", value: applicationData.kommune ?? "Kristiansand" },
         { label: "Tiltakshaver:", value: `${users?.name}, ${users?.address}, ${users?.postalCode} ${users?.postalArea}` },
         { label: "Ansvarlig søker:", value: users?.name }
     ]
     
     const detaljerInfoFields = [
-        { label: "Størrelse:", value: `${applicationData.storrelse || "0"} m²` },
-        { label: "Materiale:", value: applicationData.materiale || "Ikke spesifisert" },
-        { label: "Høyde:", value: `${applicationData.hoyde || "0"} meter` },
-        { label: "Takvinkel:", value: `${applicationData.takvinkel || "0"} grader` },
-        { label: "Avstand til nabogrense:", value: `${applicationData.nabogrense || "0"} meter` }
+        { label: "Størrelse:", value: `${applicationData.storrelse ?? "0"} m²` },
+        { label: "Materiale:", value: applicationData.materiale ?? "Ikke spesifisert" },
+        { label: "Høyde:", value: `${applicationData.hoyde ?? "0"} meter` },
+        { label: "Takvinkel:", value: `${applicationData.takvinkel ?? "0"} grader` },
+        { label: "Avstand til nabogrense:", value: `${applicationData.nabogrense ?? "0"} meter` }
     ]
 
     const vedlagtFields = [
@@ -90,7 +90,7 @@ const Soknaden = ({
     const vedleggFields = [
         { value: documents?.map((doc) => (
             <li key={doc.documentID} className='list-disc ml-7'>{doc.fileName}</li>
-        )) || "Ingen vedlegg" },
+        )) ?? "Ingen vedlegg" },
     ]
     
   return (

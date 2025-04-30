@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import CadaidAtlas from '../CadaidAtlas';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 interface BruksendreStep2_0Props {
   applicationID: number;
@@ -15,7 +15,7 @@ interface BruksendreStep2_0Props {
   
   const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
 
-  saveField('progress.currentStep', '2_0');
+  void saveField('progress.currentStep', '2_0');
 
 
   if (!applicationID) {

@@ -20,6 +20,7 @@ const Section: React.FC<SectionProps> = ({ title, children, className = '' }) =>
 const BulletList: React.FC<{ items: React.ReactNode[] }> = ({ items }) => (
   <ul className='list-disc ml-8 space-y-1 mb-4'>
     {items.map((item, index) => (
+      // The key should be on the outermost element returned by map
       <li key={index}>{item}</li>
     ))}
   </ul>
@@ -33,7 +34,7 @@ const VideoEmbed: React.FC = () => (
     title="YouTube video player"
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-    allowFullScreen
+    allowFullScreen // Use allowFullScreen instead of allowfullscreen
     className="rounded-lg shadow-md"
   />
 );
@@ -48,26 +49,28 @@ const TwoColumnList: React.FC<{
     <div className="flex flex-col md:flex-row">
       <div data-cy="left-column" className='flex flex-col w-full md:w-1/2 pr-4'>
         <h1 className='font-medium text-center mb-1'>{leftTitle}</h1>
-        <BulletList items={leftItems.map(item => <span>{item}</span>)} />
+        {/* Pass React nodes directly, BulletList handles the key */}
+        <BulletList items={leftItems.map((item, index) => <span key={index}>{item}</span>)} />
       </div>
       <div data-cy="right-column" className='flex flex-col w-full md:w-1/2 md:border-l-2 md:border-gray-500 md:pl-4'>
         <h1 className='font-medium text-center mb-1'>{rightTitle}</h1>
-        <BulletList items={rightItems.map(item => <span>{item}</span>)} />
+        {/* Pass React nodes directly, BulletList handles the key */}
+        <BulletList items={rightItems.map((item, index) => <span key={index}>{item}</span>)} />
       </div>
     </div>
   </div>
 );
 
-const ExternalLinkButton: React.FC<{ 
-  url: string; 
-  children: React.ReactNode 
+const ExternalLinkButton: React.FC<{
+  url: string;
+  children: React.ReactNode
 }> = ({ url, children }) => {
   const handleClick = () => {
     window.open(url, '_blank', 'noreferrer');
   };
 
   return (
-    <button 
+    <button
       onClick={handleClick}
       className='my-3 py-2 px-4 border-2 border-kartAI-blue rounded-lg text-kartAI-blue hover:bg-kartAI-blue hover:text-white duration-300'
     >
@@ -76,10 +79,10 @@ const ExternalLinkButton: React.FC<{
   );
 };
 
-const ActionLink: React.FC<{ 
-  href: string; 
+const ActionLink: React.FC<{
+  href: string;
   icon: React.ReactNode;
-  children: React.ReactNode 
+  children: React.ReactNode
 }> = ({ href, icon, children }) => (
   <Link href={href} className="flex items-center gap-2 hover:underline">
     {icon}
@@ -101,6 +104,7 @@ const ForDuSoker = () => {
         <div className="flex flex-col md:flex-row gap-8 mb-8">
           <div data-cy="left-column" className='w-full md:w-1/2'>
             <h1 className='font-medium mb-2'>Dette må du vite før du starter søknaden:</h1>
+            {/* BulletList handles keys internally */}
             <BulletList items={[
               "Seksjon 1: Trenger du å søke?",
               "Seksjon 2: Hva gjelder for din eiendom?",
@@ -109,7 +113,7 @@ const ForDuSoker = () => {
               "Seksjon 5: Klar for å starte?"
             ]} />
           </div>
-          
+
           <div data-cy="right-column" className='w-full md:w-1/2'>
             <VideoEmbed />
           </div>
@@ -150,12 +154,14 @@ const ForDuSoker = () => {
           Før du søker, bør du finne ut hvilke regler som gjelder for din eiendom. Det er disse som avgjør hva du kan bygge - og hvordan.
         </p>
         <h2 className='font-medium'>Sjekk spesielt:</h2>
+        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Kommuneplanen - overordnede føringer for arealbruk",
           "Reguleringsplanen - detaljerte regler for akkurat ditt område",
           "Områdeplanen - hvis det finnes, gir ekstra detaljer og hensyn"
         ]} />
         <h2>Planene viser:</h2>
+        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Hva eiendommen er regulert til (f.eks. bolig, fritidsbolig, næring)",
           "Om det finnes byggegrenser eller verneverdier",
@@ -172,6 +178,7 @@ const ForDuSoker = () => {
 
       <Section title="Hvilke tiltak støtter løsningen?">
         <p>I denne løsningen kan du søke digitalt om tre tiltakstyper:</p>
+        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Bruksendring - f.eks. gjøre om bog til oppholdsrom",
           "Bygge - f.eks. tilbygg, garasje, bod eller nybygg",
@@ -181,6 +188,7 @@ const ForDuSoker = () => {
 
       <Section title="Hva bør du ha klart før du starter søknaden?">
         <p>For å kunne lage en komplett søknad, er det lurt å ha disse tingene klare:</p>
+        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Situasjonskart over eiendommen",
           "Tegninger (plan, fasade, snitt)",
@@ -193,14 +201,16 @@ const ForDuSoker = () => {
 
       <Section title="Klar for å starte?">
         <p>Du kan velge hvordan du vil komme i gang:</p>
+        {/* BulletList handles keys internally for <li>, but React needs keys on the array elements passed */}
         <BulletList items={[
-          <ActionLink href="/atlas-app/sidebar/soknader" icon={<Plus size={20} />}>
+          // Add unique keys to each element in the array
+          <ActionLink key="start-ny" href="/atlas-app/sidebar/soknader" icon={<Plus size={20} />}>
             Start ny søknad
           </ActionLink>,
-          <ActionLink href="/atlas-app/sidebar/sjekkliste" icon={<Check size={20} />}>
+          <ActionLink key="ga-til-sjekkliste" href="/atlas-app/sidebar/sjekkliste" icon={<Check size={20} />}>
             Gå til sjekkliste
           </ActionLink>,
-          <ActionLink href="/atlas-app" icon={<Bot size={20} />}>
+          <ActionLink key="start-chatbot" href="/atlas-app" icon={<Bot size={20} />}>
             Start med chatbotten for veiledning
           </ActionLink>
         ]} />

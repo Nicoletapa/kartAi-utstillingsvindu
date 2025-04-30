@@ -16,7 +16,7 @@ const Step2_2: React.FC<Step2_2Props> = ({ applicationID }) => {
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
 
-    saveField('progress.currentStep', '2_2');
+    void saveField('progress.currentStep', '2_2');
   return (
     <div>
       <h1 className="text-3xl font-bold justify-center flex">Søknad om Dispensasjon

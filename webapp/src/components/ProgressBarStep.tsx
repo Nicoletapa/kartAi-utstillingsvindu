@@ -6,6 +6,7 @@ import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "~/lib/utils";
+import type { ApplicationType } from "@prisma/client";
 
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
@@ -22,41 +23,46 @@ import {
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
-import { ApplicationType } from "@prisma/client";
 import SmallChatbot from "./SmallChatbot";
 
-interface StepComponentType {
-    onValidityChange?: (isValid: boolean) => void;
+interface CommonStepProps<TFormData = Record<string, unknown>> {
     applicationID?: number;
+    formData?: TFormData; // Use the generic type TFormData
+    setFormData?: React.Dispatch<React.SetStateAction<TFormData>>; // Use the generic type TFormData
+    onValidityChange?: (isValid: boolean) => void;
 }
-type StepComponentsType = {
-    [key: number]: {
-        [key: number]: React.ComponentType<any>;
-    };
-};
+
+// Update StepComponentsType to use the common props interface
+type StepComponentsType = Record<
+    number,
+    // Use React.ComponentType with the common props interface
+    Record<number, React.ComponentType<CommonStepProps>>
+>;
 
 export interface ProgressBarStepProps {
     applicationID?: number;
     currentStep?: number;
 }
 
-export default function ProgressBarStep({ 
+export default function ProgressBarStep({
     applicationID,
-    currentStep: externalCurrentStep 
+    currentStep: externalCurrentStep
 }: ProgressBarStepProps) {
     const router = useRouter();
     const pathname = usePathname();
-    
+
     const isByggeorRive = pathname.includes('/bygge-eller-rive');
     const isBruksendre = pathname.includes('/bruksendring');
-    
-    const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep || 0);
+
+    const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep ?? 0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
-    const [formData, setFormData] = useState<Record<string, any>>({});
+    // Consider using a more specific type for formData if possible
+    const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-    const stepComponents: StepComponentsType = isByggeorRive ? {
+    // This assignment should now be type-compatible
+    const stepComponents: StepComponentsType = (isByggeorRive ? {
         1: {
             0: Step1_0,
             1: Step1_1,
@@ -112,15 +118,15 @@ export default function ProgressBarStep({
             1: BruksendreStep6_1,
             2: BruksendreStep6_2,
         }
-    };
+    })as unknown as StepComponentsType;
 
     const steps = [
-        { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
-        { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
-        { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
-        { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
-        { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
-        { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+        { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] ?? {}).length },
+        { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] ?? {}).length },
+        { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] ?? {}).length },
+        { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] ?? {}).length },
+        { title: "Status", totalSubsteps: Object.keys(stepComponents[5] ?? {}).length },
+        { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] ?? {}).length },
     ];
 
     const sjekklisteBruksendre: Record<number, string[]> = {
@@ -132,7 +138,7 @@ export default function ProgressBarStep({
     };
 
     const sjekklisteByggeEllerRive: Record<number, string[]> = {
-        1: ["Kryss av for hvilke(n) plan(er) gjelder for din eiendom", "Kryss av for om du trenger dispensasjon elle andre tillatelser", "Fyll inn alle nødvendige felt med detaljer til det du skal bygge", "Fyll inn feltene for utnyttningsgrad", "Besvar om prosjektet kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre itl en ny/endret avkjøring", "Besvar om tiltaket er i samsvar med gjeldene plan"],
+        1: ["Kryss av for hvilke(n) plan(er) gjelder for din eiendom", "Kryss av for om du trenger dispensasjon elle andre tillatelser", "Fyll inn alle nødvendige felt med detaljer til det du skal bygge", "Fyll inn feltene for utnyttingsgrad", "Besvar om prosjektet kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre itl en ny/endret avkjøring", "Besvar om tiltaket er i samsvar med gjeldene plan"],
         2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
         3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
         4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
@@ -167,7 +173,7 @@ export default function ProgressBarStep({
             router.push(`/404/${applicationID}`);
             return;
         }
-    }, [applicationID, isByggeorRive, isBruksendre]);
+    }, [applicationID, isByggeorRive, isBruksendre, router]);
 
     useEffect(() => {
         if (!application) return;
@@ -185,8 +191,8 @@ export default function ProgressBarStep({
         }
 
         const isStep1Valid =
-            fieldsMap['description']?.trim() !== '' &&
-            fieldsMap['area_purpose']?.trim() !== '' &&
+            fieldsMap.description?.trim() !== '' &&
+            fieldsMap.area_purpose?.trim() !== '' &&
             fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
             fieldsMap['distances.mønehøyde']?.trim() !== '' &&
             fieldsMap['distances.gesimshøyde']?.trim() !== '';
@@ -223,7 +229,7 @@ export default function ProgressBarStep({
         if (currentStep === 0 && currentSubstep === 0 && applicationID) {
             const previousStep = localStorage.getItem('previousStep');
             if (previousStep && previousStep !== '0-0') {
-                refetchApplication();
+                void refetchApplication();
             }
             localStorage.setItem('previousStep', `${currentStep}-${currentSubstep}`);
         }
@@ -294,17 +300,25 @@ export default function ProgressBarStep({
     const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
     const currentTasks = currentStep <= 5 ? currentChecklist[currentStep] ?? [] : [];
     const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
-
+    
+    // Add a function to update task completion
+    const toggleTaskCompletion = (index: number) => {
+        const newCompletedTasks = [...completedTasks];
+        newCompletedTasks[index] = !newCompletedTasks[index];
+        setCompletedTasks(newCompletedTasks);
+    };
     const handleBackToMain= () => {
         router.push(`/atlas-app`);
     };
-
     const handleValidityChange = (isValid: boolean) => {
         if (currentStep === 1 && currentSubstep === 0) {
             setIsStep1_0Valid(isValid);
         }
     };
 
+    // Then update the checklist items to be interactive
+    // For example in your renderChecklist function:
+    // <li key={index} className="flex items-start pt-1" onClick={() => toggleTaskCompletion(index)}>
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
         
@@ -322,7 +336,7 @@ export default function ProgressBarStep({
 
                         return (
                             isVisible && (
-                                <li key={index} className="flex items-start pt-1">
+                                <li key={index} className="flex items-start pt-1" onClick={() => toggleTaskCompletion(index)}>
                                     <div className={cn("flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full border-2 mr-3 z-10 duration-500 ease-in-out",
                                         isCompleted 
                                             ? "border-green-600 bg-green-600 text-white"

@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
 import * as L from 'leaflet';
@@ -8,12 +8,13 @@ import type { Feature, Geometry, GeoJsonProperties } from 'geojson';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 import { 
-  SpatialAnalysisResult, 
+   
   analyzeSpatialRelationship,
   formatPropertyNumber,
   searchProperty as fetchProperty
 } from '~/utils/propertyUtils';
 import { usePropertySearch } from '~/hooks/usePropertySearch';
+import type {SpatialAnalysisResult} from '~/utils/propertyUtils';
 
 const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
@@ -171,36 +172,8 @@ const TiltaksAidMap = ({
   // Add ref to track logging status
   const loggedPropertyData = useRef(false);
 
-  // Force a search when user property data changes
-  useEffect(() => {
-    if (autoZoomSuccessful || !userGnr || !userBnr) return;
-    
-    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
-    if (propertyNumber) {
-      setSearchInput(propertyNumber);
-      
-      if (mapReady && !autoZoomAttempted) {
-        setAutoZoomAttempted(true);
-        handlePropertySearch(propertyNumber);
-      }
-    }
-  }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful]);
-
-  // Auto-zoom effect
-  useEffect(() => {
-    if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
-    
-    if (!userGnr || !userBnr) return;
-
-    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
-    if (propertyNumber) {
-      setAutoZoomAttempted(true);
-      handlePropertySearch(propertyNumber);
-    }
-  }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful]);
-
-  // Handle property search
-  const handlePropertySearch = async (propertyNumberToSearch: string = searchInput) => {
+  // Handle property search - wrapped in useCallback
+  const handlePropertySearch = useCallback(async (propertyNumberToSearch: string = searchInput) => {
     const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
     
     if (!data || data.length === 0) {
@@ -256,7 +229,35 @@ const TiltaksAidMap = ({
       setPropertyBoundary(newBoundary);
       setErrorMessage(null);
     }
-  };
+  }, [searchInput, propertyBoundary, setErrorMessage, setPropertyBoundaries, setAutoZoomSuccessful]); // Added dependencies for useCallback
+
+  // Force a search when user property data changes
+  useEffect(() => {
+    if (autoZoomSuccessful || !userGnr || !userBnr) return;
+    
+    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+    if (propertyNumber) {
+      setSearchInput(propertyNumber);
+      
+      if (mapReady && !autoZoomAttempted) {
+        setAutoZoomAttempted(true);
+        void handlePropertySearch(propertyNumber); // Use void to ignore promise
+      }
+    }
+  }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch, setSearchInput]); // Added handlePropertySearch and setSearchInput
+
+  // Auto-zoom effect
+  useEffect(() => {
+    if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
+    
+    if (!userGnr || !userBnr) return;
+
+    const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+    if (propertyNumber) {
+      setAutoZoomAttempted(true);
+      void handlePropertySearch(propertyNumber); // Use void to ignore promise
+    }
+  }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch]); // Added handlePropertySearch
 
   const MapEvents = () => {
     const map = useMap();
@@ -275,9 +276,9 @@ const TiltaksAidMap = ({
     
       if (searchInput && !autoZoomAttempted && !autoZoomSuccessful && userGnr && userBnr) {
         setAutoZoomAttempted(true);
-        handlePropertySearch(searchInput);
+        void handlePropertySearch(searchInput); // Use void to ignore promise
       }
-    }, [map]);
+    }, [map]); // Removed dependencies that are handled by outer component scope or refs
     
     return null;
   };

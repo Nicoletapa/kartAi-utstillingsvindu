@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
 import AndreVedlegg from '../AndreVedlegg';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface BruksendreStep4_0Props {
@@ -16,7 +16,7 @@ const BruksendreStep4_0: React.FC<BruksendreStep4_0Props> = ({ applicationID }) 
         const handleOpenModal = () => setOpenModal(true);
         const handleCloseModal = () => setOpenModal(false);
 
-        saveField('progress.currentStep', '4_0');
+        void saveField('progress.currentStep', '4_0');
 
   return (
     <div>
@@ -42,6 +42,8 @@ const BruksendreStep4_0: React.FC<BruksendreStep4_0Props> = ({ applicationID }) 
           </div>
         </div>
       )}
+       {/* Disable rule for intentional empty function placeholder */}
+       {/* eslint-disable-next-line @typescript-eslint/no-empty-function */}
        <AndreVedlegg documents={[]} onUpload={() => {}} />
     </div>
 

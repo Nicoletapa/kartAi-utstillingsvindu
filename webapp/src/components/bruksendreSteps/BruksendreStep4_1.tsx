@@ -30,7 +30,7 @@ const BruksendreStep4_1: React.FC<BruksendreStep4_1Props> = ({ applicationID }) 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
 
-  saveField('progress.currentStep', '4_1');
+  void saveField('progress.currentStep', '4_1');
 
   // Show loading state or handle errors if necessary
   if (isLoadingApplication || isLoadingUser || isLoadingDocuments) {
@@ -66,7 +66,7 @@ const BruksendreStep4_1: React.FC<BruksendreStep4_1Props> = ({ applicationID }) 
         fileName: doc.fileName ?? 'Ukjent filnavn',
         documentType: doc.document ?? 'Ukjent type',
         // After filtering, doc.applicationID is guaranteed to be number
-        applicationID: doc.applicationID as number,
+        applicationID: doc.applicationID! ,
     }))
   };
 
