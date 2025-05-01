@@ -2,13 +2,13 @@
 
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
-import { ApplicationType } from "@prisma/client";
+import type { ApplicationType } from "@prisma/client";
 import { Trash2, PlusCircle, Info, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import { useState } from "react";
 
-type ApplicationStatus = 'Sendt' | 'Ferdig_behandlet' | 'Pabegynt' | string;
+
 
 const ApplicationModal = ({ onClose }: { onClose: () => void }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={onClose}>
@@ -23,7 +23,7 @@ const ApplicationModal = ({ onClose }: { onClose: () => void }) => (
           <li>Se status på søknader du har sendt inn</li>
           <li>Redigere søknader du jobber med (kladder)</li>
           <li>Laste ned ferdige søknader eller dokumenter</li>
-          <li>Starte en ny søknad når du har et nytt tiltak ved å klikke på "Lag en ny Byggesøknad"</li>
+          <li>Starte en ny søknad når du har et nytt tiltak ved å klikke på &quot;Lag en ny Byggesøknad&quot;</li>
         </ul>
 
         <div className="mt-8">
@@ -205,7 +205,7 @@ const MyApplications = () => {
   const deleteApplication = api.application.deleteApplication.useMutation({
     onSuccess: () => {
       toast.success("Søknaden ble slettet.");
-      refetch();
+      void refetch();
     },
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
@@ -309,7 +309,7 @@ const MyApplications = () => {
       ) : (
         <div className="bg-gray-100 p-6 text-center rounded-md md:mx-20">
           <p className="text-gray-500">Du har ingen søknader enda.</p>
-          <p className="mt-4">Trykk på <span className="font-medium">"Lag ny Byggesøknad"</span> for å starte.</p>
+          <p className="mt-4">Trykk på <span className="font-medium">&quot;Lag ny Byggesøknad&quot;</span> for å starte.</p>
         </div>
       )}
     </div>

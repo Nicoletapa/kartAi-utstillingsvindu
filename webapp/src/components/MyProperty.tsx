@@ -2,7 +2,9 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import * as L from "leaflet";
-import { Map } from "leaflet";
+import type { Map } from "leaflet";
+import Link from "next/link";
+import { Plus, Check, Bot } from "lucide-react";
 import TiltaksAidMap from "./TiltaksAidMap";
 import { PropertySearchBar } from "./map/PropertySearchBar";
 import { api } from "~/trpc/react";
@@ -85,7 +87,7 @@ const MyProperty = () => {
 
   const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
     setLastDrawnShape(shape);
-    setSpatialAnalysis(analysis || null);
+    setSpatialAnalysis(analysis ?? null);
   }, []);
 
   const handlePropertyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -160,9 +162,9 @@ const MyProperty = () => {
     if (userDetails) {
       setProperties([
         { 
-          id: userDetails.id, address: userDetails.address || "Hovedgata 1, 0123 Oslo", 
-          postalArea: userDetails.postalArea || "Ikke angitt",
-          gnr: userDetails.gnr || 0, bnr: userDetails.bnr || 0, 
+          id: userDetails.id, address: userDetails.address ?? "Hovedgata 1, 0123 Oslo", 
+          postalArea: userDetails.postalArea ?? "Ikke angitt",
+          gnr: userDetails.gnr ?? 0, bnr: userDetails.bnr ?? 0, 
         },
       ]);
     }
@@ -170,6 +172,9 @@ const MyProperty = () => {
 
   const propertyData: FieldDisplay[] = [
     { label: "Adresse:", value: formData.property.address || "Ikke angitt" },
+    { label: "Gårdsnr.:", value: formData.property.gnr || "Ikke angitt" },
+    { label: "Bruksnr.:", value: formData.property.bnr || "Ikke angitt" },
+    { label: "Kommune:", value: formData.property.postalArea || "Ikke angitt" },
     { label: "Gårdsnr.:", value: formData.property.gnr || "Ikke angitt" },
     { label: "Bruksnr.:", value: formData.property.bnr || "Ikke angitt" },
     { label: "Kommune:", value: formData.property.postalArea || "Ikke angitt" },
@@ -197,7 +202,7 @@ const MyProperty = () => {
         <select
           name="velgEiendom"
           id="velgEiendom"
-          value={selectedPropertyId || ""}
+          value={selectedPropertyId ?? ""}
           onChange={handlePropertyChange}
           className="bg-gray-200 border-2 border-gray-300 focus:outline-none focus:ring rounded-md mt-2 mb-2 p-2"
         >

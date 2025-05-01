@@ -63,9 +63,9 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
     if (Array.isArray(value)) {
-      saveField(fieldPath, JSON.stringify(value));
+     void saveField(fieldPath, JSON.stringify(value));
     } else {
-      saveField(fieldPath, value.toString());
+     void saveField(fieldPath, value.toString());
     }
   };
 

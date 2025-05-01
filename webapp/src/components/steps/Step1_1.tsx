@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
-import { 
-  SmaProsjekterFormData, 
+import {  
   smaProsjekterDefaultValues, 
   ROAD_TYPES, 
   CALCULATION_METHODS,
   yesNoOptions 
 } from '~/types/formTypes';
 import { RadioGroup, Tooltip } from '../ui/ui-components';
+import type {SmaProsjekterFormData} from '~/types/formTypes';
 
 // Building measurement inputs
 const buildingInputs = [
@@ -142,12 +142,18 @@ const Step1_1: React.FC<Step1_1Props> = ({
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
     // Save using the resolved field path
-    if (Array.isArray(value)) {
-      saveField(fieldPath, JSON.stringify(value));
-    } else {
-      saveField(fieldPath, value.toString());
+
+    try {
+      if (Array.isArray(value)) {
+        void saveField(fieldPath, JSON.stringify(value)); // Added void to handle promise
+      } else {
+        void saveField(fieldPath, value.toString()); // Added void to handle promise
+      }
+    } catch (error) {
+      console.error(`Error saving field ${fieldPath}:`, error);
     }
-  };
+  }; // This brace now correctly closes handleFieldChange
+
   const tooltipContents = {
     buildingDetails: 'Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.',
     calculationMethod: 'Beregningsmetode i en byggesøknad er måten arealer og volumer beregnes på for å sikre at prosjektet overholder gjeldende lover og forskrifter.',
@@ -181,7 +187,8 @@ const Step1_1: React.FC<Step1_1Props> = ({
 
   useEffect(() => {
     checkFormValidity(formData);
-  }, []);
+  
+  }, []); 
 
   return (
     <div className="justify-center flex flex-col w-full">
@@ -342,7 +349,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[0].map((item) => (
+        {environmentalConflictGroups[0]!.map((item) => ( 
           <RadioGroup
             key={item.name}
             name={item.name}
@@ -358,7 +365,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[1].map((item) => (
+        {environmentalConflictGroups[1]!.map((item) => ( // Add non-null assertion operator (!)
           <RadioGroup
             key={item.name}
             name={item.name}

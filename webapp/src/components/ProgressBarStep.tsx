@@ -5,13 +5,14 @@ import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
+import { cn } from "~/lib/utils";
+import type { ApplicationType } from "@prisma/client";
 
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
     Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
     Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
 } from "./steps"
-
 
 import {
   BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
@@ -22,43 +23,50 @@ import {
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
-import { ApplicationType } from "@prisma/client";
-import SmallChatbot from "./SmallChatbot";
-import SjekklisteSoknad from "./SjekklisteSoknad";
 
-interface StepComponentType {
-    onValidityChange?: (isValid: boolean) => void;
+import SmallChatbot from "./SmallChatbot";
+
+
+
+interface CommonStepProps<TFormData = Record<string, unknown>> {
     applicationID?: number;
-    [key: string]: any;
+    formData?: TFormData; // Use the generic type TFormData
+    setFormData?: React.Dispatch<React.SetStateAction<TFormData>>; // Use the generic type TFormData
+    onValidityChange?: (isValid: boolean) => void;
 }
-type StepComponentsType = {
-    [key: number]: {
-        [key: number]: React.ComponentType<any>;
-    };
-};
+
+// Update StepComponentsType to use the common props interface
+type StepComponentsType = Record<
+    number,
+    // Use React.ComponentType with the common props interface
+    Record<number, React.ComponentType<CommonStepProps>>
+>;
 
 export interface ProgressBarStepProps {
+
     applicationID?: number;
     currentStep?: number;
 }
 
-export default function ProgressBarStep({ 
+export default function ProgressBarStep({
     applicationID,
-    currentStep: externalCurrentStep 
+    currentStep: externalCurrentStep
 }: ProgressBarStepProps) {
     const router = useRouter();
     const pathname = usePathname();
-    
+
     const isByggeorRive = pathname.includes('/bygge-eller-rive');
     const isBruksendre = pathname.includes('/bruksendring');
-    
-    const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep || 0);
+
+    const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep ?? 0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
-    const [formData, setFormData] = useState<Record<string, any>>({});
+    // Consider using a more specific type for formData if possible
+    const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-    const stepComponents: StepComponentsType = isByggeorRive ? {
+    // This assignment should now be type-compatible
+    const stepComponents: StepComponentsType = (isByggeorRive ? {
         1: {
             0: Step1_0,
             1: Step1_1,
@@ -114,15 +122,15 @@ export default function ProgressBarStep({
             1: BruksendreStep6_1,
             2: BruksendreStep6_2,
         }
-    };
+    })as unknown as StepComponentsType;
 
     const steps = [
-        { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] || {}).length },
-        { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] || {}).length },
-        { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] || {}).length },
-        { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] || {}).length },
-        { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
-        { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
+        { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] ?? {}).length },
+        { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] ?? {}).length },
+        { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] ?? {}).length },
+        { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] ?? {}).length },
+        { title: "Status", totalSubsteps: Object.keys(stepComponents[5] ?? {}).length },
+        { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] ?? {}).length },
     ];
 
     const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
@@ -151,7 +159,7 @@ export default function ProgressBarStep({
             router.push(`/404/${applicationID}`);
             return;
         }
-    }, [applicationID, isByggeorRive, isBruksendre]);
+    }, [applicationID, isByggeorRive, isBruksendre, router]);
 
     useEffect(() => {
         if (!application) return;
@@ -169,12 +177,11 @@ export default function ProgressBarStep({
         }
 
         const isStep1Valid =
-            fieldsMap['description']?.trim() !== '' &&
-            fieldsMap['area_purpose']?.trim() !== '' &&
+            fieldsMap.description?.trim() !== '' &&
+            fieldsMap.area_purpose?.trim() !== '' &&
             fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
             fieldsMap['distances.mønehøyde']?.trim() !== '' &&
             fieldsMap['distances.gesimshøyde']?.trim() !== '';
-
         setIsStep1_0Valid(isStep1Valid);
     }, [application]);
 
@@ -207,7 +214,7 @@ export default function ProgressBarStep({
         if (currentStep === 0 && currentSubstep === 0 && applicationID) {
             const previousStep = localStorage.getItem('previousStep');
             if (previousStep && previousStep !== '0-0') {
-                refetchApplication();
+                void refetchApplication();
             }
             localStorage.setItem('previousStep', `${currentStep}-${currentSubstep}`);
         }
@@ -283,13 +290,15 @@ export default function ProgressBarStep({
             router.push(`/atlas-app`);
         }
     };
-
     const handleValidityChange = (isValid: boolean) => {
         if (currentStep === 1 && currentSubstep === 0) {
             setIsStep1_0Valid(isValid);
         }
     };
 
+    // Then update the checklist items to be interactive
+    // For example in your renderChecklist function:
+    // <li key={index} className="flex items-start pt-1" onClick={() => toggleTaskCompletion(index)}>
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
         
@@ -300,6 +309,29 @@ export default function ProgressBarStep({
                 currentSubstep={currentSubstep} />
             </div>
         );
+    };
+
+    const bruksendreVisibilityLogic = (step: number, substep: number, index: number) => {
+        if (step === 1) {
+            return substep === 0 ? index < 2 : true;
+        }
+        if (step === 4) {
+            return substep === 0 ? index === 0 : true;
+        }
+        return index <= substep;
+    };
+
+    const byggeEllerRiveVisibilityLogic = (step: number, substep: number, index: number) => {
+        if (step === 1) {
+            return substep === 0 ? index < 3 : true;
+        }
+        if (step === 4) {
+            return substep === 0 ? index === 0 : true;
+        }
+        if (step === 2) {
+            return index < substep + 2;
+        }
+        return index <= substep;
     };
 
     return (

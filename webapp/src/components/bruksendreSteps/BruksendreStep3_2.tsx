@@ -2,7 +2,7 @@ import { Info, Upload, X } from 'lucide-react'
 import React, { useState, useRef, useCallback } from 'react'
 import Countdown from 'react-countdown'
 import { useDropzone } from 'react-dropzone'
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface BruksendreStep3_2Props {
@@ -52,7 +52,7 @@ const BruksendreStep3_2: React.FC<BruksendreStep3_2Props> = ({ applicationID }) 
         multiple: true,
     });
 
-    saveField('progress.currentStep', '3_2');
+    void saveField('progress.currentStep', '3_2');
 
 
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type PropertyDetails, type ApplicantDetails } from '~/utils/applicationForm';
 
 // Define FormDataType using the imported types
@@ -7,68 +7,79 @@ export interface FormDataType {
   property: PropertyDetails;
 }
 
+
 // Define the context type
 type FormContextType = {
   applicantFormData: FormDataType;
   updateApplicantFormData: (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => void;
 };
 
-// Create context with default values from applicationForm types
+// Define the default state structure explicitly
+const defaultFormData: FormDataType = {
+  applicant: { name: '', email: '', phone: '' },
+  property: {
+    address: '',
+    property_number: '',
+    usage_number: '',
+    lease_number: '',
+    section_number: '',
+    postal_code: '',
+    municipality: '', 
+  }
+};
+
+// Create context with default values
 const FormContext = createContext<FormContextType>({
-  applicantFormData: {
-    applicant: { name: '', email: '', phone: '' },
-    property: {
-      address: '',
-      property_number: '',
-      usage_number: '',
-      lease_number: '',
-      section_number: '',
-      postal_code: '',
-      municipality: '', 
-    }
-  },
+  applicantFormData: defaultFormData,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- Default context value requires a placeholder
   updateApplicantFormData: () => {},
 });
 
 // Create provider component
 export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  // Use localStorage to persist data between page refreshes
-  const [applicantFormData, setApplicantFormData] = useState(() => {
+  // Explicitly type the state with FormDataType
+  const [applicantFormData, setApplicantFormData] = useState<FormDataType>(() => {
     // Try to load from localStorage first
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('applicantFormData');
       if (savedData) {
         try {
-          return JSON.parse(savedData);
+          const parsedData = JSON.parse(savedData) as FormDataType;
+          if (parsedData?.applicant && parsedData?.property) {
+            return parsedData;
+          } else {
+             console.error('Saved form data structure is invalid.');
+          }
         } catch (e) {
           console.error('Failed to parse saved form data', e);
+          localStorage.removeItem('applicantFormData');
         }
       }
     }
-    
-    // Default empty state if no saved data
-    return {
-      applicant: { name: '', email: '', phone: '' },
-      property: {
-        address: '',
-        property_number: '',
-        usage_number: '',
-        lease_number: '',
-        section_number: '',
-        postal_code: '',
-        municipality: '',
-      }
-    };
+
+    // Default state if no valid saved data
+    return defaultFormData;
   });
 
-  const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    const newData = typeof data === 'function' ? data(applicantFormData) : data;
-    setApplicantFormData(newData);
-    
-    // Save to localStorage
+  // Effect to save to localStorage whenever applicantFormData changes
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('applicantFormData', JSON.stringify(newData));
+      try {
+        localStorage.setItem('applicantFormData', JSON.stringify(applicantFormData));
+      } catch (error) {
+        console.error('Failed to save form data to localStorage', error);
+      }
     }
+  }, [applicantFormData]);
+
+
+  const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
+    // Use the functional update form of setState to ensure correct previous state
+    setApplicantFormData(prevData => {
+      const newData = typeof data === 'function' ? data(prevData) : data;
+      // No need to manually save here, the useEffect handles it
+      return newData; 
+    });
   };
 
   return (
@@ -79,4 +90,4 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
 };
 
 // Create custom hook for using the context
-export const useFormContext = () => useContext(FormContext);
+export const useFormContext = (): FormContextType => useContext(FormContext);

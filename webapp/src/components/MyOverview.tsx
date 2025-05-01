@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { api } from "~/trpc/react";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
-import { ApplicationType } from "@prisma/client";
+import type { ApplicationType } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -59,7 +59,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
           SAK{app.applicationID} - {APPLICATION_TYPE_DISPLAY_NAMES[app.applicationType as ApplicationType]}
         </p>
         <p className="w-full md:w-[200px] truncate">
-          Type: {app.subTypeId || <span className="italic text-gray-400">Ingen underkategori</span>}
+          Type: {app.subTypeId ?? <span className="italic text-gray-400">Ingen underkategori</span>}
         </p>
         <p className='w-full md:w-[150px]'>
           Startet: {new Date(app.submissionDate).toLocaleDateString("no-NO")}
@@ -177,7 +177,7 @@ const MyOverview = () => {
   const deleteApplication = api.application.deleteApplication.useMutation({
     onSuccess: () => {
       toast.success("Søknaden ble slettet.");
-      refetch();
+      void refetch();
     },
     onError: (error) => {
       toast.error(`Error: ${error.message}`);

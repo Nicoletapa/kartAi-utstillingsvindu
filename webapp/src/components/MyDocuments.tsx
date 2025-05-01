@@ -4,7 +4,7 @@
 import React, { useState } from 'react'
 import { Download, Eye, Info, Repeat, Trash2, Loader2 } from 'lucide-react'
 import { api } from "~/trpc/react"
-import { ApplicationType } from "@prisma/client"
+import type { ApplicationType } from "@prisma/client"
 import { toast } from "react-hot-toast"
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes"
 import { DocumentPreviewModal } from "./DocumentPreviewModal"; 
@@ -57,8 +57,8 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
   const deleteDocument = api.document.deleteDocument.useMutation({
     onSuccess: (_, { documentId }) => {
       toast.success("Dokumentet ble slettet.")
-      refetchDocuments()
-      refetchApplications()
+      void refetchDocuments()
+      void refetchApplications()
     },
     onError: (err) => toast.error(`Feil ved sletting: ${err.message}`)
   })
@@ -67,12 +67,14 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
     onSuccess: () => {
       toast.success("Dokumentet ble oppdatert.")
       resetReplacement()
-      refetchDocuments()
+      // Explicitly ignore the promise returned by refetchDocuments
+      void refetchDocuments()
     },
     onError: (error) => {
       if (error.message.includes('File was replaced but could not validate')) {
         toast(error.message, { icon: '⚠️' })
-        refetchDocuments()
+        // Explicitly ignore the promise returned by refetchDocuments
+        void refetchDocuments()
       } else {
         toast.error(`Erstatning feilet: ${error.message}`)
       }
@@ -166,13 +168,13 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
         {applications && applications.length > 0 ? (
           <div className="space-y-4 px-6 py-6 rounded-lg md:mx-20 bg-white">
             {applications.map((application) => {
-              const applicationDocuments = allDocuments?.filter(doc => doc.applicationID === application.applicationID) || []
+              const applicationDocuments = allDocuments?.filter(doc => doc.applicationID === application.applicationID) ?? []
               
               return (
                 <div key={application.applicationID} className="border bg-white rounded-md p-4 shadow-sm hover:bg-gray-100">
                   <div className="flex gap-x-2">
                     <h2 className="text-lg font-semibold">
-                      SAK{application.applicationID} - {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType as ApplicationType]}
+                      SAK{application.applicationID} - {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType ]}
                     </h2>
                   </div>
                   <div className="border border-gray-300 my-2" />
@@ -220,7 +222,7 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
     setPreviewDocument({
       fileName: document.fileName,
       document: Array.from(document.document),
-      documentType: document.fileName.split('.').pop()?.toLowerCase() || ''
+      documentType: document.fileName.split('.').pop()?.toLowerCase() ?? ''
     });
   }}
 />
@@ -298,7 +300,7 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
         ) : (
           <div className="bg-gray-100 p-6 text-center rounded-md md:mx-20">
             <p className="text-gray-500">Du har ingen søknader enda.</p>
-            <p className="mt-4">Trykk på <span className="font-medium">"Lag ny Byggesøknad"</span> for å starte.</p>
+            <p className="mt-4">Trykk på <span className="font-medium">&quot;Lag ny Byggesøknad&quot;</span> for å starte.</p>
           </div>
         )}
       </div>

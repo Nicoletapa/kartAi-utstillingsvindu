@@ -76,39 +76,39 @@ const Dispensasjon = ({
     }, [appData]);
 
   const header = [
-    { value: applicationData.kommune || "Kristiansand"},
-    { value: applicationData.avdeling || "Byggesaksavdeling"},
-    { value: applicationData.adresse || "Rådhusgata 18"},
-    { value: applicationData.postInfo || "4604, Kristiansand"},
-    { value: applicationData.telefon || "38 07 50 00"},
-    { value: applicationData.epost || "post@kristiansand.kommune.no"},
+    { value: applicationData.kommune ?? "Kristiansand"},
+    { value: applicationData.avdeling ?? "Byggesaksavdeling"},
+    { value: applicationData.adresse ?? "Rådhusgata 18"},
+    { value: applicationData.postInfo ?? "4604, Kristiansand"},
+    { value: applicationData.telefon ?? "38 07 50 00"},
+    { value: applicationData.epost ?? "post@kristiansand.kommune.no"},
     { label: "Saksnummer:", value: application?.applicationID || "2024/001" },
     { label: "Dato:", value: new Date().toLocaleDateString('no-NO') },
   ]
 
   const infoFields = [
-    { label: "Søker:", value: users?.name || "Ikke spesifisert" },
-    { label: "Adresse:", value: users?.address || "Ikke spesifisert" },
-    { label: "Eiendom:", value: applicationData.eiendomAdresse || "Ikke spesifisert" },
-    { label: "Gnr./Bnr:", value: users?.gnr || "Ikke spesifisert" },
-    { label: "Tiltakets art:", value: applicationData.tiltakType || "Ikke spesifisert" },
+    { label: "Søker:", value: users?.name ?? "Ikke spesifisert" },
+    { label: "Adresse:", value: users?.address ?? "Ikke spesifisert" },
+    { label: "Eiendom:", value: applicationData.eiendomAdresse ?? "Ikke spesifisert" },
+    { label: "Gnr./Bnr:", value: users?.gnr ?? "Ikke spesifisert" },
+    { label: "Tiltakets art:", value: applicationData.tiltakType ?? "Ikke spesifisert" },
   ]
 
   const detaljerInfoFields = [
-    { label: "Størrelse:", value: `${applicationData.storrelse || "0"} m²` },
-    { label: "Materiale:", value: applicationData.materiale || "Ikke spesifisert" },
-    { label: "Høyde:", value: `${applicationData.hoyde || "0"} meter` },
-    { label: "Takvinkel:", value: `${applicationData.takvinkel || "0"} grader` },
-    { label: "Avstand til nabogrense:", value: `${applicationData.nabogrense || "0"} meter` }
+    { label: "Størrelse:", value: `${applicationData.storrelse ?? "0"} m²` },
+    { label: "Materiale:", value: applicationData.materiale ?? "Ikke spesifisert" },
+    { label: "Høyde:", value: `${applicationData.hoyde ?? "0"} meter` },
+    { label: "Takvinkel:", value: `${applicationData.takvinkel ?? "0"} grader` },
+    { label: "Avstand til nabogrense:", value: `${applicationData.nabogrense ?? "0"} meter` }
   ]
 
   const beskrivelse = [
-    { value: applicationData.beskrivelse || "Ikke spesifisert"}
+    { value: applicationData.beskrivelse ?? "Ikke spesifisert"}
   ]
 
   const footer = [
     { value: "[Underskrift]"},
-    { value: users?.name || "Ikke spesifisert"}
+    { value: users?.name ?? "Ikke spesifisert"}
  
  ]
 

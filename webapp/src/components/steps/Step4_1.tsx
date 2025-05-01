@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
 import Soknaden from '../Soknaden';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface Step4_1Props {
@@ -16,7 +16,7 @@ const Step4_1: React.FC<Step4_1Props> = ({ applicationID }) => {
       const handleOpenModal = () => setOpenModal(true);
       const handleCloseModal = () => setOpenModal(false);
       
-      saveField('progress.currentStep', '4_0');
+      void saveField('progress.currentStep', '4_0');
 
   
   return (

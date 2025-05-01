@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 
 
 interface Step5_0Props {
@@ -19,7 +19,7 @@ const Step5_0: React.FC<Step5_0Props> = ({ applicationID }) => {
     setStatus("Søknaden din er under behandling.");
   }
 
-  saveField('progress.currentStep', '5_0');
+  void saveField('progress.currentStep', '5_0');
 
 
   return (
@@ -51,7 +51,7 @@ const Step5_0: React.FC<Step5_0Props> = ({ applicationID }) => {
           <li>3 Ukers tidsfrist hvis søknaden ikke inneholder dispensasjon og nabomerknader.</li>
           <li>12 ukers tidsfrist hvis søknaden inneholder dispensasjon og/eller nabomerknader.</li>
         </ul>
-        <p className='font-medium text-sm'>Du vil motta "varsel om saksoppdatering" når det forekommer endring i byggesøknaden din.</p>
+        <p className='font-medium text-sm'>Du vil motta &quot;varsel om saksoppdatering&quot; når det forekommer endring i byggesøknaden din.</p>
             </div>
 
             <button className="absolute mt-4 px-4 py-2 right-3 bottom-3 bg-gray-400 text-white rounded hover:bg-gray-500 transition"

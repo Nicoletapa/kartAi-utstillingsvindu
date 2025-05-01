@@ -15,7 +15,7 @@ const BruksendreStep6_0: React.FC<BruksendreStep6_0Props> = ({ applicationID }) 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
 
-  saveField('progress.currentStep', '6_0');
+  void saveField('progress.currentStep', '6_0');
 
 
   return (
