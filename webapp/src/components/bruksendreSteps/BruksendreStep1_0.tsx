@@ -151,6 +151,8 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     </div>
   );
 
+  
+
   return (
     <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Hva vil du gjøre på eiendommen din?</h1>

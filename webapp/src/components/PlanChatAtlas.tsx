@@ -108,6 +108,44 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
   useEffect(() => {
     // More robust map access check
     const checkMap = async () => {
+        if (!mapRef?.current?.map || !mapRef.current.ready) return;
+        
+        try {
+            // Verify map container exists in DOM
+            const container = mapRef.current.map.getContainer();
+            if (!document.body.contains(container)) {
+                console.warn('Map container not in DOM');
+                return;
+            }
+
+            // Safe map access
+            await new Promise(resolve => {
+                const check = () => {
+                    try {
+                        const center = mapRef.current?.map?.getCenter();
+                        if (center && center.lat !== undefined) {
+                            console.log("Map center:", center);
+                            mapCenterLogged.current = true;
+                            resolve(true);
+                        }
+                    } catch (e) {
+                        console.warn('Map not ready yet, retrying...');
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        } catch (error) {
+            console.error("Safe map access error:", error);
+        }
+    };
+
+    checkMap();
+}, [mapRef, mapReady]);
+
+  useEffect(() => {
+    // More robust map access check
+    const checkMap = async () => {
         // Use optional chaining
         if (!mapRef?.current?.map || !mapRef.current.ready) return;
 
