@@ -8,8 +8,6 @@ import { GeistSans } from "geist/font/sans";
 import AtlasSidebar from "~/components/AtlasSidebar";
 import { SendAppNow } from "~/components/SendAppNow";
 import FrontPage from "~/components/FrontPage";
-import SmallChatbot from "~/components/SmallChatbot";
-
 
 const SmallChatbot = dynamic(() => import('~/components/SmallChatbot'), {
   ssr: false,
