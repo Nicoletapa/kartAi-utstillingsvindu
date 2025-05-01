@@ -10,10 +10,10 @@ interface SectionProps {
   className?: string;
 }
 
-const ActionLink: React.FC<{ 
-    href: string; 
+const ActionLink: React.FC<{
+    href: string;
     icon: React.ReactNode;
-    children: React.ReactNode 
+    children: React.ReactNode
   }> = ({ href, icon, children }) => (
     <Link href={href} className="flex items-center gap-2 hover:underline">
       {icon}
@@ -42,13 +42,13 @@ const KlarForASoke = () => {
     <Section title="Klar for å starte?">
         <p>Du kan velge hvordan du vil komme i gang:</p>
         <BulletList items={[
-          <ActionLink href="/atlas-app/sidebar/soknader" icon={<Plus size={20} />}>
+          <ActionLink key="start-ny" href="/atlas-app/sidebar/soknader" icon={<Plus size={20} />}>
             Start ny søknad
           </ActionLink>,
-          <ActionLink href="/atlas-app/sidebar/sjekkliste" icon={<Check size={20} />}>
+          <ActionLink key="ga-til-sjekkliste" href="/atlas-app/sidebar/sjekkliste" icon={<Check size={20} />}>
             Gå til sjekkliste
           </ActionLink>,
-          <ActionLink href="/atlas-app/sidebar/min-oversikt" icon={<Bot size={20} />}>
+          <ActionLink key="start-chatbot" href="/atlas-app/sidebar/min-oversikt" icon={<Bot size={20} />}>
             Start med chatbotten for veiledning
           </ActionLink>
         ]} />

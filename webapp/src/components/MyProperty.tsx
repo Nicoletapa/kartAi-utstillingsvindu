@@ -3,8 +3,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import * as L from "leaflet";
 import type { Map } from "leaflet";
-import Link from "next/link";
-import { Plus, Check, Bot } from "lucide-react";
 import TiltaksAidMap from "./TiltaksAidMap";
 import { PropertySearchBar } from "./map/PropertySearchBar";
 import { api } from "~/trpc/react";

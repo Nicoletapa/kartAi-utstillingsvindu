@@ -5,8 +5,8 @@ import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
-import { cn } from "~/lib/utils";
 import type { ApplicationType } from "@prisma/client";
+import SjekklisteSoknad from "./SjekklisteSoknad";
 
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
@@ -309,29 +309,6 @@ export default function ProgressBarStep({
                 currentSubstep={currentSubstep} />
             </div>
         );
-    };
-
-    const bruksendreVisibilityLogic = (step: number, substep: number, index: number) => {
-        if (step === 1) {
-            return substep === 0 ? index < 2 : true;
-        }
-        if (step === 4) {
-            return substep === 0 ? index === 0 : true;
-        }
-        return index <= substep;
-    };
-
-    const byggeEllerRiveVisibilityLogic = (step: number, substep: number, index: number) => {
-        if (step === 1) {
-            return substep === 0 ? index < 3 : true;
-        }
-        if (step === 4) {
-            return substep === 0 ? index === 0 : true;
-        }
-        if (step === 2) {
-            return index < substep + 2;
-        }
-        return index <= substep;
     };
 
     return (
