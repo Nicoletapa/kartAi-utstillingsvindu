@@ -36,11 +36,7 @@ const Section: React.FC<SectionProps> = ({ title, children, className = '' }) =>
     </ul>
   );
 
-
-
 const KlarForASoke = () => {
-
-
   return (
     <div>
     <Section title="Klar for å starte?">
