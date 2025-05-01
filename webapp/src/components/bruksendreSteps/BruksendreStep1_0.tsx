@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react'
 import { Info } from 'lucide-react'
-import { ApplicationService, UIComponents } from '~/utils/api-service';
+import { ApplicationService } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
 
 interface BruksendreStep1_0Props {
@@ -150,6 +150,8 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
       )}
     </div>
   );
+
+  
 
   return (
     <div className="justify-center flex flex-col w-full">

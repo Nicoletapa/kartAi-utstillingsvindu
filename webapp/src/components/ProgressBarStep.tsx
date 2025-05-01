@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, AlertCircle, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
-import { cn } from "~/lib/utils";
-
-// Import all step components
 
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
@@ -16,7 +13,6 @@ import {
 } from "./steps"
 
 
-// Import bruksendre step components
 import {
   BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
@@ -28,6 +24,7 @@ import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 import { ApplicationType } from "@prisma/client";
 import SmallChatbot from "./SmallChatbot";
+import SjekklisteSoknad from "./SjekklisteSoknad";
 
 interface StepComponentType {
     onValidityChange?: (isValid: boolean) => void;
@@ -127,24 +124,6 @@ export default function ProgressBarStep({
         { title: "Status", totalSubsteps: Object.keys(stepComponents[5] || {}).length },
         { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] || {}).length },
     ];
-
-    const sjekklisteBruksendre: Record<number, string[]> = {
-        1: ["Kryss av de nødvendige endringene du skal gjøre", "Skriv inn en detaljert beskrivelse av det du skal gjøre", "Besvar om tiltaket følger regulerings-/kommuneplanen", "Skriv inn avstanden til nabogrensen", "Besvar om bruksendringene kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre til en ny/endret avkjøring"],
-        2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
-        3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
-        4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
-        5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
-    };
-
-    const sjekklisteByggeEllerRive: Record<number, string[]> = {
-        1: ["Kryss av for hvilke(n) plan(er) gjelder for din eiendom", "Kryss av for om du trenger dispensasjon elle andre tillatelser", "Fyll inn alle nødvendige felt med detaljer til det du skal bygge", "Fyll inn feltene for utnyttningsgrad", "Besvar om prosjektet kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre itl en ny/endret avkjøring", "Besvar om tiltaket er i samsvar med gjeldene plan"],
-        2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
-        3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
-        4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
-        5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
-    }
-
-    const currentChecklist = isBruksendre ? sjekklisteBruksendre : sjekklisteByggeEllerRive;
 
     const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
@@ -297,11 +276,12 @@ export default function ProgressBarStep({
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
 
     const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
-    const currentTasks = currentStep <= 5 ? currentChecklist[currentStep] ?? [] : [];
-    const [completedTasks, setCompletedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
     const handleBackToMain= () => {
-        router.push(`/atlas-app`);
+        const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
+        if (confirmExit) {
+            router.push(`/atlas-app`);
+        }
     };
 
     const handleValidityChange = (isValid: boolean) => {
@@ -314,63 +294,12 @@ export default function ProgressBarStep({
         if (!isByggeorRive && !isBruksendre) return null;
         
         return (
-            <div className="rounded-lg shadow-md p-4 min-w-72 h-full max-w-80 bg-blue-100 border-2 border-blue-200">
-                <h2 className="text-lg font-semibold">
-                    Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
-                </h2>
-                <ul className="list-disc pl-3 space-y-2 mt-3">
-                    {currentTasks.map((task, index) => {
-                        const isVisible = isBruksendre
-                            ? bruksendreVisibilityLogic(currentStep, currentSubstep, index)
-                            : byggeEllerRiveVisibilityLogic(currentStep, currentSubstep, index);
-                        const isCompleted = completedTasks[index];
-
-                        return (
-                            isVisible && (
-                                <li key={index} className="flex items-start pt-1">
-                                    <div className={cn("flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full border-2 mr-3 z-10 duration-500 ease-in-out",
-                                        isCompleted 
-                                            ? "border-green-600 bg-green-600 text-white"
-                                            : "border-red-600"
-                                        )}
-                                    >
-                                        {isCompleted ? (
-                                            <Check className="h-4 w-4" />
-                                        ) : (
-                                            ""
-                                        )}
-                                    </div>
-                                    <span>{task}</span>
-                                </li>
-                            )
-                        );
-                    })}
-                </ul>
+            <div>
+                <SjekklisteSoknad 
+                currentStep={currentStep} 
+                currentSubstep={currentSubstep} />
             </div>
         );
-    };
-
-    const bruksendreVisibilityLogic = (step: number, substep: number, index: number) => {
-        if (step === 1) {
-            return substep === 0 ? index < 2 : true;
-        }
-        if (step === 4) {
-            return substep === 0 ? index === 0 : true;
-        }
-        return index <= substep;
-    };
-
-    const byggeEllerRiveVisibilityLogic = (step: number, substep: number, index: number) => {
-        if (step === 1) {
-            return substep === 0 ? index < 3 : true;
-        }
-        if (step === 4) {
-            return substep === 0 ? index === 0 : true;
-        }
-        if (step === 2) {
-            return index < substep + 2;
-        }
-        return index <= substep;
     };
 
     return (

@@ -3,8 +3,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import * as L from "leaflet";
 import { Map } from "leaflet";
-import Link from "next/link";
-import { Plus, Check, Bot } from "lucide-react";
 import TiltaksAidMap from "./TiltaksAidMap";
 import { PropertySearchBar } from "./map/PropertySearchBar";
 import { api } from "~/trpc/react";
@@ -12,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import { searchProperty as fetchProperty } from "~/utils/propertyUtils";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
+import KlarForASoke from "./KlarForASoke";
 
 interface FieldDisplay {
   label: string;
@@ -252,28 +251,7 @@ const MyProperty = () => {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-medium mb-2">Klar for å starte?</h2>
-        <p>Du kan velge hvordan du vil komme i gang:</p>
-        <ul className="list-disc ml-8 space-y-1 mb-4">
-          <li>
-            <Link href="/atlas-app/sidebar/soknader" className="flex items-center gap-2 hover:underline">
-              <Plus size={20} />
-              Start ny søknad
-            </Link>
-          </li>
-          <li>
-            <Link href="/atlas-app/sidebar/sjekkliste" className="flex items-center gap-2 hover:underline">
-              <Check size={20} />
-              Gå til sjekkliste
-            </Link>
-          </li>
-          <li>
-            <Link href="/atlas-app" className="flex items-center gap-2 hover:underline">
-              <Bot size={20} />
-              Start med chatbotten for veiledning
-            </Link>
-          </li>
-        </ul>
+        <KlarForASoke />
       </div>
     </div>
   );

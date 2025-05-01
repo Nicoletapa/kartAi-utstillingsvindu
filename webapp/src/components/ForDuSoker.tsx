@@ -1,8 +1,8 @@
 "use client"
 
-import { Bot, Check, Plus } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import React from 'react';
-import Link from 'next/link';
+import KlarForASoke from './KlarForASoke';
 
 interface SectionProps {
   title: string;
@@ -75,17 +75,6 @@ const ExternalLinkButton: React.FC<{
     </button>
   );
 };
-
-const ActionLink: React.FC<{ 
-  href: string; 
-  icon: React.ReactNode;
-  children: React.ReactNode 
-}> = ({ href, icon, children }) => (
-  <Link href={href} className="flex items-center gap-2 hover:underline">
-    {icon}
-    {children}
-  </Link>
-);
 
 const ForDuSoker = () => {
   return (
@@ -191,20 +180,7 @@ const ForDuSoker = () => {
         <p>Alt dette får du hjelp til gjennom sjekklisten når du starter søknaden.</p>
       </Section>
 
-      <Section title="Klar for å starte?">
-        <p>Du kan velge hvordan du vil komme i gang:</p>
-        <BulletList items={[
-          <ActionLink href="/atlas-app/sidebar/soknader" icon={<Plus size={20} />}>
-            Start ny søknad
-          </ActionLink>,
-          <ActionLink href="/atlas-app/sidebar/sjekkliste" icon={<Check size={20} />}>
-            Gå til sjekkliste
-          </ActionLink>,
-          <ActionLink href="/atlas-app" icon={<Bot size={20} />}>
-            Start med chatbotten for veiledning
-          </ActionLink>
-        ]} />
-      </Section>
+      <KlarForASoke />
     </div>
   );
 };
