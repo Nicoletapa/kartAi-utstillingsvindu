@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Info } from 'lucide-react';
 import Dispensasjon from '../Dispensasjon';
 import { ApplicationService } from '~/utils/api-service';
-import { api } from '~/trpc/react'; // Import api
+import { api } from '~/trpc/react';
 
 interface BruksendreStep2_2Props {
   applicationID: number;
@@ -12,40 +12,34 @@ const BruksendreStep2_2: React.FC<BruksendreStep2_2Props> = ({ applicationID }) 
     const [openModal, setOpenModal] = useState<boolean>(false);
     const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
 
-    // Fetch application data
     const { data: applicationData, isLoading: isLoadingApplication } = api.application.getApplication.useQuery(
         { applicationID },
         { enabled: !isNaN(applicationID) }
     );
 
-    // Fetch user data
     const { data: userData, isLoading: isLoadingUser } = api.user.getUserDetails.useQuery();
 
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
     void saveField('progress.currentStep', '2_0');
 
-    // Show loading state or handle errors if necessary
     if (isLoadingApplication || isLoadingUser) {
-        return <div>Loading...</div>; // Or a more sophisticated loading indicator
+        return <div>Loading...</div>;
     }
 
-    // Ensure data is available before rendering Dispensasjon
     if (!applicationData || !userData) {
-        return <div>Error loading data.</div>; // Or handle the error appropriately
+        return <div>Error loading data.</div>;
     }
 
-    // Prepare props for Dispensasjon
     const dispensasjonProps = {
         application: {
             applicationID: applicationData.applicationID,
-            // Add other necessary application fields if Dispensasjon expects them directly
         },
         user: {
-            email: userData.email ?? '', // Provide default values or handle null/undefined
+            email: userData.email ?? '', 
             address: userData.address ?? '',
             name: userData.name ?? '',
-            gnr: userData.gnr ?? 0, // Ensure type compatibility
+            gnr: userData.gnr ?? 0, 
             bnr: userData.bnr ?? 0,
         }
     };

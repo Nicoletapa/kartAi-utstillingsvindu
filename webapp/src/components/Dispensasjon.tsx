@@ -25,7 +25,6 @@ interface ApplicationData {
 
 const Dispensasjon = ({
       application,
-      user,
     }: {
       application: {
         applicationID: number;

@@ -1,8 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Info } from 'lucide-react';
-import { Button } from '../ui/button';
 import { ApplicationService } from '~/utils/api-service';
-
 
 interface BruksendreStep5_1Props {
   applicationID: number;
@@ -36,6 +34,9 @@ const BruksendreStep5_1: React.FC<BruksendreStep5_1Props> = ({ applicationID }) 
 
   void saveField('progress.currentStep', '5_1');
 
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   return (
     <div className="md:pl-20 mb-32">

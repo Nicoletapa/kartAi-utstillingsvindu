@@ -17,6 +17,9 @@ interface BruksendreStep2_0Props {
 
   void saveField('progress.currentStep', '2_0');
 
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   if (!applicationID) {
     return (

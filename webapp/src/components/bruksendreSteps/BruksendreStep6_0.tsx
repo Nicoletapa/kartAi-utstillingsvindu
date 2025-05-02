@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Info } from 'lucide-react';
 import { ApplicationService } from '~/utils/api-service';
 
@@ -35,6 +35,9 @@ const BruksendreStep6_0: React.FC<BruksendreStep6_0Props> = ({ applicationID }) 
 
   void saveField('progress.currentStep', '6_0');
 
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   return (
     <div className="mb-20 flex flex-col items-center justify-center mx-auto px-4 w-full max-w-4xl">
