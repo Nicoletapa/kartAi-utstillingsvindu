@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Info } from 'lucide-react';
 import { ApplicationService } from '~/utils/api-service';
 
@@ -6,6 +6,24 @@ import { ApplicationService } from '~/utils/api-service';
 interface BruksendreStep6_0Props {
   applicationID: number;
 }
+
+const ExternalLinkButton: React.FC<{
+  url: string;
+  children: React.ReactNode
+}> = ({ url, children }) => {
+  const handleClick = () => {
+    window.open(url, '_blank', 'noreferrer');
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className='my-3 py-2 px-4 border-2 border-kartAI-blue rounded-lg text-kartAI-blue hover:bg-kartAI-blue hover:text-white duration-300'
+    >
+      {children}
+    </button>
+  );
+};
 
 const BruksendreStep6_0: React.FC<BruksendreStep6_0Props> = ({ applicationID }) => {
   const [openModal, setOpenModal] = useState<boolean>(false);
@@ -17,6 +35,9 @@ const BruksendreStep6_0: React.FC<BruksendreStep6_0Props> = ({ applicationID }) 
 
   void saveField('progress.currentStep', '6_0');
 
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   return (
     <div className="mb-20 flex flex-col items-center justify-center mx-auto px-4 w-full max-w-4xl">
@@ -77,6 +98,15 @@ const BruksendreStep6_0: React.FC<BruksendreStep6_0Props> = ({ applicationID }) 
             <li className="text-left">Dokumentasjon på at alle krav er fulgt sendes til kommunen.</li>
             <li className="text-left">Kontroller at alt arbeid er utført i henhold til tillatelsen.</li>
           </ul>
+        </div>
+
+        <div className='space-x-4 flex flex-row items-start mt-4 w-full max-w-2xl'>
+          <ExternalLinkButton url='https://www.dibk.no/globalassets/blanketter_utfyllbare/alle-blanketter/5169-soknad-om-midlertidig-brukstillatelse-2020.pdf'>
+            Søknad om midlertidig brukstillatelse
+          </ExternalLinkButton>
+          <ExternalLinkButton url='https://www.dibk.no/globalassets/blanketter_utfyllbare/alle-blanketter/5167-soknad-om-ferdigattest-2020.pdf'>
+            Søknad om ferdigattest
+          </ExternalLinkButton>
         </div>
 
         <div className="border-4 border-blue-800 bg-blue-100 p-4 rounded-lg mt-4 w-full max-w-2xl">

@@ -11,8 +11,8 @@ import FrontPage from "~/components/FrontPage";
 
 const SmallChatbot = dynamic(() => import('~/components/SmallChatbot'), {
   ssr: false,
-  
 });
+
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>

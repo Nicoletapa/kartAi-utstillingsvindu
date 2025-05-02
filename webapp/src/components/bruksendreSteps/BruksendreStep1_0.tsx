@@ -87,7 +87,7 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
   };
 
   // Helper component for radio buttons
-  const RadioField = ({ name, label, value }: { name: string; label: string; value: string }) => (
+  const RadioField = ({ name, label }: { name: string; label: string; value: string }) => (
     <div className='flex justify-between items-center mr-4'>
       <span>{label}</span>
       <div className='flex gap-4'>

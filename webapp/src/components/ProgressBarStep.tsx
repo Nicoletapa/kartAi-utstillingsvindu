@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
@@ -11,39 +12,35 @@ import SjekklisteSoknad from "./SjekklisteSoknad";
 import {
     Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
     Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
-    Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
+    Step5_0, Step5_1, Step6_0,
 } from "./steps"
 
 import {
   BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
   BruksendreStep4_1, BruksendreStep5_0, BruksendreStep5_1,
-  BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
+  BruksendreStep6_0,
 } from "./bruksendreSteps";
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
-
-import SmallChatbot from "./SmallChatbot";
-
-
+const SmallChatbot = dynamic(() => import('~/components/SmallChatbot'), {
+  ssr: false,
+});
 
 interface CommonStepProps<TFormData = Record<string, unknown>> {
     applicationID?: number;
-    formData?: TFormData; // Use the generic type TFormData
-    setFormData?: React.Dispatch<React.SetStateAction<TFormData>>; // Use the generic type TFormData
+    formData?: TFormData;
+    setFormData?: React.Dispatch<React.SetStateAction<TFormData>>;
     onValidityChange?: (isValid: boolean) => void;
 }
 
-// Update StepComponentsType to use the common props interface
 type StepComponentsType = Record<
     number,
-    // Use React.ComponentType with the common props interface
     Record<number, React.ComponentType<CommonStepProps>>
 >;
 
 export interface ProgressBarStepProps {
-
     applicationID?: number;
     currentStep?: number;
 }
@@ -62,10 +59,8 @@ export default function ProgressBarStep({
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
-    // Consider using a more specific type for formData if possible
     const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-    // This assignment should now be type-compatible
     const stepComponents: StepComponentsType = (isByggeorRive ? {
         1: {
             0: Step1_0,
@@ -91,8 +86,6 @@ export default function ProgressBarStep({
         },
         6: {
             0: Step6_0,
-            1: Step6_1,
-            2: Step6_2,
         },
     } : {
         1: {
@@ -119,8 +112,6 @@ export default function ProgressBarStep({
         },
         6: {
             0: BruksendreStep6_0,
-            1: BruksendreStep6_1,
-            2: BruksendreStep6_2,
         }
     })as unknown as StepComponentsType;
 
@@ -246,6 +237,10 @@ export default function ProgressBarStep({
         } else if (!lastStepCompleted) {
             setLastStepCompleted(true);
         }
+
+        if (currentStep === 6 && currentSubstep === 0) {
+            router.push(`/atlas-app`)
+        }
     };
 
     const totalSubsteps = steps.reduce((acc, step) => acc + step.totalSubsteps, 0);
@@ -280,6 +275,7 @@ export default function ProgressBarStep({
     console.log("ProgressBarStep rendering with applicationID:", applicationID);
 
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 1;
+    const isAtLastStep = currentStep === 6 && currentSubstep === 0; 
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
 
     const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
@@ -320,8 +316,7 @@ export default function ProgressBarStep({
             </div>
             
             <div className="container px-4 flex mx-20 flex-col">
-            <div className="mb-8 top-0 bg-background pt-4 pb-8 z-10">
-                
+            <div className="mb-8 top-0 ml-20 bg-background pt-4 pb-8 z-10">
                 <ProgressBar steps={stepsWithStatus} />
             </div>
 
@@ -361,12 +356,17 @@ export default function ProgressBarStep({
                         onClick={handleNext}
                         className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
                     >
-                        {submitApplication.isPending ? (
+                        {submitApplication.isPending && (
                             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
-                        ) : null}
-                        {isAtSubmissionStep ? "Send inn søknaden" : "Neste"}
+                        )}
+                        {isAtLastStep
+                            ? "Til hovedsiden"
+                            : isAtSubmissionStep && !isAtLastStep
+                            ? "Send inn søknaden"
+                            : "Neste"}
                         <ArrowRight size={18} className="ml-2" />
                     </Button>
+
                 </div>
             </div>
         </div>

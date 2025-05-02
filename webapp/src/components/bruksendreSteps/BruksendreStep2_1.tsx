@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Info } from 'lucide-react'
 import { ApplicationService } from '~/utils/api-service';
 
@@ -15,6 +15,9 @@ const BruksendreStep2_1: React.FC<BruksendreStep2_1Props> = ({ applicationID }) 
     const handleCloseModal = () => setOpenModal(false);
     void saveField('progress.currentStep', '2_1');
 
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   return (
     <div className='relative lg:pl-32 max-w-3xl'>

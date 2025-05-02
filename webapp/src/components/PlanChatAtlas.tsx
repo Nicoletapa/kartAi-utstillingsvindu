@@ -119,55 +119,48 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             }
 
             // Safe map access
-            await new Promise(resolve => {
-                const check = () => {
-                    try {
-                        const center = mapRef.current?.map?.getCenter();
-                        if (center && center.lat !== undefined) {
-                            console.log("Map center:", center);
-                            mapCenterLogged.current = true;
-                            resolve(true);
-                        }
-                    } catch (e) {
-                        console.warn('Map not ready yet, retrying...');
-                        setTimeout(check, 100);
-                    }
-                };
-                check();
+            await new Promise<void>((resolve) => {
+              const check = () => {
+                const center = mapRef.current?.map?.getCenter();
+                if (center?.lat !== undefined) {
+                  console.log("Map center:", center);
+                  mapCenterLogged.current = true;
+                  resolve();
+                } else {
+                  console.warn('Map not ready yet, retrying...');
+                  setTimeout(check, 100);
+                }
+              };
+              check();
             });
-        } catch (error) {
+          } catch (error) {
             console.error("Safe map access error:", error);
-        }
-    };
-
-    checkMap();
-}, [mapRef, mapReady]);
+          }
+        };
+      
+        void checkMap(); 
+      }, [mapRef, mapReady]);
 
   useEffect(() => {
-    // More robust map access check
     const checkMap = async () => {
-        // Use optional chaining
         if (!mapRef?.current?.map || !mapRef.current.ready) return;
 
         try {
-            // Verify map container exists in DOM
             const container = mapRef.current.map.getContainer();
             if (!document.body.contains(container)) {
                 console.warn('Map container not in DOM');
                 return;
             }
 
-            // Safe map access
-            await new Promise<void>(resolve => { // Specify void for Promise type
+            await new Promise<void>(resolve => {
                 const check = () => {
                     try {
-                        const center = mapRef.current?.map?.getCenter?.(); // Use optional chaining
-                        if (center?.lat !== undefined) { // Use optional chaining
+                        const center = mapRef.current?.map?.getCenter?.();
+                        if (center?.lat !== undefined) {
                             console.log("Map center:", center);
                             mapCenterLogged.current = true;
-                            resolve(); // Resolve the promise
+                            resolve();
                         } else {
-                           // Optionally add a retry limit or different handling if map never becomes ready
                            console.warn('Map center not available yet, retrying...');
                            setTimeout(check, 100);
                         }
@@ -183,7 +176,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         }
     };
 
-    // Explicitly ignore the promise returned by checkMap
     void checkMap();
 }, [mapRef, mapReady]);
 
@@ -206,7 +198,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     return Object.values(patterns).some(pattern => pattern.test(text));
   };
 
-  // Function to check if coordinates should be included
   const shouldIncludeCoordinates = (query: string): boolean => {
     // Include coordinates if:
     // 1. Query mentions property references
@@ -217,13 +208,11 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
            !!spatialAnalysis?.nearestPropertyId;
   };
 
-  // Update the queryPlanprat function
   async function queryPlanprat(queryInput: string) {
     try {
       let enhancedQuery = queryInput;
       const includeCoordinates = shouldIncludeCoordinates(queryInput);
 
-      // Add drawn shape context if available
       if (lastDrawnShape) {
         const shapeSummary = {
           type: lastDrawnShape.geometry.type,
@@ -236,7 +225,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             'Shape is within property boundaries' :
             `Shape is outside property boundaries by ${spatialAnalysis.distanceToProperty?.toFixed(2)} meters`}`;
 
-          // Add property ID if available
           if (spatialAnalysis.nearestPropertyId) {
             spatialInfo += ` Property ID: ${spatialAnalysis.nearestPropertyId}`;
           }
@@ -245,8 +233,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         enhancedQuery = `${queryInput} [Context: User has drawn on the map: ${JSON.stringify(shapeSummary)}. ${spatialInfo}]`;
       }
 
-      // Add map view context ONLY if property-related
-      // Use optional chaining for safer access
       if (mapReady && includeCoordinates) {
         const center = mapRef?.current?.map?.getCenter?.();
         const zoom = mapRef?.current?.map?.getZoom?.();
@@ -263,7 +249,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     } catch (error) {
       console.error(error);
       setError("Error: Failed to retrieve response.");
-      // Return undefined or throw error to indicate failure
       return undefined;
     }
   }
@@ -304,7 +289,6 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     setText(e.target.value);
   };
 
-  // Make handleSubmit async to handle the promise from queryPlanprat
   const handleSubmit = async (): Promise<void> => {
     if (text.trim()) {
       setChatItems((prevChatItems) => [

@@ -27,6 +27,8 @@ const Step: React.FC<StepProps> = ({
   stepNumber,
   isFirstStep,
 }) => {
+  const hasSingleSubstep = totalSubsteps === 1;
+  
   return (
     <div className="flex flex-col items-center flex-1 min-w-0">
       <div className="flex items-center w-full relative">
@@ -56,7 +58,8 @@ const Step: React.FC<StepProps> = ({
                   (isFirstStep && index === 0) || 
                   (index <= substepsCompleted && (isCompleted || isActive)) 
                     ? "bg-kartAI-blue"
-                    : "bg-muted-foreground/30"
+                    : "bg-muted-foreground/30",
+                  hasSingleSubstep ? "max-w-[44px]" : ""
                 )}
               />
               <div
@@ -76,7 +79,8 @@ const Step: React.FC<StepProps> = ({
                 "flex-1 h-[2px]",
                 (isCompleted || substepsCompleted === totalSubsteps)
                   ? "bg-kartAI-blue"
-                  : "bg-muted-foreground/30"
+                  : "bg-muted-foreground/30",
+                hasSingleSubstep ? "max-w-[20px]" : ""
               )}
             />
           )}

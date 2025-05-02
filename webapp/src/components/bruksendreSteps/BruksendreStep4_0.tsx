@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Info } from 'lucide-react';
 import AndreVedlegg from '../AndreVedlegg';
 import { ApplicationService } from '~/utils/api-service';
@@ -11,12 +11,15 @@ interface BruksendreStep4_0Props {
 const BruksendreStep4_0: React.FC<BruksendreStep4_0Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
     const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
-    
-                
-        const handleOpenModal = () => setOpenModal(true);
-        const handleCloseModal = () => setOpenModal(false);
+          
+    const handleOpenModal = () => setOpenModal(true);
+    const handleCloseModal = () => setOpenModal(false);
 
-        void saveField('progress.currentStep', '4_0');
+    void saveField('progress.currentStep', '4_0');
+
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   return (
     <div>

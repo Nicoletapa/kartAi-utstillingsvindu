@@ -1,5 +1,5 @@
 import { Info, Upload, X } from 'lucide-react'
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import Countdown from 'react-countdown'
 import { useDropzone } from 'react-dropzone'
 import { ApplicationService } from '~/utils/api-service';
@@ -54,7 +54,9 @@ const BruksendreStep3_2: React.FC<BruksendreStep3_2Props> = ({ applicationID }) 
 
     void saveField('progress.currentStep', '3_2');
 
-
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
     return (
         <div className="justify-center flex lg:pl-52 md:pl-20">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Info } from 'lucide-react';
 import Nabovarsel from '../Nabovarsel';
 import { ApplicationService } from '~/utils/api-service';
@@ -16,6 +16,9 @@ const BruksendreStep3_1: React.FC<BruksendreStep3_1Props> = ({ applicationID }) 
     const handleCloseModal = () => setOpenModal(false);
     void saveField('progress.currentStep', '3_1');
 
+    useEffect(() => {
+      console.log('Changes Saved:', isSaving);
+    }, [isSaving]);
 
   return (
     <div className="justify-center flex md:pl-10">

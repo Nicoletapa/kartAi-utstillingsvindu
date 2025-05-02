@@ -4,8 +4,8 @@ import { Tooltip, RadioGroup } from '~/components/ui/ui-components';
 import TiltaksAidMap from '../TiltaksAidMap';
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
-import { Loader2 } from 'lucide-react'
-import { Map } from "leaflet";
+import { Loader2, SprayCanIcon } from 'lucide-react';
+import type { Map } from "leaflet";
 
 type FormDataType = {
   neighboringBorder: string;
@@ -122,7 +122,13 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
 
   useEffect(() => {
     checkFormValidity(formData);
-  }, []);
+  }, [formData, checkFormValidity]);
+
+  useEffect(() => {
+    console.log('Map ready:', mapReady);
+    console.log('Last shape:', lastDrawnShape); 
+    console.log('Spatial analysis:', spatialAnalysis);
+  }, [mapReady, lastDrawnShape, spatialAnalysis]);
 
   return (
     <div className="justify-center flex flex-col w-full">
