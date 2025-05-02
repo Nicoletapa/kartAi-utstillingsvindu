@@ -268,23 +268,39 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({applicationID}) => {
   }, [deleteDocumentMutation, applicationID]);
 
   useEffect(() => {
-    if (fullSizeImage?.startsWith('data:image/')) {
-     void (async()=> {
-      try {
-        const res = await fetch(fullSizeImage);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        setImageSrc(url);
-      } catch( error) {
-        console.error("Error fetching image:", error);
-        setImageSrc(fullSizeImage); 
-      }     
+    let objectUrl: string | null = null; // Keep track of the created URL
 
-      })();
-     } else {
+    if (fullSizeImage?.startsWith('data:image/')) {
+      fetch(fullSizeImage)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch image: ${res.statusText}`);
+          }
+          return res.blob();
+        })
+        .then(blob => {
+          objectUrl = URL.createObjectURL(blob); // Create and store the URL
+          setImageSrc(objectUrl);
+        })
+        .catch(error => {
+          console.error("Error creating object URL from data URI:", error);
+          // Optionally set an error state or fallback image
+          setImageSrc(null); // Clear src on error
+        });
+    } else {
+      // If it's not a data URI, assume it's a direct URL or null
       setImageSrc(fullSizeImage);
-     }
-}, [fullSizeImage]);
+    }
+
+    // Cleanup function to revoke the object URL when the component unmounts
+    // or when fullSizeImage changes before the fetch completes.
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        console.log("Revoked object URL:", objectUrl);
+      }
+    };
+  }, [fullSizeImage]);
 
   return (
     <div className="flex min-h-screen p-6 flex-col md:flex-row" data-cy="main-container">

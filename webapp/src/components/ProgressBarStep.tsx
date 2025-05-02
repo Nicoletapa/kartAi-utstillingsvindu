@@ -5,125 +5,125 @@ import { ArrowLeft, ArrowRight, AlertCircle, Check } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
-import { cn } from "~/lib/utils";
+import type { ApplicationType } from "@prisma/client";
+import SjekklisteSoknad from "./SjekklisteSoknad";
 
-// Import all step components
-import Step1_1 from "./steps/Step1_1";
-import Step2_0 from "./steps/Step2_0";
-import Step2_1 from "./steps/Step2_1";
-import Step2_2 from "./steps/Step2_2";
-import Step3_0 from "./steps/Step3_0";
-import Step3_1 from "./steps/Step3_1";
-import Step3_2 from "./steps/Step3_2";
-import Step4_0 from "./steps/Step4_0";
-import Step4_1 from "./steps/Step4_1";
-import Step5_0 from "./steps/Step5_0";
-import Step6_0 from "./steps/Step6_0";
-import Step6_1 from "./steps/Step6_1";
-import Step6_2 from "./steps/Step6_2";
-
-// Import bruksendre step components
 import {
-  BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
+    Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
+    Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
+    Step5_0, Step5_1, Step6_0, Step6_1, Step6_2,
+} from "./steps"
+
+import {
+  BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
   BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
-  BruksendreStep4_1, BruksendreStep5_0,
+  BruksendreStep4_1, BruksendreStep5_0, BruksendreStep5_1,
+  BruksendreStep6_0, BruksendreStep6_1, BruksendreStep6_2,
 } from "./bruksendreSteps";
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 
-// Import necessary types
-import type { SmaProsjekterFormData } from '~/types/formTypes';
-import type { BruksendringFormData } from '~/types/formTypes'; // If you have this type
+import SmallChatbot from "./SmallChatbot";
 
-// Create a union type for all possible form data types
-type ApplicationFormData = SmaProsjekterFormData | BruksendringFormData | Record<string, string | number | boolean>;
 
-// Make the StepComponentProps interface use generics
-export interface StepComponentProps<T extends ApplicationFormData = ApplicationFormData> {
-    onValidityChange?: (isValid: boolean) => void;
+
+interface CommonStepProps<TFormData = Record<string, unknown>> {
     applicationID?: number;
-    formData?: T;
-    setFormData?: React.Dispatch<React.SetStateAction<T>>;
+    formData?: TFormData; // Use the generic type TFormData
+    setFormData?: React.Dispatch<React.SetStateAction<TFormData>>; // Use the generic type TFormData
+    onValidityChange?: (isValid: boolean) => void;
 }
 
-// Update the StepComponentsType to use the generic version
-type StepComponentsType = Record<number, Record<number, React.ComponentType<StepComponentProps<ApplicationFormData>>>>;
+// Update StepComponentsType to use the common props interface
+type StepComponentsType = Record<
+    number,
+    // Use React.ComponentType with the common props interface
+    Record<number, React.ComponentType<CommonStepProps>>
+>;
 
 export interface ProgressBarStepProps {
+
     applicationID?: number;
     currentStep?: number;
 }
 
-export default function ProgressBarStep({ 
+export default function ProgressBarStep({
     applicationID,
-    currentStep: externalCurrentStep 
+    currentStep: externalCurrentStep
 }: ProgressBarStepProps) {
     const router = useRouter();
     const pathname = usePathname();
-    
-    // Application type detection
+
     const isByggeorRive = pathname.includes('/bygge-eller-rive');
     const isBruksendre = pathname.includes('/bruksendring');
-    
-    // If an external step is provided, use it instead of determining from pathname
+
     const [currentOverallStep, setCurrentOverallStep] = useState(externalCurrentStep ?? 0);
     const [lastStepCompleted, setLastStepCompleted] = useState(false);
     const [isStep1_0Valid, setIsStep1_0Valid] = useState(false);
-    // Removed unused appType state
-    const [formData, setFormData] = useState<ApplicationFormData>({});
+    const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
+    // Consider using a more specific type for formData if possible
+    const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-    // Define step components based on application type
-    const stepComponents: StepComponentsType = isByggeorRive ? {
+    // This assignment should now be type-compatible
+    const stepComponents: StepComponentsType = (isByggeorRive ? {
         1: {
-            0: Step1_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: Step1_0,
+            1: Step1_1,
         },
         2: {
-            0: Step2_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: Step2_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            2: Step2_2 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: Step2_0,
+            1: Step2_1,
+            2: Step2_2,
         },
         3: {
-            0: Step3_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: Step3_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            2: Step3_2 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: Step3_0,
+            1: Step3_1,
+            2: Step3_2,
         },
         4: {
-            0: Step4_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: Step4_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: Step4_0,
+            1: Step4_1,
         },
         5: {
-            0: Step5_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: Step5_0,
+            1: Step5_1,
         },
         6: {
-            0: Step6_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: Step6_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            2: Step6_2 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: Step6_0,
+            1: Step6_1,
+            2: Step6_2,
         },
     } : {
         1: {
-            0: BruksendreStep1_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: BruksendreStep1_0,
+            1: BruksendreStep1_1,
         },
         2: {
-            0: BruksendreStep2_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: BruksendreStep2_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            2: BruksendreStep2_2 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: BruksendreStep2_0,
+            1: BruksendreStep2_1,
+            2: BruksendreStep2_2,
         },
         3: {
-            0: BruksendreStep3_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: BruksendreStep3_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            2: BruksendreStep3_2 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: BruksendreStep3_0,
+            1: BruksendreStep3_1,
+            2: BruksendreStep3_2,
         },
         4: {
-            0: BruksendreStep4_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
-            1: BruksendreStep4_1 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: BruksendreStep4_0,
+            1: BruksendreStep4_1,
         },
         5: {
-            0: BruksendreStep5_0 as React.ComponentType<StepComponentProps<ApplicationFormData>>,
+            0: BruksendreStep5_0,
+            1: BruksendreStep5_1,
         },
-    };
+        6: {
+            0: BruksendreStep6_0,
+            1: BruksendreStep6_1,
+            2: BruksendreStep6_2,
+        }
+    })as unknown as StepComponentsType;
 
-    // Define steps based on the step components
     const steps = [
         { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] ?? {}).length },
         { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] ?? {}).length },
@@ -133,16 +133,7 @@ export default function ProgressBarStep({
         { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] ?? {}).length },
     ];
 
-    // Define checklist tasks
-    const sjekkliste: Record<number, string[]> = {
-        1: ["Skriv inn hva tiltaket er", "Fyll inn de nødvendige bygningsdetaljene", "Besvar om tiltaket følger regulerings-/kommuneplanen"],
-        2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
-        3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
-        4: ["Sørg for at søknaden er korrekt. Du kan sende byggesøknaden dersom alt er til dine behov"],
-        5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
-    };
-
-    const { data: application, refetch: refetchApplication } = api.application.getApplication.useQuery(
+    const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
         { enabled: !!applicationID }
     );
@@ -150,7 +141,6 @@ export default function ProgressBarStep({
     const submitApplication = api.application.submitApplication.useMutation({
         onSuccess: () => {
             toast.success("Application submitted successfully");
-            router.push("/atlas-app");
         },
         onError: (error) => {
             toast.error(`Error submitting application: ${error.message}`);
@@ -169,12 +159,13 @@ export default function ProgressBarStep({
             router.push(`/404/${applicationID}`);
             return;
         }
-    }, [applicationID, isByggeorRive, isBruksendre, router]); 
+    }, [applicationID, isByggeorRive, isBruksendre, router]);
 
     useEffect(() => {
         if (!application) return;
 
-        // Removed unused appType state setting
+        setAppType(application.applicationType);
+
         const fieldsMap: Record<string, string> = {};
 
         if (Array.isArray(application.application_fields)) {
@@ -188,10 +179,9 @@ export default function ProgressBarStep({
         const isStep1Valid =
             fieldsMap.description?.trim() !== '' &&
             fieldsMap.area_purpose?.trim() !== '' &&
-            fieldsMap["distances.neighbor_boundary"]?.trim() !== '' &&
-            fieldsMap["distances.mønehøyde"]?.trim() !== '' &&
-            fieldsMap["distances.gesimshøyde"]?.trim() !== '';
-
+            fieldsMap['distances.neighbor_boundary']?.trim() !== '' &&
+            fieldsMap['distances.mønehøyde']?.trim() !== '' &&
+            fieldsMap['distances.gesimshøyde']?.trim() !== '';
         setIsStep1_0Valid(isStep1Valid);
     }, [application]);
 
@@ -224,7 +214,7 @@ export default function ProgressBarStep({
         if (currentStep === 0 && currentSubstep === 0 && applicationID) {
             const previousStep = localStorage.getItem('previousStep');
             if (previousStep && previousStep !== '0-0') {
-                void refetchApplication(); // Added void operator to handle promise
+                void refetchApplication();
             }
             localStorage.setItem('previousStep', `${currentStep}-${currentSubstep}`);
         }
@@ -236,12 +226,15 @@ export default function ProgressBarStep({
             return;
         }
 
-        if (currentStep === 4 && currentSubstep === 0) {
+        if (currentStep === 4 && currentSubstep === 1) {
             const confirmSend = window.confirm("Er du sikker på at du vil sende inn søknaden?");
             if (!confirmSend) return;
 
             try {
                 await submitApplication.mutateAsync({ applicationID });
+                if (currentOverallStep < totalSubsteps - 1) {
+                    setCurrentOverallStep(currentOverallStep + 1);
+                }
             } catch (error) {
                 console.error("Error submitting application:", error);
             }
@@ -290,62 +283,45 @@ export default function ProgressBarStep({
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
 
     const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
-    const currentTasks = currentStep <= 5 ? sjekkliste[currentStep] ?? [] : [];
-    // Keep completedTasks state but we're not updating it in this component
-    const [completedTasks] = useState<boolean[]>(Array(currentTasks.length).fill(false));
 
+    const handleBackToMain= () => {
+        const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
+        if (confirmExit) {
+            router.push(`/atlas-app`);
+        }
+    };
     const handleValidityChange = (isValid: boolean) => {
         if (currentStep === 1 && currentSubstep === 0) {
             setIsStep1_0Valid(isValid);
         }
     };
 
-    // Render checklist component
+    // Then update the checklist items to be interactive
+    // For example in your renderChecklist function:
+    // <li key={index} className="flex items-start pt-1" onClick={() => toggleTaskCompletion(index)}>
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
         
         return (
-            <div className="rounded-lg shadow-md p-4 min-w-72 h-full max-w-80 bg-blue-100 border-2 border-blue-200">
-                <h2 className="text-lg font-semibold">
-                    Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
-                </h2>
-                <ul className="list-disc pl-3 space-y-2 mt-3">
-                    {currentTasks.map((task, index) => {
-                        const isVisible = currentStep === 1 
-                            ? true 
-                            : currentStep === 2 
-                                ? index < currentSubstep + 2 
-                                : index <= currentSubstep;
-                        const isCompleted = completedTasks[index];
-
-                        return (
-                            isVisible && (
-                                <li key={index} className="flex items-start pt-1">
-                                    <div className={cn("flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded-full border-2 mr-3 z-10 duration-500 ease-in-out",
-                                        isCompleted 
-                                            ? "border-green-600 bg-green-600 text-white"
-                                            : "border-red-600"
-                                        )}
-                                    >
-                                        {isCompleted ? (
-                                            <Check className="h-4 w-4" />
-                                        ) : (
-                                            ""
-                                        )}
-                                    </div>
-                                    <span>{task}</span>
-                                </li>
-                            )
-                        );
-                    })}
-                </ul>
+            <div>
+                <SjekklisteSoknad 
+                currentStep={currentStep} 
+                currentSubstep={currentSubstep} />
             </div>
         );
     };
 
     return (
-        <div className="container mx-auto py-6 px-4 flex flex-col">
+        <div>
+            <div className="mx-20 mt-6">
+               <Button className="bg-kartAI-blue hover:bg-kartAI-lightblue w-44" onClick={handleBackToMain}>
+                    Tilbake til hovedsiden
+               </Button>
+            </div>
+            
+            <div className="container px-4 flex mx-20 flex-col">
             <div className="mb-8 top-0 bg-background pt-4 pb-8 z-10">
+                
                 <ProgressBar steps={stepsWithStatus} />
             </div>
 
@@ -353,7 +329,7 @@ export default function ProgressBarStep({
                 {currentStep <= 5 && renderChecklist()}
                 {CurrentStepComponent && (
                     <CurrentStepComponent
-                        applicationID={applicationID} // Make sure this is being passed
+                        applicationID={applicationID}
                         formData={formData}
                         setFormData={setFormData}
                         onValidityChange={handleValidityChange}
@@ -361,7 +337,7 @@ export default function ProgressBarStep({
                 )}
             </div>
 
-            <div className="flex justify-between mt-8 gap-4">
+            <div className="flex justify-between mx-20 gap-4 mt-8 mb-8">
                 <Button
                     onClick={handlePrev}
                     className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
@@ -394,5 +370,8 @@ export default function ProgressBarStep({
                 </div>
             </div>
         </div>
+        <SmallChatbot />
+        </div>
+        
     );
 }

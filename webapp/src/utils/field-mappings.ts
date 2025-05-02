@@ -1,4 +1,4 @@
-import { SmaProsjekterFormData, BruksendringFormData } from '../types/formTypes';
+import type { SmaProsjekterFormData, BruksendringFormData } from '../types/formTypes';
 
 /**
  * Centralized field name mappings for the application

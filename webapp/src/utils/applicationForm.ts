@@ -1,4 +1,5 @@
-import { z } from "zod";
+import { z  } from "zod"; // Import ZodTypeAny
+import type { ZodTypeAny } from "zod";
 
 // =============== CONSTANTS ===============
 
@@ -119,7 +120,7 @@ const baseSchema = z.object({
 });
 
 // Helper function to create consistent form schemas
-function createFormSchema(specificFields: z.ZodRawShape) {
+function createFormSchema(specificFields: Record<string, ZodTypeAny>) { // Add type annotation
   return z.object({
     title: z.string().optional(),
     fields: baseSchema.extend(specificFields).optional()

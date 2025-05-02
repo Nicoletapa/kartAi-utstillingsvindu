@@ -1,15 +1,14 @@
 import React, { useEffect } from 'react';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
-import type { SmaProsjekterFormData } from '~/types/formTypes';
-import { 
+import {  
   smaProsjekterDefaultValues, 
   ROAD_TYPES, 
   CALCULATION_METHODS,
   yesNoOptions 
 } from '~/types/formTypes';
 import { RadioGroup, Tooltip } from '../ui/ui-components';
-import { StepComponentProps } from '../ProgressBarStep';
+import type {SmaProsjekterFormData} from '~/types/formTypes';
 
 // Building measurement inputs
 const buildingInputs = [
@@ -18,7 +17,7 @@ const buildingInputs = [
   { name: 'gesimshøyde', label: 'Gesimshøyde:', placeholder: 'F.eks. 3.5', unit: 'meter' },
   { name: 'distance_va', label: 'Avstand til VA-ledninger:', placeholder: 'F.eks. 4', unit: 'meter' },
   { name: 'distance_high_voltage_lines', label: 'Avstand til strømkabler:', placeholder: 'F.eks. 3', unit: 'meter' },
-  { name: 'road_center', label: 'Avstand til vei:', placeholder: 'F.eks. 5', unit: 'meter' },
+  { name: 'distance_road', label: 'Avstand til vei:', placeholder: 'F.eks. 5', unit: 'meter' },
 ];
 
 // Distance measurement inputs
@@ -48,14 +47,8 @@ const calculationMethodOptions = [
   { label: 'U-grad', value: CALCULATION_METHODS.U_GRAD },
 ];
 
-// Define a type for the environmental conflict item
-type EnvironmentalConflictItem = {
-  name: string;
-  label: string;
-};
-
-// Define the array with proper typing
-const environmentalConflictGroups: EnvironmentalConflictItem[][] = [
+// Environmental conflicts
+const environmentalConflictGroups = [
   [
     { name: 'distance_train_tracks', label: 'Er det mindre enn 30 meter til nærmeste trikke-eller togspor?' },
     { name: 'distance_water_sewer_pipes', label: 'Bygger/river du i nærheten av en vann- og avløpsledning?' },
@@ -69,8 +62,8 @@ const environmentalConflictGroups: EnvironmentalConflictItem[][] = [
   ]
 ];
 
-interface Step1_1Props extends StepComponentProps<SmaProsjekterFormData> {
-  applicationID: number; // Make this required
+interface Step1_1Props {
+  applicationID: number;
   formData: SmaProsjekterFormData;
   setFormData: React.Dispatch<React.SetStateAction<SmaProsjekterFormData>>;
   onValidityChange: (isValid: boolean) => void;
@@ -93,6 +86,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
       (data.size?.trim() ?? '') !== '' &&
       (data.mønehøyde?.trim() ?? '') !== '' &&
       (data.gesimshøyde?.trim() ?? '') !== '' &&
+      (data.distance_road?.trim() ?? '') !== '' &&
       
       // Distance measurements
       (data.road_center?.trim() ?? '') !== '' &&
@@ -144,14 +138,21 @@ const Step1_1: React.FC<Step1_1Props> = ({
 
     console.log(`Saving field: ${name} with value:`, value);
 
+    // Get the mapped field path for saving to the backend
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
-    if (Array.isArray(value)) {
-      void saveField(fieldPath, JSON.stringify(value));
-    } else {
-      void saveField(fieldPath, value.toString());
+    // Save using the resolved field path
+
+    try {
+      if (Array.isArray(value)) {
+        void saveField(fieldPath, JSON.stringify(value)); // Added void to handle promise
+      } else {
+        void saveField(fieldPath, value.toString()); // Added void to handle promise
+      }
+    } catch (error) {
+      console.error(`Error saving field ${fieldPath}:`, error);
     }
-  };
+  }; // This brace now correctly closes handleFieldChange
 
   const tooltipContents = {
     buildingDetails: 'Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.',
@@ -172,18 +173,22 @@ const Step1_1: React.FC<Step1_1Props> = ({
 
   // Handle calculation method changes
   const handleCalculationMethodChange = (method: string) => {
+    // Since calculation_method is already an array in the type definition,
+    // we don't need to split it
     const currentMethods = formData.calculation_method || [];
     
     const updatedMethods = currentMethods.includes(method)
       ? currentMethods.filter(v => v !== method)
       : [...currentMethods, method];
     
+    // Pass the array directly, no need to join
     handleFieldChange('calculation_method', updatedMethods);
   };
 
   useEffect(() => {
     checkFormValidity(formData);
-  }, [checkFormValidity, formData]);
+  
+  }, []); 
 
   return (
     <div className="justify-center flex flex-col w-full">
@@ -344,8 +349,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {/* First group of environmental conflicts */}
-        {environmentalConflictGroups[0]?.map((item) => (
+        {environmentalConflictGroups[0]!.map((item) => ( 
           <RadioGroup
             key={item.name}
             name={item.name}
@@ -361,8 +365,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {/* Second group of environmental conflicts */}
-        {environmentalConflictGroups[1]?.map((item) => (
+        {environmentalConflictGroups[1]!.map((item) => ( // Add non-null assertion operator (!)
           <RadioGroup
             key={item.name}
             name={item.name}

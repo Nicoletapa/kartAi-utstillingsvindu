@@ -1,14 +1,25 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
+import { ApplicationService } from '~/utils/api-service';
 
-const Step6_0 = () => {
+
+interface Step6_0Props {
+  applicationID: number;
+}
+
+const Step6_0: React.FC<Step6_0Props> = ({ applicationID }) => {
   const [openModal, setOpenModal] = useState<boolean>(false);
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+  
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
 
+  void saveField('progress.currentStep', '6_0');
+
+
   return (
-    <div className="mb-40 flex flex-col items-center justify-center min-h-screen mx-auto px-4 w-full max-w-4xl">
+    <div className="mb-10 items-center justify-center mx-auto px-4 w-full max-w-4xl">
       <div className="w-full flex flex-col items-center">
         <h1 className="text-3xl font-bold flex items-center justify-center">
           Hva må du gjøre videre?
@@ -51,8 +62,8 @@ const Step6_0 = () => {
         )}
 
         <div className="mt-6 w-full max-w-2xl">
-          <p className="text-center">Før du skal ta bygget i bruk, må du enten:</p>
-          <ul className="list-disc space-y-1 mx-auto max-w-md pl-5">
+          <p className="">Før du skal ta bygget i bruk, må du enten:</p>
+          <ul className="list-disc space-y-1 pl-7">
             <li className="text-left">
               <span className="font-medium">Midlertidig tillatelse</span> - hvis bygget ikke er helt ferdig, men kan brukes med noen begrensninger.
             </li>
@@ -61,8 +72,8 @@ const Step6_0 = () => {
             </li>
           </ul>
 
-          <p className="font-bold mt-6 text-center">For å få ferdigattest:</p>
-          <ul className="list-disc space-y-1 mx-auto max-w-md pl-5">
+          <p className="font-bold mt-6">For å få ferdigattest:</p>
+          <ul className="list-disc space-y-1 pl-5">
             <li className="text-left">Dokumentasjon på at alle krav er fulgt sendes til kommunen.</li>
             <li className="text-left">Kontroller at alt arbeid er utført i henhold til tillatelsen.</li>
           </ul>

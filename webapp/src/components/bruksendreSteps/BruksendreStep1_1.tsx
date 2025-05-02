@@ -1,9 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { Tooltip, RadioGroup } from '~/components/ui/ui-components';
-import { StepComponentProps } from '~/components/ProgressBarStep';
+import TiltaksAidMap from '../TiltaksAidMap';
+import { usePropertySearch } from "~/hooks/usePropertySearch";
+import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
+import { Loader2 } from 'lucide-react'
+import { Map } from "leaflet";
 
-// Update FormDataType to match our schema change
 type FormDataType = {
   neighboringBorder: string;
   powerLine: string;
@@ -13,26 +16,23 @@ type FormDataType = {
   road_type: string; 
 };
 
-// Define default values to ensure controls are always controlled
 const defaultValues: FormDataType = {
   neighboringBorder: '',
-  powerLine: 'Nei',
-  dangerZone: 'Nei',
-  protectedBuilding: 'Nei',
-  drivewayChanges: 'Nei',
+  powerLine: '',
+  dangerZone: '',
+  protectedBuilding: '',
+  drivewayChanges: '',
   road_type: '',
 };
 
-// Road type options
 const ROAD_TYPES = {
   RIKSVEI: "riksvei_eller_fylkesvei",
   KOMMUNAL: "kommunal_vei",
   PRIVAT: "privat_vei"
 };
 
-// Update the interface to extend the generic StepComponentProps
-interface BruksendreStep1_1Props extends StepComponentProps<FormDataType> {
-  applicationID: number; // Make this required
+interface BruksendreStep1_1Props {
+  applicationID: number;
   formData: FormDataType;
   setFormData: React.Dispatch<React.SetStateAction<FormDataType>>;
   onValidityChange: (isValid: boolean) => void;
@@ -44,15 +44,21 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
   setFormData: externalSetFormData, 
   onValidityChange 
 }) => {
-  // Merge with defaults to ensure all properties are defined
+
+  const [mapReady, setMapReady] = useState(false);
+  const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
+  const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
+  
+  
   const formData = { ...defaultValues, ...externalFormData };
   
   const tooltip = UIComponents.useTooltip();
   
-  // Use the bruksendring application type specifically
   const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'bruksendring');
+  const { userData } = usePropertySearch();
   
-  // Form validation function
+  const mapRef = useRef<Map | null>(null);
+  
   const checkFormValidity = (data: typeof formData) => {
     const basicFieldsValid = 
       (data.neighboringBorder?.trim() ?? '') !== '' &&
@@ -61,7 +67,6 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
       (data.drivewayChanges === "Ja" || data.drivewayChanges === "Nei") &&
       (data.powerLine?.trim() ?? '') !== '';
 
-    // Validate road_type only if driveway changes are planned
     const drivewayValid = data.drivewayChanges === "Nei" || data.road_type !== '';
 
     const isValid = basicFieldsValid && drivewayValid;
@@ -69,28 +74,21 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     return isValid;
   };
 
-  // Single unified handler for all field changes
   const handleFieldChange = (name: string, value: string | boolean) => {
-    // Create the updated data
     const updatedFormData = { 
       ...formData, 
       [name]: value 
     };
     
-    // Update parent component state
     externalSetFormData(prev => ({...prev, [name]: value}));
     
-    // Check validity with the updated data
     checkFormValidity(updatedFormData);
     
-    // Debug field name
     console.log(`Saving field: ${name} with value: ${value}`);
     
-    // Save to API
-   void saveField(name, value.toString());
+    void saveField(name, value.toString());
   };
 
-  // Event handlers for form elements - simplified to use the unified handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     handleFieldChange(e.target.name, e.target.value);
   };
@@ -99,32 +97,40 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     handleFieldChange(e.target.name, e.target.value);
   };
 
-  // Common tooltip content
+    const handleMapReady = useCallback((map: Map) => {
+      if (!mapRef.current) {
+        mapRef.current = map;
+        setMapReady(true);
+      }
+    }, []);
+  
+    const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
+      setLastDrawnShape(shape);
+      setSpatialAnalysis(analysis ?? null);
+    }, []);
+
   const tooltips = {
     shortestDistance: "Skriv inn korteste avstand.",
     conflictsWithSurroundings: "konflikt",
     driveway: "Hvis byggeprosjektet vil føre til en ny eller endret avkjørsel til eiendommen, må du søke om tillatelse fra Statens vegvesen eller kommunen."
   };
 
-  // Common radio options
   const yesNoOptions = [
     { value: "Ja", label: "Ja" },
     { value: "Nei", label: "Nei" }
   ];
 
-  // Validate form on mount
   useEffect(() => {
     checkFormValidity(formData);
-  }, [checkFormValidity, formData]);
+  }, []);
 
   return (
     <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Detaljer til det du vil gjøre</h1>
 
-      {/* Distance Information Section */}
-      <section className="border-2 border-gray-400 rounded-lg mt-4 p-4">
+      <section className="border-2 border-gray-400 rounded-lg mt-4">
         <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-3/6 h-72">
+          <div className="w-full md:w-3/6 h-72 p-4">
             <h2 className="inline-flex font-medium">
               Korteste avstand
               <Tooltip
@@ -144,7 +150,8 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
                 <input
                   type="number"
                   name="neighboringBorder"
-                  className="required text-sm w-20 h-8 p-2 border-b-2 border-gray-400 outline-none"
+                  placeholder='F.eks. 4'
+                  className="required text-sm w-20 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none"
                   value={formData.neighboringBorder}
                   onChange={handleInputChange}
                   required
@@ -154,15 +161,22 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
             </form>
           </div>
 
-          <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400 md:pl-8">
-            <div className='overflow-hidden'>
-              [KART]
+          <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400">
+            <div className='overflow-hidden max-h-96 no-rounded-map relative z-0'>
+              <TiltaksAidMap 
+                onMapReady={handleMapReady}
+                onShapeDrawn={handleShapeDrawn}
+                userGnr={userData?.gnr}
+                userBnr={userData?.bnr}
+                userFnr={userData?.fnr}
+                userSnr={userData?.snr}
+                autoZoom={true}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Environmental Conflicts Section */}
       <section className='w-full min-h-28 p-4 border-2 border-gray-400 rounded-lg mt-4'>
         <h2 className="font-medium inline-flex">
           Kan bruksendringene være i konflikt med omgivelsene?
@@ -205,7 +219,6 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
         </div>
       </section>
 
-      {/* Driveway Section - Updated */}
       <section className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
         <h2 className="font-medium inline-flex mb-2">
           Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
@@ -265,11 +278,10 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
         )}
       </section>
 
-      {/* Show saving indicator */}
       {isSaving && (
         <div className="fixed bottom-4 right-4 bg-white shadow-md rounded-full p-2 z-10">
-          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
+          <Loader2 className="animate-spin text-gray-500" size={24} />
+          </div>
       )}
     </div>
   );

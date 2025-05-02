@@ -1,5 +1,6 @@
 'use client';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
 import * as L from 'leaflet';
@@ -7,13 +8,14 @@ import type { Map } from 'leaflet';
 import type { Feature, Geometry, GeoJsonProperties } from 'geojson'; 
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
-import type { SpatialAnalysisResult } from '~/utils/propertyUtils';
 import { 
+   
   analyzeSpatialRelationship,
   formatPropertyNumber,
   searchProperty as fetchProperty
 } from '~/utils/propertyUtils';
 import { usePropertySearch } from '~/hooks/usePropertySearch';
+import type {SpatialAnalysisResult} from '~/utils/propertyUtils';
 
 const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
@@ -161,66 +163,66 @@ const TiltaksAidMap = ({
 
   const loggedPropertyData = useRef(false);
 
-  const handlePropertySearch = async (propertyNumberToSearch: string = searchInput) => {
-    try {
-      const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
-      
-      if (!data || data.length === 0) {
-        setErrorMessage('No property found with this number or invalid property data');
-        return;
-      }
-      
-      if (data[0]?.geom) {
-        if (propertyBoundary && mapRef.current) {
-          mapRef.current.removeLayer(propertyBoundary);
-        }
-
-        const propertyFeature = {
-          type: 'Feature',
-          geometry: data[0]?.geom,
-          properties: { 
-            id: propertyNumberToSearch,
-            matrikkelnummer: data[0]?.matrikkelnummer
-          }
-        } as GeoJSON.Feature;
-
-        const currentPropertyData = data[0] ?? null;
-        
-        if (!loggedPropertyData.current && currentPropertyData) {
-          console.log('Current property data:', currentPropertyData);
-          loggedPropertyData.current = true;
-        }
-        
-        setPropertyBoundaries([propertyFeature]);
-
-        const newBoundary = L.geoJSON(data[0]?.geom, {
-          style: {
-            color: 'blue',
-            weight: 2,
-            fillOpacity: 0.1
-          }
-        });
-
-        if (mapRef.current) {
-          newBoundary.addTo(mapRef.current);
-          
-          mapRef.current.fitBounds(newBoundary.getBounds(), {
-            maxZoom: MAX_ZOOM,
-            padding: [20, 20] 
-          });
-          
-          setAutoZoomSuccessful(true);
-        }
-
-        setPropertyBoundary(newBoundary);
-        setErrorMessage(null);
-      }
-    } catch (error) {
-      console.error('Error searching property:', error);
-      setErrorMessage('Failed to search property');
+  // Handle property search - wrapped in useCallback
+  const handlePropertySearch = useCallback(async (propertyNumberToSearch: string = searchInput) => {
+    const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
+    
+    if (!data || data.length === 0) {
+      setErrorMessage('No property found with this number or invalid property data');
+      return;
     }
-  };
+    
+    if (data[0]?.geom) {
+      if (propertyBoundary && mapRef.current) {
+        mapRef.current.removeLayer(propertyBoundary);
+      }
+  
+      // Convert the property data to a GeoJSON feature with ID
+      const propertyFeature = {
+        type: 'Feature',
+        geometry: data[0]?.geom,
+        properties: { 
+          id: propertyNumberToSearch,
+          matrikkelnummer: data[0]?.matrikkelnummer
+        }
+      } as GeoJSON.Feature;
+  
+      // Replace setter with direct assignment to a local constant to prevent unused state
+      const currentPropertyData = data[0] ?? null;
+      
+      // Only log once per component instance
+      if (!loggedPropertyData.current && currentPropertyData) {
+        console.log('Current property data:', currentPropertyData);
+        loggedPropertyData.current = true;
+      }
+      
+      setPropertyBoundaries([propertyFeature]);
+  
+      const newBoundary = L.geoJSON(data[0]?.geom, {
+        style: {
+          color: 'blue',
+          weight: 2,
+          fillOpacity: 0.1
+        }
+      });
+  
+      if (mapRef.current) {
+        newBoundary.addTo(mapRef.current);
+        
+        mapRef.current.fitBounds(newBoundary.getBounds(), {
+          maxZoom: MAX_ZOOM,
+          padding: [20, 20] 
+        });
+        
+        setAutoZoomSuccessful(true);
+      }
+  
+      setPropertyBoundary(newBoundary);
+      setErrorMessage(null);
+    }
+  }, [searchInput, propertyBoundary, setErrorMessage, setPropertyBoundaries, setAutoZoomSuccessful]); // Added dependencies for useCallback
 
+  // Force a search when user property data changes
   useEffect(() => {
     if (autoZoomSuccessful || !userGnr || !userBnr) return;
     
@@ -230,21 +232,12 @@ const TiltaksAidMap = ({
       
       if (mapReady && !autoZoomAttempted) {
         setAutoZoomAttempted(true);
-        void handlePropertySearch(propertyNumber);
+        void handlePropertySearch(propertyNumber); // Use void to ignore promise
       }
     }
-  }, [
-    userGnr, 
-    userBnr, 
-    userFnr, 
-    userSnr, 
-    mapReady, 
-    autoZoomAttempted, 
-    autoZoomSuccessful,
-    setSearchInput, 
-    handlePropertySearch
-  ]);
+  }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch, setSearchInput]); // Added handlePropertySearch and setSearchInput
 
+  // Auto-zoom effect
   useEffect(() => {
     if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
     
@@ -253,19 +246,9 @@ const TiltaksAidMap = ({
     const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
     if (propertyNumber) {
       setAutoZoomAttempted(true);
-      void handlePropertySearch(propertyNumber);
+      void handlePropertySearch(propertyNumber); // Use void to ignore promise
     }
-  }, [
-    mapReady, 
-    userGnr, 
-    userBnr, 
-    userFnr, 
-    userSnr, 
-    autoZoom, 
-    autoZoomAttempted, 
-    autoZoomSuccessful,
-    handlePropertySearch
-  ]);
+  }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch]); // Added handlePropertySearch
 
   const MapEvents = () => {
     const map = useMap();
@@ -278,14 +261,18 @@ const TiltaksAidMap = ({
       mapReadyCallbackFired.current = true;
       
       if (stableOnMapReady) {
-        stableOnMapReady(map);
+        try {
+          stableOnMapReady(map);
+        } catch(error) {
+          console.error('Error in onMapReady callback:', error);
+        }
       }
       
       if (searchInput && !autoZoomAttempted && !autoZoomSuccessful && userGnr && userBnr) {
         setAutoZoomAttempted(true);
-        void handlePropertySearch(searchInput);
+        void handlePropertySearch(searchInput); // Use void to ignore promise
       }
-    }, [map]);
+    }, [map]); // Removed dependencies that are handled by outer component scope or refs
     
     return null;
   };

@@ -87,3 +87,7 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.no-rounded-map .leaflet-container {
+  border-radius: 0 !important;
+}

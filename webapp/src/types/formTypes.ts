@@ -7,11 +7,12 @@ export interface SmaProsjekterFormData {
   size: string;
   mønehøyde: string;
   gesimshøyde: string;
-  road_center: string;
+  distance_road: string;
   
   // Distance measurements
   neighbor_boundary: string;
   nearest_building: string;
+  road_center: string;
   
   // Environmental conflicts
   distance_train_tracks: string;
@@ -82,20 +83,21 @@ export const smaProsjekterDefaultValues: SmaProsjekterFormData = {
   size: '',
   mønehøyde: '',
   gesimshøyde: '',
+  distance_road: '',
   road_center: '',
   neighbor_boundary: '',
   nearest_building: '',
-  distance_train_tracks: 'Nei',
-  distance_water_sewer_pipes: 'Nei',
-  distance_high_voltage_lines: 'Nei',
-  in_flood_risk_area: 'Nei',
-  near_beach_or_river: 'Nei',
-  protected_species_present: 'Nei',
-  cultural_heritage_site: 'Nei',
+  distance_train_tracks: '',
+  distance_water_sewer_pipes: '',
+  distance_high_voltage_lines: '',
+  in_flood_risk_area: '',
+  near_beach_or_river: '',
+  protected_species_present: '',
+  cultural_heritage_site: '',
   calculation_method: [],
-  new_driveway: 'Nei',
+  new_driveway: '',
   road_type: '',
-  planCompliance: 'Ja',
+  planCompliance: '',
   nonComplianceReason: '',
   allowed_utilization: '',
   property_net_area: '',
@@ -106,11 +108,11 @@ export const smaProsjekterDefaultValues: SmaProsjekterFormData = {
 
 export const bruksendringDefaultValues: BruksendringFormData = {
   neighboringBorder: '',
-  powerLine: 'Nei',
-  dangerZone: 'Nei',
-  protectedBuilding: 'Nei',
+  powerLine: '',
+  dangerZone: '',
+  protectedBuilding: '',
   takvinkel: '',
-  drivewayChanges: 'Nei',
+  drivewayChanges: '',
   road_type: '',
   changeDescription: ''
 };

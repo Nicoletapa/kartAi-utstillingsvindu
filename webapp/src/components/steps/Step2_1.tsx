@@ -1,11 +1,20 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react'
+import { ApplicationService } from '~/utils/api-service';
 
-const Step2_1 = () => {
+interface Step2_1Props {
+  applicationID: number;
+}
+
+const Step2_1: React.FC<Step2_1Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    
         
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
+
+    void saveField('progress.currentStep', '2_1');
 
   return (
     <div className='relative lg:pl-32 max-w-3xl'>

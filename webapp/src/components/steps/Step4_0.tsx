@@ -1,19 +1,23 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
 import AndreVedlegg from '../AndreVedlegg';
+import { ApplicationService } from '~/utils/api-service';
 
-const Step4_0 = () => {
+
+interface Step4_0Props {
+  applicationID: number;
+}
+
+const Step4_0: React.FC<Step4_0Props> = ({ applicationID }) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    
                 
         const handleOpenModal = () => setOpenModal(true);
         const handleCloseModal = () => setOpenModal(false);
 
-        const handleFileUpload = (files: File[]) => {
-          console.log('Files uploaded:', files);
-          setUploadedFiles((prev) => [...prev, ...files]);
-         
-        };
+        void saveField('progress.currentStep', '4_0');
+
   return (
     <div>
         <h1 className="text-3xl font-bold justify-center flex mb-4">Andre vedlegg
@@ -38,7 +42,9 @@ const Step4_0 = () => {
           </div>
         </div>
       )}
-       <AndreVedlegg documents={[]} onUpload={handleFileUpload} />
+       {/* Disable rule for intentional empty function placeholder */}
+       {/* eslint-disable-next-line @typescript-eslint/no-empty-function */}
+       <AndreVedlegg documents={[]} onUpload={() => {}} />
     </div>
 
    

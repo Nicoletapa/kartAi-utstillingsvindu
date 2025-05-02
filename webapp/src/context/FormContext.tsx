@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type PropertyDetails, type ApplicantDetails } from '~/utils/applicationForm';
 
 // Define FormDataType using the imported types
@@ -7,13 +7,14 @@ export interface FormDataType {
   property: PropertyDetails;
 }
 
+
 // Define the context type
 type FormContextType = {
   applicantFormData: FormDataType;
   updateApplicantFormData: (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => void;
 };
 
-// Create default values that match the types exactly
+// Define the default state structure explicitly
 const defaultFormData: FormDataType = {
   applicant: { name: '', email: '', phone: '' },
   property: {
@@ -27,57 +28,58 @@ const defaultFormData: FormDataType = {
   }
 };
 
-// Create context with properly typed non-empty function
+// Create context with default values
 const FormContext = createContext<FormContextType>({
   applicantFormData: defaultFormData,
-  // Fix: Provide a non-empty implementation
-  updateApplicantFormData: () => {
-    console.warn('FormContext used outside of provider');
-  },
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- Default context value requires a placeholder
+  updateApplicantFormData: () => {},
 });
 
 // Create provider component
 export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  // Use localStorage to persist data between page refreshes with proper typing
+  // Explicitly type the state with FormDataType
   const [applicantFormData, setApplicantFormData] = useState<FormDataType>(() => {
     // Try to load from localStorage first
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('applicantFormData');
       if (savedData) {
         try {
-          // Fix: Add type validation to ensure the parsed data matches FormDataType
           const parsedData = JSON.parse(savedData) as FormDataType;
-          
-          // Ensure all required fields are present
-          if (
-            parsedData &&
-            typeof parsedData === 'object' &&
-            parsedData.applicant &&
-            parsedData.property
-          ) {
+          if (parsedData?.applicant && parsedData?.property) {
             return parsedData;
+          } else {
+             console.error('Saved form data structure is invalid.');
           }
         } catch (e) {
           console.error('Failed to parse saved form data', e);
+          localStorage.removeItem('applicantFormData');
         }
       }
     }
-    
-    // Default empty state if no saved data
+
+    // Default state if no valid saved data
     return defaultFormData;
   });
 
-  const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    const newData = typeof data === 'function' 
-      ? (data as (prevData: FormDataType) => FormDataType)(applicantFormData) 
-      : data;
-    
-    setApplicantFormData(newData);
-    
-    // Save to localStorage
+  // Effect to save to localStorage whenever applicantFormData changes
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('applicantFormData', JSON.stringify(newData));
+      try {
+        localStorage.setItem('applicantFormData', JSON.stringify(applicantFormData));
+      } catch (error) {
+        console.error('Failed to save form data to localStorage', error);
+      }
     }
+  }, [applicantFormData]);
+
+
+  const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
+    // Use the functional update form of setState to ensure correct previous state
+    setApplicantFormData(prevData => {
+      const newData = typeof data === 'function' ? data(prevData) : data;
+      // No need to manually save here, the useEffect handles it
+      return newData; 
+    });
   };
 
   return (

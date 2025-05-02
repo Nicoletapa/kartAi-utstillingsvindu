@@ -11,8 +11,8 @@ export const applicationRouter = createTRPCRouter({
       z.object({
         applicationType: z.nativeEnum(ApplicationType),
         subTypeId: z.string().optional(),
-        submissionDate: z.coerce.date(),
-        updatedDate: z.coerce.date().optional(),
+        submissionDate: z.date(),
+        updatedDate: z.date().optional(),
         status: z.nativeEnum(ApplicationStatus).optional().default("Pabegynt"),
 
       }),
@@ -41,7 +41,7 @@ export const applicationRouter = createTRPCRouter({
           applicationType: input.applicationType,
         subTypeId: input.subTypeId,
         updatedDate: input.updatedDate ?? new Date(),
-        submissionDate: input.submissionDate, 
+        submissionDate: input.submissionDate, // Ensure this is passed through
         status: input.status || "Pabegynt",
         user: {
           connect: {

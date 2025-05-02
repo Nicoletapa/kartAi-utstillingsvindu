@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { ArrowRight, ArrowLeft, Info } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { ApplicationService, UIComponents, FormService } from '~/utils/api-service';
+import { Loader2 } from 'lucide-react';
 
 // Types
 interface StepApplicantDetailsProps {
@@ -25,6 +26,18 @@ interface FieldDisplay {
   value: string;
 }
 
+// Move this outside the component or memoize it
+const checkFormValidity = (data: FormDataType) => {
+  const safeString = (value: string | undefined | null): string => 
+    (value === undefined || value === null) ? '' : String(value).trim();
+  
+  return !!safeString(data.applicant.name) && 
+         !!safeString(data.applicant.email) &&
+         !!safeString(data.property.address) &&
+         !!safeString(data.property.property_number) &&
+         !!safeString(data.property.usage_number);
+};
+
 const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({ 
   applicationID, 
   onValidityChange
@@ -38,12 +51,15 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   const { data: session } = useSession();
   const tooltip = UIComponents.useTooltip();
   
+  // Form validation
+
   // Replace your custom form state with FormService
   const { 
     formData, 
     setFormData, 
     isDirty, 
     setIsDirty, 
+    handleInputChange 
   } = FormService.useForm<FormDataType>(
     applicantFormData,
     checkFormValidity
@@ -74,26 +90,45 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   );
 
   // Form validation
-  function checkFormValidity(data: FormDataType = formData) {
-    const safeString = (value: string | undefined | null): string => 
-      (value === undefined || value === null) ? '' : String(value).trim();
-    
-    const isValid = 
-      !!safeString(data.applicant.name) && 
-      !!safeString(data.applicant.email) &&
-      !!safeString(data.property.address) &&
-      !!safeString(data.property.property_number) &&
-      !!safeString(data.property.usage_number);
-  
-    // Only update the parent state in useEffect, not during render
-    setIsFormValid(isValid);
-    return isValid;
-  }
 
-  // Add an effect to notify parent of validity changes
+  // Load data from application
   useEffect(() => {
-    onValidityChange(isFormValid);
-  }, [isFormValid, onValidityChange]);
+    if (!application?.application_fields || application.application_fields.length === 0) {
+      return;
+    }
+    
+    const fieldsMap: Record<string, string> = {};
+    application.application_fields.forEach(field => {
+      fieldsMap[field.fieldName] = field.fieldValue;
+    });
+    
+    const newFormData: FormDataType = {
+      applicant: {
+        name: fieldsMap['applicant.name'] ?? '',
+        email: fieldsMap['applicant.email'] ?? '',
+        phone: fieldsMap['applicant.phone'] ?? '',
+      },
+      property: {
+        address: fieldsMap['property.address'] ?? '',
+        property_number: fieldsMap['property.property_number'] ?? '',
+        usage_number: fieldsMap['property.usage_number'] ?? '',
+        lease_number: fieldsMap['property.lease_number'] ?? '',
+        section_number: fieldsMap['property.section_number'] ?? '',
+        postal_code: fieldsMap['property.postal_code'] ?? '',
+        municipality: fieldsMap['property.municipality'] ?? '',
+      }
+    };
+    
+    setFormData(newFormData);
+    checkFormValidity(newFormData);
+  }, [application]);
+
+// In your component, use this effect instead:
+useEffect(() => {
+  const isValid = checkFormValidity(formData);
+  setIsFormValid(isValid);
+  onValidityChange(isValid);
+}, [formData, onValidityChange]); // Only run when formData changes
 
   // Property selection handler
   const handlePropertyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -112,6 +147,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     }
   };
 
+  // Save all form data at once - for navigation or other bulk saves
   const saveAllFormData = async () => {
     if (!applicationID) return false;
     
@@ -182,64 +218,70 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   
   // Auto-fill form with user data
   useEffect(() => {
-    if (!userDetails || isDirty || formData.applicant.name || formData.property.address) return;
+    if (!userDetails || isDirty) return;
     
-    setFormData({
-      applicant: {
-        name: userDetails.name ?? formData.applicant.name ?? '',
-        email: userDetails.email ?? formData.applicant.email ?? '',
-        phone: userDetails.phone ?? formData.applicant.phone ?? '',
-      },
-      property: {
-        address: userDetails.address ?? formData.property.address ?? '',
-        property_number: userDetails.gnr?.toString() ?? formData.property.property_number ?? '',
-        usage_number: userDetails.bnr?.toString() ?? formData.property.usage_number ?? '',
-        lease_number: formData.property.lease_number ?? '',
-        section_number: formData.property.section_number ?? '',
-        postal_code: userDetails.postalCode ?? formData.property.postal_code ?? '',
-        municipality: userDetails.postalArea ?? formData.property.municipality ?? '',
-      }
-    });
-  }, [userDetails, isDirty, formData.applicant.name, formData.property.address, setFormData]);
+    // Only auto-fill if all fields are empty
+    const shouldAutoFill = 
+      !formData.applicant.name && 
+      !formData.applicant.email && 
+      !formData.property.address;
+  
+    if (shouldAutoFill) {
+      setFormData(prev => ({
+        applicant: {
+          name: userDetails.name ?? prev.applicant.name ?? '',
+          email: userDetails.email ?? prev.applicant.email ?? '',
+          phone: userDetails.phone ?? prev.applicant.phone ?? '',
+        },
+        property: {
+          ...prev.property,
+          address: userDetails.address ?? prev.property.address ?? '',
+          property_number: userDetails.gnr?.toString() ?? prev.property.property_number ?? '',
+          usage_number: userDetails.bnr?.toString() ?? prev.property.usage_number ?? '',
+          postal_code: userDetails.postalCode ?? prev.property.postal_code ?? '',
+          municipality: userDetails.postalArea ?? prev.property.municipality ?? '',
+        }
+      }));
+    }
+  }, [userDetails, isDirty]); // Remove formData fields from dependencies
 
   // Load data from application
   useEffect(() => {
-    if (!application?.application_fields || application.application_fields.length === 0) {
-      return;
-    }
-    
-    try {
+    if (!application?.application_fields) return;
+  
+    setFormData(prev => {
       const fieldsMap: Record<string, string> = {};
       application.application_fields.forEach(field => {
         fieldsMap[field.fieldName] = field.fieldValue;
       });
       
-      setFormData(prevFormData => ({
+      return {
         applicant: {
-          name: fieldsMap['applicant.name'] ?? prevFormData.applicant.name ?? '',
-          email: fieldsMap['applicant.email'] ?? prevFormData.applicant.email ?? '',
-          phone: fieldsMap['applicant.phone'] ?? prevFormData.applicant.phone ?? '',
+          name: fieldsMap['applicant.name'] ?? prev.applicant.name ?? '',
+          email: fieldsMap['applicant.email'] ?? prev.applicant.email ?? '',
+          phone: fieldsMap['applicant.phone'] ?? prev.applicant.phone ?? '',
         },
         property: {
-          address: fieldsMap['property.address'] ?? prevFormData.property.address ?? '',
-          property_number: fieldsMap['property.property_number'] ?? prevFormData.property.property_number ?? '',
-          usage_number: fieldsMap['property.usage_number'] ?? prevFormData.property.usage_number ?? '',
-          lease_number: fieldsMap['property.lease_number'] ?? prevFormData.property.lease_number ?? '',
-          section_number: fieldsMap['property.section_number'] ?? prevFormData.property.section_number ?? '',
-          postal_code: fieldsMap['property.postal_code'] ?? prevFormData.property.postal_code ?? '',
-          municipality: fieldsMap['property.municipality'] ?? prevFormData.property.municipality ?? '',
+          ...prev.property,
+          address: fieldsMap['property.address'] ?? prev.property.address ?? '',
+          property_number: fieldsMap['property.property_number'] ?? prev.property.property_number ?? '',
+          usage_number: fieldsMap['property.usage_number'] ?? prev.property.usage_number ?? '',
+          lease_number: fieldsMap['property.lease_number'] ?? prev.property.lease_number ?? '',
+          section_number: fieldsMap['property.section_number'] ?? prev.property.section_number ?? '',
+          postal_code: fieldsMap['property.postal_code'] ?? prev.property.postal_code ?? '',
+          municipality: fieldsMap['property.municipality'] ?? prev.property.municipality ?? '',
         }
-      }));
-    } catch (error) {
-      console.error("Error loading application data:", error);
-    }
-  }, [application, setFormData]);
+      };
+    });
+  }, [application]); // Only run when application changes
 
   // Auto-save when isDirty, using debounced saveField from the service
   useEffect(() => {
     if (!isDirty || !applicationID) return;
     
-
+    // Don't need to implement auto-save here, as each field change will trigger saveField
+    // from FormService's handleInputChange method
+    // This is already handled by the ApplicationService.useSaveFormData hook
   }, [isDirty, applicationID]);
 
   // Prepare display data
@@ -262,10 +304,9 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     { label: "E-post:", value: userDetails?.email ?? 'Ikke angitt' },
   ];
 
-  // Return the component
   return (
     <div className="flex flex-col items-center justify-center h-full mt-16">
-      {(isLoadingApplication && applicationID) ?? isLoadingUserDetails ? (
+      {(isLoadingApplication && applicationID) || isLoadingUserDetails ? (
         <LoadingIndicator />
       ) : (
         <>
@@ -273,13 +314,11 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
 
           <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 lg:w-[950px]" data-cy="main-container">
             <div className="flex flex-col md:flex-row gap-8">
-              {/* Left column - Personal details */}
               <div className="w-full md:w-2/6" data-cy="left-column">
                 <h1 className='font-medium mb-4'>Personopplysninger</h1>
                 <DisplayFields fields={personalData} />
               </div>
 
-              {/* Right column - Property details */}
               <div className="w-full md:w-4/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
                 <div className='mb-4'>
                   <h1 className='font-medium inline-flex'>
@@ -305,7 +344,6 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
                 </div>
 
                 <div className='flex flex-col space-y-2 mt-2'>
-                  {/* Property selector */}
                   <select 
                     name="velgEiendom" 
                     id="velgEiendom" 
@@ -322,12 +360,10 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
                   <h1 className='font-medium'>Eiendomsinformasjon</h1>
                   
                   <div className="flex flex-col md:flex-row md:gap-8 w-full">
-                    {/* Property details */}
                     <div className="flex-1 space-y-2">
                       <DisplayFields fields={propertyData} />
                     </div>
 
-                    {/* Owner details */}
                     <div className="flex-1 space-y-2">
                       <h1 className='font-medium'>Eies av:</h1>
                       <div>
@@ -341,11 +377,9 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
             </div>
           </div>
 
-          {/* Navigation buttons */}
           <NavigationButtons 
             onBack={handleBack}
             onNext={handleNext}
-            isNextDisabled={isSaving || !isFormValid} // Don't call checkFormValidity() directly here
             isSaving={isSaving}
           />
         </>
@@ -354,11 +388,10 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   );
 };
 
-// Helper components remain the same
 const LoadingIndicator: React.FC = () => (
   <div className="flex justify-center items-center h-full">
-    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-    <span className="ml-3">Laster data...</span>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
+        <span className="ml-3">Laster data...</span>
   </div>
 );
 
@@ -376,29 +409,23 @@ const DisplayFields: React.FC<{ fields: FieldDisplay[] }> = ({ fields }) => (
 const NavigationButtons: React.FC<{
   onBack: () => void;
   onNext: () => void;
-  isNextDisabled: boolean;
   isSaving: boolean;
-}> = ({ onBack, onNext, isNextDisabled, isSaving }) => (
+}> = ({ onBack, onNext, isSaving }) => (
   <div className="mt-5 w-full flex justify-center gap-4">
     <Button 
       onClick={onBack} 
       className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
     >
-      <ArrowLeft className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" />
+      <ArrowLeft size={18} className="mr-2" />
       <span className="relative inline-block">Tilbake</span>
     </Button>
 
     <Button 
       onClick={onNext}
-      disabled={isNextDisabled} 
-      className={`border-2 bg-white w-44 ${
-        !isNextDisabled
-          ? "text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue"
-          : "text-gray-400 border-gray-300 cursor-not-allowed"
-      }`}
+      className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
     >
       {isSaving ? (
-        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
+        <Loader2 className="animate-spin text-gray-500" size={24} />
       ) : null}
       <span className="relative inline-block">
         Neste
