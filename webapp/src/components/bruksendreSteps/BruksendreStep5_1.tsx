@@ -8,6 +8,24 @@ interface BruksendreStep5_1Props {
   applicationID: number;
 }
 
+const ExternalLinkButton: React.FC<{
+  url: string;
+  children: React.ReactNode
+}> = ({ url, children }) => {
+  const handleClick = () => {
+    window.open(url, '_blank', 'noreferrer');
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className='my-3 py-2 px-4 border-2 border-kartAI-blue rounded-lg text-kartAI-blue hover:bg-kartAI-blue hover:text-white duration-300'
+    >
+      {children}
+    </button>
+  );
+};
+
 const BruksendreStep5_1: React.FC<BruksendreStep5_1Props> = ({ applicationID }) => {
   const [openModal, setOpenModal] = useState<boolean>(false);
   const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
@@ -20,7 +38,7 @@ const BruksendreStep5_1: React.FC<BruksendreStep5_1Props> = ({ applicationID }) 
 
 
   return (
-    <div className="md:pl-20 mb-52">
+    <div className="md:pl-20 mb-32">
       <h1 className="text-3xl font-bold justify-center flex">Byggesøknaden er godkjent
         <Info size={18} className="ml-2 hover:cursor-pointer" onClick={handleOpenModal} />
       </h1>
@@ -55,9 +73,9 @@ const BruksendreStep5_1: React.FC<BruksendreStep5_1Props> = ({ applicationID }) 
         <div className='w-full md:w-2/4 md:pl-6' data-cy="right-column">
             <div className='rounded-lg p-4 border-4 border-blue-800 flex flex-col items-center'>
                 <p className='text-center'>Hva du kan gjøre avhenger av hvilken type tillatelse du har fått:</p>
-                <Button className='mt-4 bg-white border-kartAI-blue border-2 text-kartAI-blue hover:bg-kartAI-blue hover:text-white'>
+                <ExternalLinkButton url='https://www.dibk.no/regelverk/sak'>
                     Les mer
-                </Button>
+                </ExternalLinkButton>
             </div>
         </div>
         </div>
