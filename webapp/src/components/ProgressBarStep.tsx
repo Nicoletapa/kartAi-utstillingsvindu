@@ -307,6 +307,19 @@ export default function ProgressBarStep({
         );
     };
 
+    const getAbsoluteStepIndex = (stepIndex: number, substepIndex?: number) => {
+        let absoluteIndex = 0;
+        for (let i = 0; i < stepIndex; i++) {
+            absoluteIndex += steps[i]?.totalSubsteps ?? 0;
+        }
+
+        if (substepIndex !== undefined) {
+            absoluteIndex += substepIndex;
+        }
+
+        return absoluteIndex;
+    }
+
     return (
         <div>
             <div className="mx-20 mt-6">
@@ -317,7 +330,13 @@ export default function ProgressBarStep({
             
             <div className="container px-4 flex mx-20 flex-col">
             <div className="mb-8 top-0 ml-20 bg-background pt-4 pb-8 z-10">
-                <ProgressBar steps={stepsWithStatus} />
+                <ProgressBar 
+                steps={stepsWithStatus}
+                onStepClick={(stepIndex, substepIndex) => {
+                    const absoluteIndex = getAbsoluteStepIndex(stepIndex, substepIndex);
+                    setCurrentOverallStep(absoluteIndex);
+                }}
+                />
             </div>
 
             <div className="flex space-x-8 flex-1">
