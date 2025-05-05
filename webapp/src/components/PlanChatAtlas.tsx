@@ -1,69 +1,62 @@
 "use client";
-import { type ChangeEvent, useState, type KeyboardEvent, useEffect } from "react";
+import { type ChangeEvent, useState, type KeyboardEvent, useEffect, useRef } from "react";
 import { api } from "~/trpc/react";
 import type { Map } from 'leaflet';
-import type { SpatialAnalysisResult } from './TiltaksAidMap';
+import type { SpatialAnalysisResult } from './TiltaksAidMap'; 
 import { SendHorizonal } from 'lucide-react';
 import { useSession } from "next-auth/react";
-import ReactMarkdown from 'react-markdown';
+import { useChatStore, type ChatItem } from '~/store/chatStore'; 
 
 interface PlanPratProps {
-  mapRef?: React.MutableRefObject<{ map: Map | null; ready: boolean }>;
-  lastDrawnShape?: GeoJSON.Feature | null;
-  spatialAnalysis?: SpatialAnalysisResult | null;
-  mapReady?: boolean;
+  mapRefFromStore?: { map: Map | null; ready: boolean };
+  lastDrawnShapeFromStore?: GeoJSON.Feature | null;
+  spatialAnalysisFromStore?: SpatialAnalysisResult | null;
   onClose: () => void;
   disableTopRightRadius?: boolean;
   disableBottomRightRadius?: boolean;
 }
+
 interface GuideButton {
   title: string;
   url: string;
   description?: string;
 }
 
-
-export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = false, onClose, disableBottomRightRadius, disableTopRightRadius }: PlanPratProps) {
+export function PlanPrat({
+  mapRefFromStore,
+  lastDrawnShapeFromStore,
+  spatialAnalysisFromStore,
+  disableBottomRightRadius,
+  disableTopRightRadius
+}: PlanPratProps) {
   const { data: session } = useSession();
-  const [error, setError] = useState("");
   const [text, setText] = useState<string>("");
-  const [chatItems, setChatItems] = useState<
-    { text: string; isUser: boolean, guides?: GuideButton[] }[]
-  >([]);
-  const [isTyping, setIsTyping] = useState(false);
-
   const utils = api.useUtils();
+  const mapCenterLogged = useRef(false);
 
-  // Legg til forhåndsdefinerte spørsmål
-  const suggestedQuestions = [
-    "Hvilke regler gjelder for å bygge garasje i Kristiansand?",
-    "Kan jeg bygge terrasse uten å søke?",
-    "Hva er reglene for boligbygging i strandsonen?"
-  ];
+  // --- State and actions from the store ---
+  const {
+    chatItems,
+    isTyping,
+    error,
+    addMessage,
+    setIsTyping,
+    setError,
 
-  // Funksjon for å velge et foreslått spørsmål
-  const handleSuggestedQuestion = (question: string) => {
-    setText(question);
-    // Alternativt kan du sende spørsmålet direkte:
-    setText(question);
-    handleSendMessage();
-  };
+  } = useChatStore();
+  const lastDrawnShape = lastDrawnShapeFromStore;
+  const spatialAnalysis = spatialAnalysisFromStore;
+  // ------------------------------------------
 
   useEffect(() => {
     if (lastDrawnShape) {
-
       const shapeType = lastDrawnShape.geometry.type;
       let description = `I've drawn a ${shapeType.toLowerCase()} on the map.`;
 
-
-      if (shapeType === "Polygon" || shapeType === "LineString") {
-        const coordsCount = Array.isArray(lastDrawnShape.geometry.coordinates[0])
-          ? lastDrawnShape.geometry.coordinates[0].length
-          : lastDrawnShape.geometry.coordinates.length;
-        description += ` It has ${coordsCount} points.`;
+      if (['Polygon', 'LineString', 'MultiPoint', 'MultiLineString', 'MultiPolygon'].includes(shapeType)) {
+          description += ` It involves multiple coordinates.`;
       }
 
-      // Add spatial analysis information if available
       if (spatialAnalysis) {
         if (spatialAnalysis.isWithinProperty) {
           description += ` The shape is within the property boundary.`;
@@ -72,164 +65,62 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
         }
       }
 
-      setShapeContext(description);
-      
-      // Display context in UI if needed
-      document.title = `PlanChat - ${description.substring(0, 20)}...`;
-      
-      setChatItems((prevChatItems) => [
-        { 
-          text: response.answer, 
-          isUser: false,
-          guides: response.guides 
-        },
-        ...prevChatItems,
-      ]);
+      const systemMessageExists = chatItems.some(item => !item.isUser && item.text.startsWith("System:") && item.text.includes(description));
+
+      if (!systemMessageExists) {
+          addMessage({ text: `System: ${description} Ask me about it!`, isUser: false });
+      }
     }
-  }, [lastDrawnShape, spatialAnalysis]);
+  }, [lastDrawnShape, spatialAnalysis, addMessage, chatItems]);
 
 
   useEffect(() => {
-    // Use optional chaining for safer access
-    if (mapReady && !mapCenterLogged.current) {
+    const mapReady = mapRefFromStore?.ready ?? false;
+    const map = mapRefFromStore?.map ?? null;
+
+    if (mapReady && map && !mapCenterLogged.current) {
       try {
-        const center = mapRef?.current?.map?.getCenter?.(); // Use optional chaining
+        const center = map.getCenter?.();
         if (center) {
-          console.log("Map center: ", center);
+          console.log("Map center (from PlanPrat): ", center);
           mapCenterLogged.current = true;
         }
       } catch (error) {
-        console.error("Error accessing map: ", error)
+        console.error("Error accessing map in PlanPrat: ", error)
       }
-      // Can control the map here, e.g.,
-      // mapRef.current.setView([latitude, longitude], zoom);
     }
-  }, [mapRef, mapReady]);
+  }, [mapRefFromStore]); 
 
   useEffect(() => {
-    if (chatItems.length > 0 && chatItems[0]?.isUser === false) { // Added optional chaining for chatItems[0]
+    if (chatItems.length > 0 && chatItems[0]?.isUser === false) { 
       setIsTyping(true);
       const typingTimeout = setTimeout(() => {
         setIsTyping(false);
-      }, 0); // Consider a small delay like 500ms for a better typing effect
+      }, 0); 
       return () => clearTimeout(typingTimeout);
     }
   }, [chatItems]);
 
   const handleSendMessage = () => {
     if (!isTyping && text.trim() !== "") {
-     // Explicitly ignore the promise returned by handleSubmit
-     void handleSubmit();
+      void handleSubmit();
       setText("");
     }
   }
 
-  useEffect(() => {
-    // More robust map access check
-    const checkMap = async () => {
-        if (!mapRef?.current?.map || !mapRef.current.ready) return;
-        
-        try {
-            // Verify map container exists in DOM
-            const container = mapRef.current.map.getContainer();
-            if (!document.body.contains(container)) {
-                console.warn('Map container not in DOM');
-                return;
-            }
-
-            // Safe map access
-            await new Promise(resolve => {
-                const check = () => {
-                    try {
-                        const center = mapRef.current?.map?.getCenter();
-                        if (center && center.lat !== undefined) {
-                            console.log("Map center:", center);
-                            mapCenterLogged.current = true;
-                            resolve(true);
-                        }
-                    } catch (e) {
-                        console.warn('Map not ready yet, retrying...');
-                        setTimeout(check, 100);
-                    }
-                };
-                check();
-            });
-        } catch (error) {
-            console.error("Safe map access error:", error);
-        }
-    };
-
-    checkMap();
-}, [mapRef, mapReady]);
-
-  useEffect(() => {
-    // More robust map access check
-    const checkMap = async () => {
-        // Use optional chaining
-        if (!mapRef?.current?.map || !mapRef.current.ready) return;
-
-        try {
-            // Verify map container exists in DOM
-            const container = mapRef.current.map.getContainer();
-            if (!document.body.contains(container)) {
-                console.warn('Map container not in DOM');
-                return;
-            }
-
-            // Safe map access
-            await new Promise<void>(resolve => { // Specify void for Promise type
-                const check = () => {
-                    try {
-                        const center = mapRef.current?.map?.getCenter?.(); // Use optional chaining
-                        if (center?.lat !== undefined) { // Use optional chaining
-                            console.log("Map center:", center);
-                            mapCenterLogged.current = true;
-                            resolve(); // Resolve the promise
-                        } else {
-                           // Optionally add a retry limit or different handling if map never becomes ready
-                           console.warn('Map center not available yet, retrying...');
-                           setTimeout(check, 100);
-                        }
-                    } catch (e) {
-                        console.warn('Error during map check, retrying...', e);
-                        setTimeout(check, 100);
-                    }
-                };
-                check();
-            });
-        } catch (error) {
-            console.error("Safe map access error:", error);
-        }
-    };
-
-    // Explicitly ignore the promise returned by checkMap
-    void checkMap();
-}, [mapRef, mapReady]);
-
 
   const containsPropertyReference = (text: string): boolean => {
-
     const patterns = {
-
-      gnr: /g(?:år)?d?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
+      gnr: /g(?:Ã¥r)?d?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
       bnr: /b(?:ruk)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
       snr: /s(?:eksjon)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
-
-
       combined: /(\d+)\/(\d+)(?:\/(?:0\/)?(\d+))?/,
-
-
       propertyTerms: /\b(eiendom|tomt|adresse|eiendommen min|min eiendom)\b/i
     };
-
     return Object.values(patterns).some(pattern => pattern.test(text));
   };
 
   const shouldIncludeCoordinates = (query: string): boolean => {
-    // Include coordinates if:
-    // 1. Query mentions property references
-    // 2. User has drawn a shape on the map
-    // 3. Spatial analysis data is available
     return containsPropertyReference(query) ||
            !!lastDrawnShape ||
            !!spatialAnalysis?.nearestPropertyId;
@@ -239,34 +130,29 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
     try {
       let enhancedQuery = queryInput;
       const includeCoordinates = shouldIncludeCoordinates(queryInput);
+      const mapReady = mapRefFromStore?.ready ?? false;
+      const map = mapRefFromStore?.map ?? null;
 
-      // Add drawn shape context if available
       if (lastDrawnShape) {
         const shapeSummary = {
           type: lastDrawnShape.geometry.type,
           coordinates: getCoordinatesFromGeometry(lastDrawnShape.geometry),
         };
-
         let spatialInfo = "";
         if (spatialAnalysis) {
           spatialInfo = `Spatial analysis: ${spatialAnalysis.isWithinProperty ?
             'Shape is within property boundaries' :
             `Shape is outside property boundaries by ${spatialAnalysis.distanceToProperty?.toFixed(2)} meters`}`;
-
-          // Add property ID if available
           if (spatialAnalysis.nearestPropertyId) {
             spatialInfo += ` Property ID: ${spatialAnalysis.nearestPropertyId}`;
           }
         }
-
         enhancedQuery = `${queryInput} [Context: User has drawn on the map: ${JSON.stringify(shapeSummary)}. ${spatialInfo}]`;
       }
 
-      // Add map view context ONLY if property-related
-      // Use optional chaining for safer access
-      if (mapReady && includeCoordinates) {
-        const center = mapRef?.current?.map?.getCenter?.();
-        const zoom = mapRef?.current?.map?.getZoom?.();
+      if (mapReady && map && includeCoordinates) {
+        const center = map.getCenter?.();
+        const zoom = map.getZoom?.();
         if (center) {
           enhancedQuery += ` [Map context: User is viewing map at coordinates ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}, zoom level ${zoom}]`;
         }
@@ -275,127 +161,102 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       const response = await utils.planprat.fetchResponse.fetch({
         query: enhancedQuery,
       });
-
       return response;
     } catch (error) {
       console.error(error);
-      setError("Error: Failed to retrieve response.");
-      // Return undefined or throw error to indicate failure
+      setError("Error: Failed to retrieve response."); 
       return undefined;
     }
   }
 
-
   function getCoordinatesFromGeometry(geometry: GeoJSON.Geometry): GeoJSON.Position | GeoJSON.Position[] | GeoJSON.Position[][] | GeoJSON.Position[][][] | Array<{type: string; coordinates: unknown}> {
-    if (geometry.type === 'GeometryCollection') {
-
-      return geometry.geometries.map(g => ({
-        type: g.type,
-        coordinates: getCoordinatesFromGeometry(g)
-      }));
-    } else if (geometry.type === 'Point') {
-
-      return geometry.coordinates;
-    } else if (geometry.type === 'LineString') {
-
-      return geometry.coordinates;
-    } else if (geometry.type === 'Polygon') {
-
-      return geometry.coordinates;
-    } else if (geometry.type === 'MultiPoint') {
-
-      return geometry.coordinates;
-    } else if (geometry.type === 'MultiLineString') {
-
-      return geometry.coordinates;
-    } else if (geometry.type === 'MultiPolygon') {
-
-      return geometry.coordinates;
-    } else {
-
-      return [];
+    switch (geometry.type) {
+      case 'Point':
+      case 'LineString':
+      case 'Polygon':
+      case 'MultiPoint':
+      case 'MultiLineString':
+      case 'MultiPolygon':
+        return geometry.coordinates;
+      case 'GeometryCollection':
+        return geometry.geometries.map(g => ({
+          type: g.type,
+          coordinates: getCoordinatesFromGeometry(g)
+        }));
+      default:
+        console.warn(`Unsupported geometry type encountered: ${(geometry as GeoJSON.Geometry).type}`);
+        return [];
     }
   }
+
 
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setText(e.target.value);
   };
 
-  // Make handleSubmit async to handle the promise from queryPlanprat
   const handleSubmit = async (): Promise<void> => {
     if (text.trim()) {
-      setChatItems((prevChatItems) => [
-        { text: text, isUser: true },
-        ...prevChatItems,
-      ]);
+      const userMessage: ChatItem = { text: text, isUser: true };
+      addMessage(userMessage); 
       const sendText = text;
       setText("");
 
-      setIsTyping(true);
+      setIsTyping(true); 
 
-      try { // Add try...catch for queryPlanprat
+      try {
         const response = await queryPlanprat(sendText);
-        setIsTyping(false); // Ensure typing indicator stops even if response is null/undefined
+        setIsTyping(false); 
+
         if (!response) {
-           // Error is handled within queryPlanprat, maybe set a generic error message here if needed
-           // setError("Failed to get response.");
            return;
         }
-        setChatItems((prevChatItems) => [
-          {
-            text: response.answer,
-            isUser: false,
-            guides: response.guides
-          },
-          ...prevChatItems,
-        ]);
+
+        const botMessage: ChatItem = {
+          text: response.answer,
+          isUser: false,
+          guides: response.guides
+        };
+        addMessage(botMessage); 
+
       } catch (error) {
-         setIsTyping(false);
+         setIsTyping(false); 
          console.error("Error in handleSubmit:", error);
-         setError("An unexpected error occurred.");
+         setError("An unexpected error occurred."); 
       }
     }
   };
+  // ---------------------------------------------
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === "Enter" && !e.shiftKey) { // Allow Shift+Enter for new lines
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  // Format text with markdown-like syntax using Tailwind classes
   const formatText = (text: string): JSX.Element => {
-    // Split the text into paragraphs
     const paragraphs = text.split(/\n\n+/);
-    const listItemRegex = /^[-*•] /; // Regex for list items
+    const listItemRegex = /^[-*â€¢] /;
 
     return (
       <>
         {paragraphs.map((paragraph, idx) => {
           if (!paragraph.trim()) return null;
-
-          // Process bold text - ** or __ for bold
           const formattedText = paragraph.replace(
             /(\*\*|__)(.*?)\1/g,
             '<strong class="font-semibold">$2</strong>'
           );
-          
-          // Check if this is a list item
-          if (RegExp(/^[-*•] /).exec(formattedText)) {
+          if (RegExp(/^[-*â€¢] /).exec(formattedText)) {
             return (
               <ul key={idx} className="list-disc ml-6 mb-3">
                 {formattedText.split(/\n/).map((item, i) => {
-                  // Remove the list marker for display
                   const listItem = item.replace(listItemRegex, '');
-                  // Ensure list item isn't empty after removing marker
                   if (!listItem.trim()) return null;
                   return <li key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: listItem }} />;
                 })}
               </ul>
             );
           }
-
           return <p key={idx} className="mb-3" dangerouslySetInnerHTML={{ __html: formattedText }} />;
         })}
       </>
@@ -404,34 +265,29 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
 
   const renderGuideButtons = (guides: GuideButton[]) => {
     if (!guides || guides.length === 0) return null;
-
     return (
       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="text-sm font-semibold mb-2 text-blue-800">Relevante veivisere:</h4>
         <div className="flex flex-col gap-2">
           {guides.map((guide, index) => (
-            <a
+            <button
               key={index}
-              href={guide.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => window.open(guide.url, '_blank')}
               className="inline-flex items-center justify-between px-4 py-3 border border-blue-300 text-sm font-medium rounded-md shadow-sm text-blue-800 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+              type="button"
             >
               <span className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 {guide.title}
               </span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+            </button>
           ))}
         </div>
       </div>
     );
   };
+
 
   return (
     <div className={`bg-white h-[500px] flex flex-col shadow-lg
@@ -440,27 +296,27 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
       ${disableBottomRightRadius ? '' : 'rounded-br-lg'}
       rounded-bl-lg`}>
       <div className={`w-full bg-kartAI-blue shadow-lg pb-3 pt-1 text-center text-white rounded-tl-lg ${
-    disableTopRightRadius ? '' : 'rounded-tr-lg'
-  }`}>
+        disableTopRightRadius ? '' : 'rounded-tr-lg'
+      }`}>
         <h1>Chat</h1>
-
-        {session?.user && ( // Use optional chaining
+        {session?.user && (
           <p className="text-sm font-medium">Din adresse: {session.user.address}</p>
         )}
       </div>
 
-      <div id="planprat-input-output" className="relative w-full p-2 flex-1 flex flex-col"> {/* Allow chat area to grow */}
-        <ul
-          id="planprat-output"
-          className="flex w-full flex-1 h-0 flex-col-reverse overflow-y-auto scrollbar-hide mb-2" // Use flex-1 and h-0 for proper scrolling
-        >
-          {error && (
+      <div id="planprat-input-output" className="relative w-full p-2 flex-1 flex flex-col" style={{ height: "calc(100% - 3rem)" }}>
+  <ul
+    id="planprat-output"
+    className="flex w-full flex-grow overflow-y-auto flex-col-reverse mb-2"
+    style={{ height: "calc(100% - 5rem)" }}
+  >
+          {error && ( 
             <li className="m-2 mr-6 self-start rounded-lg bg-red-100 p-2 text-red-700 border border-red-500">
               {error}
             </li>
           )}
 
-          {isTyping && (
+          {isTyping && ( 
             <li className="mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-3 text-black flex items-center space-x-1">
               <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-loadingFade"></span>
               <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_200ms]"></span>
@@ -468,47 +324,40 @@ export function PlanPrat({ mapRef, lastDrawnShape, spatialAnalysis, mapReady = f
             </li>
           )}
 
-
           {chatItems.map((chatItem, index) => (
             <li
               data-cy="chat-output"
               className={
                 chatItem.isUser
-                  ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100 max-w-[80%]" // Limit width
-                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black max-w-[80%]" // Limit width
+                  ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100 max-w-[80%]"
+                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black max-w-[80%]"
               }
-              key={index}
+              key={chatItem.timestamp ?? index} 
             >
               {chatItem.isUser ? chatItem.text : formatText(chatItem.text)}
-              
-              {/* Add guide buttons if available */}
               {!chatItem.isUser && chatItem.guides && chatItem.guides.length > 0 && (
                 renderGuideButtons(chatItem.guides)
               )}
             </li>
-          )}
-
-          {chatItems.map((chatItem, index) => renderChatItem(chatItem, index))}
+          ))}
         </ul>
-        <div className="relative w-full mt-auto"> {/* Push input to bottom */}
+        <div className="relative w-full mt-auto">
           <textarea
             id="planprat-input"
-            className="w-full min-h-[4rem] max-h-[10rem] rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner resize-y" // Allow vertical resize
+            className="w-full min-h-[4rem] max-h-[10rem] rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner resize-y"
             placeholder="Still meg et spørsmål ..."
             value={text}
             onChange={handleTextChange}
-            disabled={isTyping}
+            disabled={isTyping} 
             onKeyDown={handleKeyDown}
-            rows={2} // Start with 2 rows
+            rows={2}
           ></textarea>
-
           <button
             type="submit"
             id="planprat-input-button"
-            className="absolute bottom-2 right-2 p-2 rounded bg-transparent disabled:opacity-50" // Style disabled state
+            className="absolute bottom-2 right-2 p-2 rounded bg-transparent disabled:opacity-50"
             onClick={handleSendMessage}
-            disabled={isTyping || text.trim() === ""}
-            aria-label="Send message" // Add aria-label
+            aria-label="Send message"
           >
             <SendHorizonal size={24} className="text-kartAI-blue hover:text-blue-800 duration-300 transition" />
           </button>

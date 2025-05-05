@@ -1,5 +1,79 @@
 import * as turf from '@turf/turf';
+import type { GeoJSON } from 'geojson'; // Make sure GeoJSON is imported
 
+
+export interface AllowedAreaResponse {
+  allowed_building_area: GeoJSON.Geometry | GeoJSON.FeatureCollection;
+}
+
+
+export async function fetchAllowedBuildingArea(
+  matrikkelnummer: string,
+  supabaseUrl: string | undefined,
+  supabaseKey: string | undefined
+): Promise<GeoJSON.Feature | null> {
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Supabase URL or Key is missing.");
+    return null;
+  }
+  if (!matrikkelnummer) {
+    console.warn("Matrikkelnummer is required to fetch allowed building area.");
+    return null;
+  }
+
+  console.log("Fetching allowed building area for:", matrikkelnummer);
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_allowedbuildingarea`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ matrikkelnummer }) // Send as object
+    });
+
+    console.log("Allowed area fetch status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`Supabase responded with status ${response.status}`);
+    }
+
+    const data: AllowedAreaResponse[] = await response.json();
+    console.log("Allowed area raw data:", data);
+
+    if (!Array.isArray(data) || data.length === 0 || !data[0]?.allowed_building_area) {
+      console.warn("⚠️ No allowed building area returned from Supabase.");
+      return null;
+    }
+
+    const geom = data[0].allowed_building_area;
+
+    // Handle FeatureCollection or simple Geometry
+    if (geom.type === "FeatureCollection" && Array.isArray(geom.features) && geom.features.length > 0) {
+      // Return the first feature if it's a collection
+      return geom.features[0] as GeoJSON.Feature;
+    } else if (geom.type !== "FeatureCollection") {
+      // Wrap simple geometry in a Feature structure
+      return {
+        type: "Feature",
+        geometry: geom,
+        properties: {}
+      };
+    } else {
+      console.warn("⚠️ Allowed building area geometry is empty or invalid.");
+      return null;
+    }
+
+  } catch (error) {
+    console.error("❌ Error fetching allowed building area:", error);
+    return null;
+  }
+}
+
+
+// ... existing analyzeSpatialRelationship function ...
 export interface PropertyData {
   geom: GeoJSON.GeoJSON;
   matrikkelnummer?: string;

@@ -1,146 +1,175 @@
 "use client"
 
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react' 
 import { Bot, X, Maximize2, Minimize2 } from 'lucide-react'
 import { PlanPrat } from './PlanChatAtlas'
 import TiltaksAidMap from './TiltaksAidMap'
 import type { Map } from 'leaflet'
+import type { Feature } from 'geojson';
 import type { SpatialAnalysisResult } from '~/utils/propertyUtils'
 import { usePropertySearch } from '~/hooks/usePropertySearch'
 import clsx from 'clsx'
+import { usePathname } from 'next/navigation'
+// --- Import the store ---
+import { useChatStore, MIN_OVERSIKT_PATH, MAIN_CHATBOT_SECTION_ID } from '~/store/chatStore'; // Adjust path
 
 const SmallChatbot = () => {
-    const [showChatbot, setShowChatbot] = useState(false);
-    const [expanded, setExpanded] = useState(false);
-    const [isVisible, setIsVisible] = useState(false)
+    const pathname = usePathname();
+    const { userData } = usePropertySearch();
 
-    const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
-    const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
+    // --- Get state and actions from the store ---
+    const {
+        showChatbot,
+        isExpanded,
+        isVisible,
+        lastDrawnShape,
+        spatialAnalysis,
+        mapInstanceRef,
+        openBubble,
+        closeBubble,
+        toggleExpand,
+        setLastDrawnShape,
+        setMapInstance,
+        clearMapInstance,
+    } = useChatStore();
+    // ------------------------------------------
 
-    const { userData } = usePropertySearch()
+    // Local state only for the unique map container ID
+    const [mapContainerId] = useState(() => `map-container-${Math.random().toString(36).slice(2, 11)}`);
 
-   const mapInstance = useRef<{ map: Map | null; ready: boolean; containerId: string | null; }>({
-        map: null,
-        ready: false,
-        containerId: null,
-    });
-
-    const [mapContainerId] = useState(() => `map-container-${Math.random().toString(36).substr(2, 9)}`);
-
+    // --- Map Handling ---
     const handleMapReady = useCallback((map: Map) => {
-        if (!mapInstance.current.map) {
-            mapInstance.current = { map, ready: true, containerId: mapContainerId };
+        // Update map instance in the global store
+        if (!mapInstanceRef.map) {
+            setMapInstance({ map, ready: true, containerId: mapContainerId });
+            console.log("Map ready in SmallChatbot (global state):", mapContainerId);
         }
-    }, [mapContainerId])
+    }, [mapContainerId, setMapInstance, mapInstanceRef.map]); // Added dependencies
 
-    const handleCloseChat = () => {
-        setIsVisible(false)
-        setTimeout(() => {
-            setShowChatbot(false)
-            setExpanded(false)
-        }, 300)
-    }
-
+    // Cleanup map instance on component unmount (if SmallChatbot itself unmounts)
     useEffect(() => {
-        // Store the current map instance and container ID for cleanup
-        const mapToRemove = mapInstance.current.map;
-        const containerIdToRemove = mapInstance.current.containerId;
+        // Get the map instance details *at the time the effect runs*
+        const mapToRemove = mapInstanceRef.map;
+        const containerId = mapInstanceRef.containerId;
 
         return () => {
-            if (mapToRemove) {
+            // Check if the map instance we captured still exists in the store
+            // This check might be less critical if SmallChatbot lives in the root layout
+            // and never unmounts, but good practice anyway.
+            const currentMapInStore = useChatStore.getState().mapInstanceRef.map;
+
+            if (mapToRemove && mapToRemove === currentMapInStore) {
+                console.log("Cleaning up map in SmallChatbot (global state):", containerId);
                 try {
-                    // Attempt to remove the map instance
                     mapToRemove.remove();
-                    // Optionally, verify container cleanup if needed, but avoid internal properties like _leaflet_map
-                    // const container = document.getElementById(containerIdToRemove);
-                    // if (container) { /* potentially check classes or attributes if necessary */ }
                 } catch (e) {
                     console.warn('Map cleanup error:', e);
                 } finally {
-                    // Reset the ref only if it hasn't been reassigned
-                    if (mapInstance.current.map === mapToRemove) {
-                        mapInstance.current = {
-                            map: null,
-                            ready: false,
-                            containerId: null,
-                        };
-                    }
+                    clearMapInstance(); // Clear map state in the store
                 }
             }
-        }
-    }, []) // Dependency array is empty as we capture the initial map instance for cleanup
+        };
+        // Depend on clearMapInstance to ensure stable function reference
+    }, [clearMapInstance, mapInstanceRef.map, mapInstanceRef.containerId]);
 
-    const handleToggle = () => {
-        if (showChatbot) {
-            handleCloseChat()
+
+    // --- Chat Toggle Logic ---
+    const handleToggle = useCallback(() => {
+        if (pathname === MIN_OVERSIKT_PATH) {
+            const mainChatbotElement = document.getElementById(MAIN_CHATBOT_SECTION_ID);
+            if (mainChatbotElement) {
+                mainChatbotElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (showChatbot) closeBubble(); // Ensure bubble closes if scrolling
+            } else {
+                console.warn(`Could not find element with ID '${MAIN_CHATBOT_SECTION_ID}' to scroll to. Toggling bubble instead.`);
+                // Fallback: Toggle bubble if element not found
+                if (showChatbot) {
+                    closeBubble();
+                } else {
+                    openBubble();
+                }
+            }
         } else {
-            setShowChatbot(true)
-            setTimeout(() => setIsVisible(true), 10)
+            // Default behavior: Toggle bubble
+            if (showChatbot) {
+                closeBubble();
+            } else {
+                openBubble();
+            }
         }
-    }
+    }, [pathname, showChatbot, openBubble, closeBubble]); // Dependencies from store
 
-    const handleExpandToggle = () => {
-        setExpanded(prev => !prev);
-    }
+    // --- Shape Drawing ---
+    // Use the action from the store
+    const handleShapeDrawn = useCallback((shape: Feature, analysis?: SpatialAnalysisResult) => {
+        setLastDrawnShape(shape, analysis);
+    }, [setLastDrawnShape]);
 
-    const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
-        setLastDrawnShape(shape)
-        setSpatialAnalysis(analysis ?? null) // Use nullish coalescing
-    }, [])
+    // --- Optional: Hide button entirely on specific paths ---
+    // if (pathname === MIN_OVERSIKT_PATH) {
+    //     return null;
+    // }
 
     return (
         <div>
-            <button 
-                onClick={handleToggle} 
-                className='fixed right-10 bottom-14 h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer z-30'
+            {/* Toggle Button */}
+            <button
+                onClick={handleToggle}
+                className='fixed right-10 bottom-14 h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer z-30 shadow-lg hover:bg-kartAI-darkblue transition-colors'
+                aria-label={pathname === MIN_OVERSIKT_PATH ? "Scroll to chatbot" : "Open chatbot"}
             >
                 <Bot size={30} className='text-white' />
             </button>
 
+            {/* Chat Window - Renders based on store state */}
             {showChatbot && (
                 <div
-                className={clsx(
-                    'fixed flex mb-2 bottom-28 right-10 z-40 transition-all duration-300',
-                    expanded ? 'w-[900px]' : 'w-[350px]',
-                    isVisible
-                        ? 'opacity-100 scale-100'
-                        : 'opacity-0 scale-95 pointer-events-none',
-                    'transform transition-all ease-out duration-300'
-                )}
-            >
+                    className={clsx(
+                        'fixed flex mb-2 bottom-28 right-10 z-40 transition-all duration-300',
+                        isExpanded ? 'w-[900px]' : 'w-[350px]',
+                        isVisible
+                            ? 'opacity-100 scale-100'
+                            : 'opacity-0 scale-95 pointer-events-none',
+                        'transform transition-all ease-out duration-300'
+                    )}
+                >
+                    {/* Chat Panel */}
                     <div className={clsx(
                         'h-[500px] transition-all duration-300',
-                        expanded ? 'w-[350px]' : 'w-full'
+                        isExpanded ? 'w-[350px]' : 'w-full'
                     )}>
                         <div className='relative h-full bg-white rounded-l-lg rounded-r-none shadow-lg'>
-                            <button 
-                                onClick={handleExpandToggle} 
-                                className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 left-2'
+                            {/* Expand/Minimize Button */}
+                            <button
+                                onClick={toggleExpand} // Use store action
+                                className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 left-2 z-10'
+                                aria-label={isExpanded ? "Minimize chat" : "Expand chat"}
                             >
-                                {expanded ? (
-                                    <Minimize2 size={20} className='text-white' />
-                                ) : (
-                                    <Maximize2 size={20} className='text-white' />
-                                )}
+                                {isExpanded ? <Minimize2 size={20} className='text-white' /> : <Maximize2 size={20} className='text-white' />}
                             </button>
-                            <button 
-                                onClick={handleCloseChat} 
-                                className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 right-2'
+                            {/* Close Button */}
+                            <button
+                                onClick={closeBubble} // Use store action
+                                className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 right-2 z-10'
+                                aria-label="Close chat"
                             >
                                 <X size={20} className='text-white' />
                             </button>
+                           
                             <PlanPrat
-                                onClose={handleCloseChat}
-                                mapRef={mapInstance}
-                                lastDrawnShape={lastDrawnShape}
-                                spatialAnalysis={spatialAnalysis}
-                                disableTopRightRadius={expanded}
-                                disableBottomRightRadius={expanded}
+                                onClose={closeBubble} 
+                                mapRefFromStore={mapInstanceRef}
+                                
+                                lastDrawnShapeFromStore={lastDrawnShape}
+                                spatialAnalysisFromStore={spatialAnalysis}
+                                
+                                disableTopRightRadius={isExpanded}
+                                disableBottomRightRadius={isExpanded}
                             />
                         </div>
                     </div>
 
-                    {expanded && (
+                    {isExpanded && (
                         <div id={mapContainerId} className='w-[60%] h-[500px] shadow-lg rounded-r-lg overflow-hidden'>
                             <TiltaksAidMap
                                 onMapReady={handleMapReady}
@@ -156,7 +185,7 @@ const SmallChatbot = () => {
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default SmallChatbot
+export default SmallChatbot;

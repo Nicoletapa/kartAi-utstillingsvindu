@@ -5,13 +5,15 @@ from langchain.schema import Document
 from langchain_chroma import Chroma 
 
 from src.generator import embedder
-
+from dotenv import load_dotenv
 import os
 import shutil
 
+load_dotenv()
 
 
-CHROMA_PATH ="chroma"
+
+CHROMA_PATH = os.getenv("CHROMA_PATH")
 
 DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backend/src/data")
 

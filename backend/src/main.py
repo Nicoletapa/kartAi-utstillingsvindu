@@ -9,7 +9,7 @@ import asyncio # Needed for run_in_executor
 # --- Import your routers ---
 from src.api.routes import planprat
 from src.api.routes import guidance
-from src.api.routes import chatbot # <-- Import the new router
+# from src.api.routes import chatbot # <-- Import the new router
 
 from src.utils.logging import setup_logging
 
@@ -58,11 +58,11 @@ app.include_router(planprat.router)
 app.include_router(guidance.router, prefix="/api/guidance", tags=["guidance"])
 
 # --- Include the new chatbot router ---
-app.include_router(
-    chatbot.router,
-    prefix="/api/chatbot", 
-    tags=["chatbot"]      
-)
+# app.include_router(
+#     chatbot.router,
+#     prefix="/api/chatbot", 
+#     tags=["chatbot"]      
+# )
 
 # --- Health Check ---
 @app.get("/health", tags=["health"])
