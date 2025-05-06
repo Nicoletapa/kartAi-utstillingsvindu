@@ -21,7 +21,7 @@ export default function ApplicantDetailsPage() {
   
   return (
     <div>
-          <FormProvider>
+    <FormProvider>
       <Step_applicant_details 
         applicationID={applicationID} 
         onValidityChange={handleValidityChange}

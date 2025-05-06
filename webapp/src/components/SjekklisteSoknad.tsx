@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cn } from "~/lib/utils";
@@ -58,8 +58,9 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep, applicat
   const isByggeorRive = pathname.includes('/bygge-eller-rive');
   const isBruksendre = pathname.includes('/bruksendring');
 
-  const currentChecklist = isBruksendre ? sjekklisteBruksendre : sjekklisteByggeEllerRive;
-
+  const currentChecklist = useMemo(() => {
+    return isBruksendre ? sjekklisteBruksendre : sjekklisteByggeEllerRive;
+  }, [isBruksendre]);
   useEffect(() => {
     if (!applicationID) {
       console.warn("No applicationID provided to SjekklisteSoknad");
@@ -73,8 +74,10 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep, applicat
 
   useEffect(() => {
     const currentTasks = currentStep <= 5 ? currentChecklist[currentStep] ?? [] : [];
-    setCompletedTasks(Array(currentTasks.length).fill(false));
-  }, [currentStep, currentChecklist]);
+    if (completedTasks.length !== currentTasks.length) {
+      setCompletedTasks(Array(currentTasks.length).fill(false));
+    }
+  }, [currentStep, currentChecklist, completedTasks.length]);
 
   if (!isByggeorRive && !isBruksendre) {
     return null;

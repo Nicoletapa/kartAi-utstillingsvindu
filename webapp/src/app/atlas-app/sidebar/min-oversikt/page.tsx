@@ -6,9 +6,7 @@ import SmallChatbot from '~/components/SmallChatbot';
 export default function MyOverviewPage() {
   return (
     <AtlasSidebar>
-      <div>
-        <MyOverview />
-      </div>
+      <MyOverview />
       <SmallChatbot />
     </AtlasSidebar>
   )

@@ -6,9 +6,7 @@ import SmallChatbot from '~/components/SmallChatbot';
 export default function ForDuSokerPage() {
   return (
     <AtlasSidebar>
-      <div>
-        <ForDuSoker />
-      </div>
+      <ForDuSoker />
       <SmallChatbot />
     </AtlasSidebar>
   )

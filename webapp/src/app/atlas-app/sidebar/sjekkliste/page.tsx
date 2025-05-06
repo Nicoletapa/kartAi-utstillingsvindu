@@ -6,9 +6,7 @@ import SmallChatbot from '~/components/SmallChatbot';
 export default function SjekklistePage() {
   return (
     <AtlasSidebar>
-      <div>
-        <ChecklistAtlas />
-      </div>
+      <ChecklistAtlas />
       <SmallChatbot />
     </AtlasSidebar>
   )
