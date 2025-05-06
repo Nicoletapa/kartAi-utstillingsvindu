@@ -7,6 +7,95 @@ import { SendHorizonal } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import { useChatStore, type ChatItem } from '~/store/chatStore'; 
 
+// Helper function to apply bold formatting
+const applyBold = (lineText: string): string =>
+  lineText.replace(
+    /(\*\*|__)(.*?)\1/g, // Matches **bold** or __bold__
+    '<strong class="font-semibold">$2</strong>'
+  );
+
+// Helper function to check if a line is a list item
+const isListItem = (lineText: string): boolean =>
+  /^[-*•]\s+/.test(lineText); // Starts with -, *, or •, followed by one or more spaces
+
+const formatText = (text: string): JSX.Element[] => {
+  const outputElements: JSX.Element[] = [];
+  if (!text || !text.trim()) {
+    return outputElements; // Return empty array for empty or whitespace-only text
+  }
+
+  // Split the text into major blocks based on double newlines (paragraph breaks)
+  const majorBlocks = text.split(/\n\n+/);
+
+  majorBlocks.forEach((block, blockIdx) => {
+    if (!block.trim()) return; // Skip empty blocks
+
+    const lines = block.split('\n'); // Split each block into individual lines
+    let currentParagraphLines: string[] = [];
+    let currentListItems: string[] = [];
+
+    // Function to flush (render) accumulated paragraph lines
+    const flushParagraph = (key: string) => {
+      if (currentParagraphLines.length > 0) {
+        outputElements.push(
+          <p
+            key={`p-${key}`}
+            className="my-2" // Add some vertical margin for paragraphs
+            dangerouslySetInnerHTML={{ __html: currentParagraphLines.join('<br />') }}
+          />
+        );
+        currentParagraphLines = [];
+      }
+    };
+
+    // Function to flush (render) accumulated list items
+    const flushList = (key: string) => {
+      if (currentListItems.length > 0) {
+        outputElements.push(
+          <ul key={`ul-${key}`} className="list-disc ml-5 my-2"> {/* Standard list styling */}
+            {currentListItems.map((item, itemIdx) => (
+              <li
+                key={`li-${key}-${itemIdx}`}
+                className="mb-1" // Small margin below each list item
+                dangerouslySetInnerHTML={{ __html: item.replace(/^[-*•]\s+/, '') }} // Remove marker before rendering
+              />
+            ))}
+          </ul>
+        );
+        currentListItems = [];
+      }
+    };
+
+    lines.forEach((line, lineIdx) => {
+      // Apply bolding to the line content, preserve original line for structural checks if needed
+      const boldedLine = applyBold(line); 
+      const trimmedLineForCheck = line.trim(); // Use a trimmed version for structural checks
+
+      if (!trimmedLineForCheck) {
+        // If an effectively empty line is encountered, it can act as a break.
+        // Flush existing paragraph or list.
+        flushParagraph(`block-${blockIdx}-line-${lineIdx}-empty-p`);
+        flushList(`block-${blockIdx}-line-${lineIdx}-empty-ul`);
+        return; // Continue to the next line
+      }
+
+      if (isListItem(trimmedLineForCheck)) {
+        flushParagraph(`block-${blockIdx}-line-${lineIdx}-p`); // If starting a list, finish current paragraph
+        currentListItems.push(boldedLine); // Add the original (now bolded) line to list items
+      } else {
+        flushList(`block-${blockIdx}-line-${lineIdx}-ul`); // If starting a paragraph, finish current list
+        currentParagraphLines.push(boldedLine); // Add to paragraph lines
+      }
+    });
+
+    // After processing all lines in a block, flush any remaining content
+    flushParagraph(`block-${blockIdx}-final-p`);
+    flushList(`block-${blockIdx}-final-ul`);
+  });
+
+  return outputElements;
+};
+
 interface PlanPratProps {
   mapRefFromStore?: { map: Map | null; ready: boolean };
   lastDrawnShapeFromStore?: GeoJSON.Feature | null;
@@ -14,12 +103,6 @@ interface PlanPratProps {
   onClose: () => void;
   disableTopRightRadius?: boolean;
   disableBottomRightRadius?: boolean;
-}
-
-interface GuideButton {
-  title: string;
-  url: string;
-  description?: string;
 }
 
 export function PlanPrat({
@@ -42,11 +125,18 @@ export function PlanPrat({
     addMessage,
     setIsTyping,
     setError,
-
   } = useChatStore();
   const lastDrawnShape = lastDrawnShapeFromStore;
   const spatialAnalysis = spatialAnalysisFromStore;
   // ------------------------------------------
+
+  // Handle sending messages when user clicks send button
+  const handleSendMessage = () => {
+    if (!isTyping && text.trim() !== "") {
+      void handleSubmit();
+      setText("");
+    }
+  };
 
   useEffect(() => {
     if (lastDrawnShape) {
@@ -86,7 +176,7 @@ export function PlanPrat({
           mapCenterLogged.current = true;
         }
       } catch (error) {
-        console.error("Error accessing map in PlanPrat: ", error)
+        console.error("Error accessing map in PlanPrat: ", error);
       }
     }
   }, [mapRefFromStore]); 
@@ -99,15 +189,7 @@ export function PlanPrat({
       }, 0); 
       return () => clearTimeout(typingTimeout);
     }
-  }, [chatItems]);
-
-  const handleSendMessage = () => {
-    if (!isTyping && text.trim() !== "") {
-      void handleSubmit();
-      setText("");
-    }
-  }
-
+  }, [chatItems, setIsTyping]);
 
   const containsPropertyReference = (text: string): boolean => {
     const patterns = {
@@ -125,6 +207,31 @@ export function PlanPrat({
            !!lastDrawnShape ||
            !!spatialAnalysis?.nearestPropertyId;
   };
+
+  function getCoordinatesFromGeometry(geometry: GeoJSON.Geometry): GeoJSON.Position | GeoJSON.Position[] | GeoJSON.Position[][] | GeoJSON.Position[][][] | Array<{type: string; coordinates: unknown}> {
+    switch (geometry.type) {
+      case 'Point':
+        return (geometry as GeoJSON.Point).coordinates;
+      case 'LineString':
+        return (geometry as GeoJSON.LineString).coordinates;
+      case 'Polygon':
+        return (geometry as GeoJSON.Polygon).coordinates;
+      case 'MultiPoint':
+        return (geometry as GeoJSON.MultiPoint).coordinates;
+      case 'MultiLineString':
+        return (geometry as GeoJSON.MultiLineString).coordinates;
+      case 'MultiPolygon':
+        return (geometry as GeoJSON.MultiPolygon).coordinates;
+      case 'GeometryCollection':
+        return (geometry as GeoJSON.GeometryCollection).geometries.map(g => ({
+          type: g.type,
+          coordinates: getCoordinatesFromGeometry(g)
+        }));
+      default:
+        console.warn(`Unsupported geometry type encountered: ${(geometry as GeoJSON.Geometry).type}`);
+        return [];
+    }
+  }
 
   async function queryPlanprat(queryInput: string) {
     try {
@@ -168,33 +275,15 @@ export function PlanPrat({
       return undefined;
     }
   }
-
-  function getCoordinatesFromGeometry(geometry: GeoJSON.Geometry): GeoJSON.Position | GeoJSON.Position[] | GeoJSON.Position[][] | GeoJSON.Position[][][] | Array<{type: string; coordinates: unknown}> {
-    switch (geometry.type) {
-      case 'Point':
-      case 'LineString':
-      case 'Polygon':
-      case 'MultiPoint':
-      case 'MultiLineString':
-      case 'MultiPolygon':
-        return geometry.coordinates;
-      case 'GeometryCollection':
-        return geometry.geometries.map(g => ({
-          type: g.type,
-          coordinates: getCoordinatesFromGeometry(g)
-        }));
-      default:
-        console.warn(`Unsupported geometry type encountered: ${(geometry as GeoJSON.Geometry).type}`);
-        return [];
-    }
-  }
-
-
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setText(e.target.value);
   };
 
   const handleSubmit = async (): Promise<void> => {
+    if (isTyping) {
+      return; // Don't allow submissions while already processing
+    }
+    
     if (text.trim()) {
       const userMessage: ChatItem = { text: text, isUser: true };
       addMessage(userMessage); 
@@ -204,90 +293,65 @@ export function PlanPrat({
       setIsTyping(true); 
 
       try {
-        const response = await queryPlanprat(sendText);
+        // Create a comprehensive payload with detailed spatial data
+        const payload = {
+          text: sendText,
+          spatialData: spatialAnalysisFromStore ? {
+            shapeType: lastDrawnShapeFromStore?.geometry.type || 'unknown',
+            coordinates: lastDrawnShapeFromStore ? 
+              getCoordinatesFromGeometry(lastDrawnShapeFromStore.geometry) : 
+              [],
+            isWithinProperty: Boolean(spatialAnalysisFromStore.isWithinProperty),
+            distanceToProperty: spatialAnalysisFromStore.distanceToProperty ?? null,
+            nearestPropertyId: spatialAnalysisFromStore.nearestPropertyId || null,
+            isWithinAllowedArea: spatialAnalysisFromStore.isWithinAllowedArea ?? null,
+            // Include the new spatial information with proper null checks
+            distanceToNeighborProperty: spatialAnalysisFromStore.distanceToNeighborProperty ?? null,
+            neighborPropertyId: spatialAnalysisFromStore.neighborPropertyId || null,
+            distanceToRoad: spatialAnalysisFromStore.distanceToRoad ?? null,
+            roadType: spatialAnalysisFromStore.roadType || null,
+            buildingSize: spatialAnalysisFromStore.buildingSize ?? null
+          } : null
+        };
+
+        const response = await queryPlanprat(payload);
         setIsTyping(false); 
 
         if (!response) {
-           return;
+          return;
         }
+
+        // Check for error responses
+        if (response.error) {
+          console.error("API error:", response.error);
+          setError(typeof response.error === 'string' ? response.error : "An error occurred");
+          return;
+        }
+
+        console.log("Response from API:", response);
+        console.log("Response guides:", response.guides);
 
         const botMessage: ChatItem = {
           text: response.answer,
           isUser: false,
-          guides: response.guides
+          guides: Array.isArray(response.guides) ? response.guides : []
         };
-        addMessage(botMessage); 
-
+        
+        addMessage(botMessage);
       } catch (error) {
-         setIsTyping(false); 
-         console.error("Error in handleSubmit:", error);
-         setError("An unexpected error occurred."); 
+        setIsTyping(false); 
+        console.error("Error in handleSubmit:", error);
+        setError("An unexpected error occurred."); 
       }
     }
   };
-  // ---------------------------------------------
-
+  
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-
-  const formatText = (text: string): JSX.Element => {
-    const paragraphs = text.split(/\n\n+/);
-    const listItemRegex = /^[-*â€¢] /;
-
-    return (
-      <>
-        {paragraphs.map((paragraph, idx) => {
-          if (!paragraph.trim()) return null;
-          const formattedText = paragraph.replace(
-            /(\*\*|__)(.*?)\1/g,
-            '<strong class="font-semibold">$2</strong>'
-          );
-          if (RegExp(/^[-*â€¢] /).exec(formattedText)) {
-            return (
-              <ul key={idx} className="list-disc ml-6 mb-3">
-                {formattedText.split(/\n/).map((item, i) => {
-                  const listItem = item.replace(listItemRegex, '');
-                  if (!listItem.trim()) return null;
-                  return <li key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: listItem }} />;
-                })}
-              </ul>
-            );
-          }
-          return <p key={idx} className="mb-3" dangerouslySetInnerHTML={{ __html: formattedText }} />;
-        })}
-      </>
-    );
-  };
-
-  const renderGuideButtons = (guides: GuideButton[]) => {
-    if (!guides || guides.length === 0) return null;
-    return (
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <h4 className="text-sm font-semibold mb-2 text-blue-800">Relevante veivisere:</h4>
-        <div className="flex flex-col gap-2">
-          {guides.map((guide, index) => (
-            <button
-              key={index}
-              onClick={() => window.open(guide.url, '_blank')}
-              className="inline-flex items-center justify-between px-4 py-3 border border-blue-300 text-sm font-medium rounded-md shadow-sm text-blue-800 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-              type="button"
-            >
-              <span className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                {guide.title}
-              </span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
 
   return (
     <div className={`bg-white h-[500px] flex flex-col shadow-lg
@@ -305,11 +369,11 @@ export function PlanPrat({
       </div>
 
       <div id="planprat-input-output" className="relative w-full p-2 flex-1 flex flex-col" style={{ height: "calc(100% - 3rem)" }}>
-  <ul
-    id="planprat-output"
-    className="flex w-full flex-grow overflow-y-auto flex-col-reverse mb-2"
-    style={{ height: "calc(100% - 5rem)" }}
-  >
+        <ul
+          id="planprat-output"
+          className="flex w-full flex-grow overflow-y-auto flex-col-reverse mb-2"
+          style={{ height: "calc(100% - 5rem)" }}
+        >
           {error && ( 
             <li className="m-2 mr-6 self-start rounded-lg bg-red-100 p-2 text-red-700 border border-red-500">
               {error}
@@ -335,8 +399,25 @@ export function PlanPrat({
               key={chatItem.timestamp ?? index} 
             >
               {chatItem.isUser ? chatItem.text : formatText(chatItem.text)}
-              {!chatItem.isUser && chatItem.guides && chatItem.guides.length > 0 && (
-                renderGuideButtons(chatItem.guides)
+              {!chatItem.isUser && chatItem.guides && Array.isArray(chatItem.guides) && chatItem.guides.length > 0 && (
+                <div className="mt-2 flex flex-col gap-2">
+                  {chatItem.guides.map((guide, guideIndex) => (
+                    <a
+                      key={guideIndex}
+                      href={guide.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm mb-1"
+                    >
+                      <span className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        {guide.title}
+                      </span>
+                    </a>
+                  ))}
+                </div>
               )}
             </li>
           ))}
