@@ -22,7 +22,9 @@ class DocumentSearchTool(BaseTool):
     """A tool for searching local document store for building regulations information."""
 
     name: str = "document_search"
-    description: str = "Use this tool FIRST to search for information about building regulations, permit requirements, and application processes specific to Kristiansand Municipality (based on Kommuneplanbestemmelser and related local documents). Input should be a specific question about local building rules or permits."
+    description: str = (
+        "Searches Kristiansand Municipality's local documents for general building regulations, permit requirements, application processes, and guidance (based on 'Kommuneplanbestemmelser' - general municipal plan provisions - and related official guidelines). Use for questions about general local building rules and procedures. This tool provides information based on general municipal-wide provisions, NOT specific 'reguleringsplaner' (detailed zoning plans for local areas)."
+    )
     args_schema: type[DocumentSearchInput] = DocumentSearchInput
     return_direct: bool = False
 
@@ -33,7 +35,7 @@ class DocumentSearchTool(BaseTool):
         os.path.join(BASE, REL_CHROMA_PATH)
     )
     print(f"Chroma path: {os.path.abspath(__file__)}")
-    search_k: ClassVar[int] = int(os.getenv("RAG_SEARCH_K", 5))
+    search_k: ClassVar[int] = int(os.getenv("RAG_SEARCH_K", 3))
     relevance_threshold: ClassVar[float] = float(os.getenv("RAG_RELEVANCE_THRESHOLD", 0.4))
 
     # --- Private attribute for Chroma client ---

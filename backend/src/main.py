@@ -1,16 +1,16 @@
-# main.py (Your existing file)
-
 import logging
-from fastapi import FastAPI, Request # Added Request
+from fastapi import FastAPI, Request
 from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
-import asyncio # Needed for run_in_executor
+import asyncio
+from fastapi.responses import JSONResponse
 
 # --- Import your routers ---
 from src.api.routes import planprat
-from src.api.routes import guidance
-# from src.api.routes import chatbot # <-- Import the new router
 
+
+# Import get_plan_agent from the new service file
+from src.services.agent_factory import get_plan_agent
 from src.utils.logging import setup_logging
 
 # Set up logging
@@ -30,10 +30,14 @@ async def startup_event():
     logger.info("Application startup...")
     app.state.loop = asyncio.get_running_loop()
     logger.info("Stored running event loop on app.state.loop")
+    
+    # Initialize the plan agent at startup
+    get_plan_agent()  # This now calls the function from agent_service.py
+    logger.info("PlanAgent initialized at startup")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-     logger.info("Application shutdown...")
+    logger.info("Application shutdown...")
     # Cleanup if needed
 
 
@@ -54,15 +58,8 @@ app.add_middleware(
 )
 
 # --- Include Routers ---
-app.include_router(planprat.router) 
-app.include_router(guidance.router, prefix="/api/guidance", tags=["guidance"])
-
-# --- Include the new chatbot router ---
-# app.include_router(
-#     chatbot.router,
-#     prefix="/api/chatbot", 
-#     tags=["chatbot"]      
-# )
+app.include_router(planprat.router, prefix="/api", tags=["planning"]) 
+# app.include_router(guidance.router, prefix="/api/guidance", tags=["guidance"])
 
 # --- Health Check ---
 @app.get("/health", tags=["health"])
