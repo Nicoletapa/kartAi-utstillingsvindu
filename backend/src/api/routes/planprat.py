@@ -3,7 +3,11 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import logging
 # Update this import to use the new service file
+<<<<<<< HEAD
 from src.services.agent_factory import get_plan_agent
+=======
+from src.services.agent_service import get_plan_agent
+>>>>>>> e70ce6d16390ea79964bf514ac696e0bd07885a8
 logger = logging.getLogger(__name__)
 
 # Define request/response models
