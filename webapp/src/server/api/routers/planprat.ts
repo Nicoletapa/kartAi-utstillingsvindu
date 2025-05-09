@@ -14,8 +14,8 @@ interface PlanpratResponse {
   error?: string;
 }
 
-// Update the URL to use the correct path format
-const FASTAPI_PLANPRAT_URL = process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/api/plan-prat` : "http://localhost:8000/api/plan-prat";
+// Use PLANPRAT_URL environment variable directly
+const FASTAPI_PLANPRAT_URL = "http://api:8000/api/plan-prat"; 
 
 export const planpratRouter = createTRPCRouter({
   fetchResponse: publicProcedure

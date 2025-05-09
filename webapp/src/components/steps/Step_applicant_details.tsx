@@ -121,7 +121,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     
     setFormData(newFormData);
     checkFormValidity(newFormData);
-  }, [application]);
+  }, [application, setFormData]);
 
 // In your component, use this effect instead:
 useEffect(() => {
@@ -243,7 +243,7 @@ useEffect(() => {
         }
       }));
     }
-  }, [userDetails, isDirty]); // Remove formData fields from dependencies
+  }, [userDetails, isDirty, formData.applicant.email, formData.applicant.name, setFormData]); 
 
   // Load data from application
   useEffect(() => {
@@ -273,9 +273,8 @@ useEffect(() => {
         }
       };
     });
-  }, [application]); // Only run when application changes
+  }, [application, setFormData]); 
 
-  // Auto-save when isDirty, using debounced saveField from the service
   useEffect(() => {
     if (!isDirty || !applicationID) return;
     

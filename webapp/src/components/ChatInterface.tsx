@@ -1,15 +1,18 @@
 // Location: e.g., src/components/ChatInterface.tsx
 
 import React, { useState } from 'react';
-// You'll likely need a library to easily read cookies in the browser
-import Cookies from 'js-cookie';
+
+// Define a type for the chatbot response
+interface ChatbotResponse {
+  reply: string;
+  // Add any other properties your API returns
+}
 
 function ChatInterface() {
     const [inputValue, setInputValue] = useState('');
     const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'bot' | 'system', content: string }[]>([]);
     const [isBotThinking, setIsBotThinking] = useState(false);
 
-    // --- THIS IS THE CORE FUNCTION WHERE CHANGES ARE NEEDED ---
     const handleSendMessage = async () => {
         const messageText = inputValue.trim();
         if (!messageText) return; // Don't send empty
@@ -19,33 +22,17 @@ function ChatInterface() {
         setInputValue(''); // Clear input
         setIsBotThinking(true);
 
-        // --- Step 1 & 2: Get Session Token ---
-        const sessionCookieName = process.env.NEXT_PUBLIC_SESSION_COOKIE_NAME || 'next-auth.session-token'; // Use env var if possible!
-        const userSessionToken = Cookies.get(sessionCookieName);
-
-        // --- Step 3: Check if Token Exists ---
-        if (!userSessionToken) {
-            console.error("User session token not found. User might be logged out.");
-            setChatMessages(prev => [...prev, { role: 'system', content: "Error: Cannot send message. Please ensure you are logged in." }]);
-            setIsBotThinking(false);
-            return; // Stop processing
-        }
-
-        // --- Step 4: Make HTTP Request to Python Backend ---
+        // Make HTTP Request to Python Backend without authentication
         const pythonChatbotApiUrl = '/api/chatbot'; // Your Python service endpoint
 
         try {
             const response = await fetch(pythonChatbotApiUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    // --- Step 5: Include Custom Header ---
-                    'X-User-Session-Token': userSessionToken
+                    'Content-Type': 'application/json'
                 },
-                // --- Step 6: Send User Message ---
                 body: JSON.stringify({
                     userMessage: messageText
-                    // You could include other context here if needed
                 })
             });
 
@@ -55,8 +42,8 @@ function ChatInterface() {
                 throw new Error(`Chatbot service error: ${response.status} ${response.statusText} - ${errorData}`);
             }
 
-            // --- Step 7: Handle Response ---
-            const result = await response.json(); // Assuming Python returns JSON { reply: "..." }
+            // Handle Response with proper typing
+            const result = await response.json() as ChatbotResponse;
             setChatMessages(prev => [...prev, { role: 'bot', content: result.reply || '...' }]);
 
         } catch (error) {
@@ -66,7 +53,6 @@ function ChatInterface() {
             setIsBotThinking(false);
         }
     };
-    // --- END OF CORE FUNCTION ---
 
     return (
         <div className="chat-container">
@@ -87,7 +73,6 @@ function ChatInterface() {
                     disabled={isBotThinking}
                     placeholder="Type your message..."
                 />
-                {/* This button's onClick triggers the handleSendMessage function */}
                 <button onClick={handleSendMessage} disabled={isBotThinking || !inputValue.trim()}>
                     Send
                 </button>

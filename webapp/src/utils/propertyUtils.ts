@@ -10,8 +10,19 @@ import type {
   GeoJsonProperties 
 } from 'geojson';
 
+// Define more specific types for API responses
 export interface AllowedAreaResponse {
   allowed_building_area: GeoJSON.Geometry | GeoJSON.FeatureCollection;
+}
+
+interface AllowedAreaAPIResponse {
+  allowed_building_area: {
+    type: string;
+    features?: GeoJSON.Feature[];
+    geometry?: GeoJSON.Geometry;
+    coordinates?: number[][][];
+    properties?: GeoJSON.GeoJsonProperties;
+  };
 }
 
 export async function fetchAllowedBuildingArea(
@@ -42,7 +53,7 @@ export async function fetchAllowedBuildingArea(
       return null;
     }
 
-    const data = await response.json();
+    const data = await response.json() as AllowedAreaAPIResponse[];
     console.log("Allowed building area response:", data);
 
     // Handle empty response
@@ -68,20 +79,25 @@ export async function fetchAllowedBuildingArea(
         console.log("Empty FeatureCollection returned");
         return null;
       }
-      // Just use the first feature 
-      feature = geom.features[0];
+      // Just use the first feature - add null check to prevent undefined assignment
+      const firstFeature = geom.features[0];
+      if (!firstFeature) {
+        console.log("First feature is undefined");
+        return null;
+      }
+      feature = firstFeature;
     } 
     // Handle case where we just got a geometry
     else if (["Polygon", "MultiPolygon"].includes(geom.type)) {
       feature = {
         type: "Feature",
-        geometry: geom,
+        geometry: geom as GeoJSON.Geometry,
         properties: {}
       };
     } 
     // Already a feature
     else if (geom.type === "Feature") {
-      feature = geom;
+      feature = geom as GeoJSON.Feature;
     } 
     // Unhandled format
     else {
@@ -99,6 +115,7 @@ export async function fetchAllowedBuildingArea(
 export interface PropertyData {
   geom: GeoJSON.GeoJSON;
   matrikkelnummer?: string;
+  matrikkelnummertekst?: string;
 }
 
 export interface PropertyIdentifiers {
@@ -172,14 +189,25 @@ export function analyzeSpatialRelationship(
               drawnCentroid,
               { units: 'meters' }
             );
-            distanceToProperty = nearestPointOnBoundary.properties.dist ?? null;
-          } catch (error) {
-            console.warn("Error calculating distance to property boundary:", error);
+            distanceToProperty = nearestPointOnBoundary.properties?.dist ?? null;
+          } catch (error: unknown) {
+            // Convert unknown error to string safely
+            const errorMessage = error instanceof Error 
+              ? error.message 
+              : String(error);
+            console.warn("Error calculating distance to property boundary:", errorMessage);
           }
         }
-        nearestPropertyId = firstPropertyBoundary.properties?.matrikkelnummer ?? firstPropertyBoundary.properties?.id ?? null;
-      } catch (error) {
-        console.error("Error during property spatial analysis:", error);
+        nearestPropertyId = 
+          (firstPropertyBoundary.properties?.matrikkelnummer as string | undefined) ?? 
+          (firstPropertyBoundary.properties?.id as string | undefined) ?? 
+          null;
+      } catch (error: unknown) {
+        // Convert unknown error to string safely
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : String(error);
+        console.error("Error during property spatial analysis:", errorMessage);
       }
     }
   }
@@ -202,8 +230,8 @@ export function analyzeSpatialRelationship(
           roadType = "Municipal Road";
         }
       }
-    } catch (error) {
-      console.error("Error during allowed area analysis:", error);
+    } catch (error: unknown) {
+      console.error("Error during allowed area analysis:", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -240,7 +268,31 @@ export const searchProperty = async (
       }
     );
     
-    const data = await response.json() as PropertyData[];
+    if (!response.ok) {
+      console.error(`Error searching for property: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    // First get the response as unknown type to avoid direct any assignment
+    const rawData: unknown = await response.json();
+    
+    // Validate that it's an array before proceeding
+    if (!Array.isArray(rawData)) {
+      console.error('Expected array response from property search');
+      return null;
+    }
+    
+    // Type guard function to validate each property item
+    const isPropertyData = (item: unknown): item is PropertyData => {
+      return typeof item === 'object' && 
+             item !== null && 
+             'geom' in item && 
+             item.geom !== undefined;
+    };
+    
+    // Filter and convert to typed array
+    const data: PropertyData[] = rawData.filter(isPropertyData);
+    
     return data.length > 0 ? data : null;
   } catch (error) {
     console.error('Error searching for property:', error);

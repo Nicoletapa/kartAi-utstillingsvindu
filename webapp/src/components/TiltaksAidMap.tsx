@@ -110,7 +110,7 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBo
       const spatialAnalysis = performSpatialAnalysis(
         geoJson, 
         propertyBoundaries,
-        allowedAreaBoundary || null
+        allowedAreaBoundary ?? null
       );
       console.log('Spatial analysis (incl. allowed area):', spatialAnalysis);
 
@@ -128,7 +128,7 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBo
         const spatialAnalysis = performSpatialAnalysis(
           geoJson,
           propertyBoundaries,
-          allowedAreaBoundary || null
+          allowedAreaBoundary ?? null
         );
 
         if (onShapeDrawn) {

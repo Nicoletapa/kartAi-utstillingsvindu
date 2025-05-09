@@ -1,5 +1,5 @@
 # Use the official Python image from Docker Hub
-FROM python:3.11-slim
+FROM --platform=linux/amd64 python:3.11-slim
 
 # Set environment variables to prevent Python from buffering stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -9,11 +9,10 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /code
 
 # Install dependencies first to leverage Docker layer caching
-COPY ../requirements.txt /code/requirements.txt
+COPY requirements.txt /code/requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
-
 
 # Install Tesseract OCR and other necessary dependencies
 RUN apt-get update && \

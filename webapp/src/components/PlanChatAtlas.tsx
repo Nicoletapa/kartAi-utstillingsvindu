@@ -20,8 +20,8 @@ const isListItem = (lineText: string): boolean =>
 
 const formatText = (text: string): JSX.Element[] => {
   const outputElements: JSX.Element[] = [];
-  if (!text || !text.trim()) {
-    return outputElements; // Return empty array for empty or whitespace-only text
+  if (!text?.trim()) {
+    return outputElements; 
   }
 
   // Split the text into major blocks based on double newlines (paragraph breaks)
@@ -211,19 +211,19 @@ export function PlanPrat({
   function getCoordinatesFromGeometry(geometry: GeoJSON.Geometry): GeoJSON.Position | GeoJSON.Position[] | GeoJSON.Position[][] | GeoJSON.Position[][][] | Array<{type: string; coordinates: unknown}> {
     switch (geometry.type) {
       case 'Point':
-        return (geometry as GeoJSON.Point).coordinates;
+        return (geometry ).coordinates;
       case 'LineString':
-        return (geometry as GeoJSON.LineString).coordinates;
+        return (geometry ).coordinates;
       case 'Polygon':
-        return (geometry as GeoJSON.Polygon).coordinates;
+        return (geometry ).coordinates;
       case 'MultiPoint':
-        return (geometry as GeoJSON.MultiPoint).coordinates;
+        return (geometry ).coordinates;
       case 'MultiLineString':
-        return (geometry as GeoJSON.MultiLineString).coordinates;
+        return (geometry ).coordinates;
       case 'MultiPolygon':
-        return (geometry as GeoJSON.MultiPolygon).coordinates;
+        return (geometry ).coordinates;
       case 'GeometryCollection':
-        return (geometry as GeoJSON.GeometryCollection).geometries.map(g => ({
+        return (geometry ).geometries.map(g => ({
           type: g.type,
           coordinates: getCoordinatesFromGeometry(g)
         }));
@@ -297,24 +297,24 @@ export function PlanPrat({
         const payload = {
           text: sendText,
           spatialData: spatialAnalysisFromStore ? {
-            shapeType: lastDrawnShapeFromStore?.geometry.type || 'unknown',
+            shapeType: lastDrawnShapeFromStore?.geometry.type ?? 'unknown',
             coordinates: lastDrawnShapeFromStore ? 
               getCoordinatesFromGeometry(lastDrawnShapeFromStore.geometry) : 
               [],
             isWithinProperty: Boolean(spatialAnalysisFromStore.isWithinProperty),
             distanceToProperty: spatialAnalysisFromStore.distanceToProperty ?? null,
-            nearestPropertyId: spatialAnalysisFromStore.nearestPropertyId || null,
+            nearestPropertyId: spatialAnalysisFromStore.nearestPropertyId ?? null,
             isWithinAllowedArea: spatialAnalysisFromStore.isWithinAllowedArea ?? null,
-            // Include the new spatial information with proper null checks
+        
             distanceToNeighborProperty: spatialAnalysisFromStore.distanceToNeighborProperty ?? null,
-            neighborPropertyId: spatialAnalysisFromStore.neighborPropertyId || null,
+            neighborPropertyId: spatialAnalysisFromStore.neighborPropertyId ?? null,
             distanceToRoad: spatialAnalysisFromStore.distanceToRoad ?? null,
-            roadType: spatialAnalysisFromStore.roadType || null,
+            roadType: spatialAnalysisFromStore.roadType ?? null,
             buildingSize: spatialAnalysisFromStore.buildingSize ?? null
           } : null
         };
 
-        const response = await queryPlanprat(payload);
+        const response = await queryPlanprat(payload.text);
         setIsTyping(false); 
 
         if (!response) {

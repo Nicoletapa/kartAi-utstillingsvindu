@@ -11,7 +11,8 @@ import { usePropertySearch } from '~/hooks/usePropertySearch'
 import clsx from 'clsx'
 import { usePathname } from 'next/navigation'
 // --- Import the store ---
-import { useChatStore, MIN_OVERSIKT_PATH, MAIN_CHATBOT_SECTION_ID } from '~/store/chatStore'; // Adjust path
+import { useChatStore, MIN_OVERSIKT_PATH, MAIN_CHATBOT_SECTION_ID } from '~/store/chatStore'; 
+
 
 const SmallChatbot = () => {
     const pathname = usePathname();
