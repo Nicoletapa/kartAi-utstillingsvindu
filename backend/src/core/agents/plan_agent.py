@@ -1,452 +1,336 @@
 import logging
-from typing import Dict, List, Any
+import re
+from typing import List, Dict, Any, Tuple, Optional
 
-from langchain_core.prompts import PromptTemplate
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain_core.prompts import ChatPromptTemplate 
+from langchain_core.tools import BaseTool
+from langchain.memory import ConversationBufferMemory
+from langchain_core.exceptions import OutputParserException
+from langchain_core.tools import Tool as LangchainCoreTool
 
+from src.rag_tool import DocumentSearchTool
+from src.search_internet_tool import SearchTool
+from src.spatial_analysis_tool import SpatialAnalysisTool
 from src.core.agents.base import BaseAgent
-from src.document_store import DocumentStore
-from src.core.retrieval.spatial_retriever import SpatialDocumentRetriever
-from src.core.retrieval.property_extractor import PropertyExtractor, PropertyIdentifiers
-from src.data.application_types import get_application_types_by_keyword
+from src.generator import llm
 
+from dotenv import load_dotenv
+
+load_dotenv()
 logger = logging.getLogger(__name__)
 
-class PlanAgent(BaseAgent):
-    """Agent for handling planning and building regulation queries"""
+def extract_markdown_links(text: str) -> Tuple[str, List[Dict[str, str]]]:
+    """
+    Extracts markdown links from text.
+    Returns the text with the markdown links and their associated "Useful links:"
+    or "Nyttige lenker:" header removed, and a list of guide objects.
+    """
+    guides = []
+    # Pattern to find markdown links like [Title](URL)
+    link_pattern = r'\[([^\]]+)\]\(([^)]+)\)'
     
+    # Find all links and store them
+    matches = re.findall(link_pattern, text)
+    for title, url in matches:
+        guides.append({"title": title, "url": url})
+
+    # Start with the original text for modification
+    modified_text = text
+    
+    if guides:
+        # If guides were found, remove all occurrences of the markdown link pattern
+        modified_text = re.sub(link_pattern, '', modified_text)
+        
+        # Remove the "Useful links:" or "Nyttige lenker:" header line.
+        # This regex looks for the header, possibly bolded, followed by optional whitespace and a newline.
+        modified_text = re.sub(r"(\*\*Useful links:\*\*|\bUseful links:)\s*\n?", "", modified_text, flags=re.IGNORECASE)
+        modified_text = re.sub(r"(\*\*Nyttige lenker:\*\*|\bNyttige lenker:)\s*\n?", "", modified_text, flags=re.IGNORECASE)
+        
+        # Clean up potentially multiple blank lines that might result from removals
+        modified_text = re.sub(r'\n\s*\n', '\n', modified_text).strip()
+        
+    return modified_text, guides
+
+
+class PlanAgent(BaseAgent):
+    """Agent for handling planning and building regulation queries using tools."""
+
+    # --- Constants ---
+    RESET_COMMANDS = ["reset", "nullstill samtale", "start på nytt"]
+    
+    # Error Messages
+    MSG_CONVERSATION_RESET = "Samtalen er nullstilt. Hva vil du snakke om nå?"
+    MSG_DEFAULT_SYNC_ERROR = "Beklager, jeg kunne ikke fullføre behandlingen av spørsmålet ditt."
+    MSG_DEFAULT_ASYNC_ERROR = "I encountered an issue while processing your question (async). Please try again or rephrase your query."
+    MSG_PARSING_ERROR_FALLBACK_EMPTY_ANSWER = "Jeg fant relevant informasjon, men klarte ikke å formatere det endelige svaret riktig. Vennligst prøv igjen."
+    MSG_PARSING_ERROR_FALLBACK_GENERIC = "Jeg støtte på et problem underveis i behandlingen av svaret. Vennligst prøv igjen."
+    MSG_OUTPUT_PARSER_EXCEPTION = "Det oppstod en feil under formateringen av svaret. Prøv gjerne å omformulere spørsmålet."
+    MSG_UNEXPECTED_ERROR = "Beklager, en uventet feil oppstod."
+
+    name: str = "PlanAgent"
+    tools: List[BaseTool]
+    agent_executor: AgentExecutor
+    memory: ConversationBufferMemory
+    llm = llm
+
+    doc_search_tool: Optional[DocumentSearchTool]
+    search_tool: Optional[SearchTool]
+    spatial_tool: Any 
+
+    class ResetConversation(Exception):
+        """Custom exception to signal a conversation reset."""
+        pass
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.document_store = DocumentStore()
-        self.property_extractor = PropertyExtractor(llm=self.llm)
-        self.spatial_retriever = SpatialDocumentRetriever()
-    
-    def _is_greeting(self, query: str) -> bool:
-        """
-        Detect if the query is a simple greeting message using LLM classification.
-        For very short messages, still use pattern matching for efficiency.
-        """
-        query_lower = query.lower().strip().rstrip("!.,?")
-        
-       
-        if len(query_lower.split()) <= 2:
-            greeting_patterns = [
-                "hei", "hello", "hallo", "hi", "hey", "god dag", "god morgen", 
-                "god kveld", "morn", "halla", "heisann", "hva skjer", "hvordan går det"
-            ]
-            if any(pattern in query_lower for pattern in greeting_patterns):
-                return True
-        
-        if len(query_lower.split()) <= 5:
-            greeting_prompt = PromptTemplate(
-                template="""
-                Analyze whether this message is ONLY a greeting or contains a substantive question.
-                
-                Examples of just greetings:
-                - "Hei"
-                - "God morgen"
-                - "Hallo, hvordan går det?"
-                - "Hei, er du der?"
-                
-                Examples of substantive questions:
-                - "Hei, kan jeg bygge en garasje?"
-                - "God dag, jeg lurer på regler for tilbygg"
-                - "Hallo, trenger jeg byggetillatelse?"
-                
-                User message: "{query}"
-                
-                Is this ONLY a greeting without a substantive question? Answer YES or NO.
-                """
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history",
+            return_messages=True,
+            output_key='output'
+        )
+        self._initialize_tools()
+        if not self.tools:
+            logger.critical("No tools were successfully initialized. Agent cannot function properly.")
+            raise ValueError("Could not initialize any tools. Please check the logs for detailed errors.")
+        self._initialize_agent_executor()
+        logger.info("PlanAgent initialized.")
+
+    def _initialize_tools(self):
+        """Initializes and collects all tools for the agent."""
+        self.tools = []
+        try:
+            self.doc_search_tool = DocumentSearchTool()
+            self.tools.append(self.doc_search_tool)
+            logger.info("DocumentSearchTool initialized successfully.")
+        except Exception as e:
+            logger.error(f"Failed to initialize DocumentSearchTool: {e}", exc_info=True)
+            self.doc_search_tool = None
+
+        try:
+            self.search_tool = SearchTool()
+            self.tools.append(self.search_tool)
+            logger.info("SearchTool initialized successfully.")
+        except Exception as e:
+            logger.error(f"Failed to initialize SearchTool: {e}", exc_info=True)
+            self.search_tool = None
+
+        try:
+            self.spatial_tool = SpatialAnalysisTool()
+            self.tools.append(self.spatial_tool)
+            logger.info("SpatialAnalysisTool initialized successfully.")
+        except Exception as e:
+            logger.error(f"Failed to initialize SpatialAnalysisTool: {e}", exc_info=True)
+            self.spatial_tool = LangchainCoreTool(
+                name="spatial_analysis",
+                func=lambda _: "Spatial analysis is currently unavailable. Please try again later.",
+                description="Analyze spatial data (currently unavailable)"
             )
-            
-            try:
-                response = self.llm.invoke(greeting_prompt.format(query=query))
-                
-                if hasattr(response, "content"):
-                    content = response.content.strip().upper()
-                else:
-                    content = str(response).strip().upper()
-                
-                return "YES" in content
-            except Exception as e:
-                logger.error(f"Error in greeting classification: {e}")
-                return len(query_lower.split()) <= 3
+            self.tools.append(self.spatial_tool)
         
-        return False
-    
-    def _handle_greeting(self, query:str) -> Dict[str, Any]:
-        """Generate a naturla, conversational respose to greetings"""
+        self.tools = [tool for tool in self.tools if tool is not None]
 
-        greeting_prompt = PromptTemplate(
-        template="""
-        Instructions for the AI assistant:
-        - You are a friendly assistant for Kristiansand municipality's building department.
-        - Write a SHORT, casual greeting response in Norwegian.
-        - Say hello back in a friendly way.
-        - Briefly ask how you can help with questions about building permits or regulations.
-        - Suggest 1-2 common topics people ask about (like building garages or distance requirements).
-        - Keep your response to just 2-3 short sentences.
-        - Be warm but professional.
-        - DON'T include detailed information about building laws or regulations.
-        - DON'T mention map coordinates or specific locations.
-        
-        User message: {query}
-        """
-    )
-        
-        try:
-            response =self.llm.invoke(greeting_prompt.format(query=query))
-            
-            if hasattr(response, "content"):
-                response_text = response.content
-            else:
-                response_text = str(response)
-                
-            return {
-                "answer" : response_text,
-                "guides" : []
-            }
-        except Exception as e :
-            logger.error(f"Error generating greeting response: {e}")
-            return {
-                "answer": "Hei! Hvordan kan jeg hjelpe deg i dag?",
-                "guides": []
-            }
-    
-    
-    def _add_followup_suggestions(self, response_text:str, query:str) ->str:
-        """Add follow-up suggestions to the response if appropriate""" 
-        
-        if len(response_text ) < 100:
-            return response_text
-        
-        suggestion_prompt = PromptTemplate(
-            template="""
-            Based on this user query and your response, suggest 2-3 follow-up questiona the user might want to ask.
-            
-            User query: {query}
-            
-            Your response: {response} 
-            
-            Format your suggestions as a single paragraph starting with "Du kan også spørre meg om:" or similar phrase in Norwegian.
-        Make the suggestions specific and directly related to the topic of the conversation.
-        Keep it brief and natural sounding.
-            """
-        )
-        
-        try: 
-            suggestion_result = self.llm.invoke(suggestion_prompt.format(query=query, response=response_text))
-            if hasattr(suggestion_result, "content"):
-                suggestions = suggestion_result.content
-            else: 
-                suggestions = str(suggestion_result)
-                
-            return f"{response_text}\n\n{suggestions}"
-        except Exception as e:
-            logger.error(f"Error generating follow-up suggestions: {e}")
-            return response_text
-        
-    
-    def process(self, query: str, **kwargs) -> Dict[str, Any]:
-        """
-        Process a planning regulations query
-        
-        Args:
-            query: The user query string
-            
-        Returns:
-            Dict containing answer and guide buttons
-        """
-        
-        logger.info(f"Processing query: {query[:50]}...")
-        
-        if self._is_greeting(query):
-            logger.info("Detected greeting, generating conversational response")
-            return self._handle_greeting(query)
-        
-        try:
-            property_ids = self.property_extractor.extract_ids(query)
-        
-            
-            context_response= self.document_store.query(query)
+    def _initialize_agent_executor(self):
+        """Sets up the prompt, agent, and agent executor."""
+        prompt_template_str = """
+You are a helpful assistant for building regulations in Kristiansand municipality. Speak English. Be polite and clear.
 
-            context = context_response
-            self._log_token_usage(context, "Building regulations context")
-            
-            
-            guide_buttons = []
-            if self._is_building_related(query):  
-                guide_buttons = self._find_relevant_guides(query)
-                
-            
-            if property_ids.gnr is not None or property_ids.bnr is not None:
-                property_context = self._get_property_context(property_ids)
-                if property_context:
-                    context += f"\n\n{property_context}"
-                    
-            application_related = self._is_application_related(query)
-            if application_related:
-                relevant_keywords = self._extract_building_keywords(query)
-                application_types = []
-                for keyword in relevant_keywords:
-                    application_types.extend(get_application_types_by_keyword(keyword))
-                
-                if application_types:
-                    app_context = self._format_application_types(application_types)
-                    context += f"\n\nRelevant application types:\n{app_context}"
-                    
-            prompt = PromptTemplate(
-            template="""
-Instructions for the AI assistant:
-- You are a senior municipality worker with deep expertise in building permits and regulations.
-- Answer the user's question using the context provided.
-- Your answers MUST be DEFINITIVE and DIRECT.
-- When the user asks if they can build something, give a clear YES or NO answer whenever possible.
-- Provide SPECIFIC measurements, distances, and requirements whenever applicable.
-- Use CONCRETE examples to illustrate your points.
-- Avoid hedging language like "it might be", "perhaps", "it depends", unless absolutely necessary.
-- When regulations have exceptions, clearly state both the rule AND the specific exceptions.
-- If the user's question doesn't provide enough details for a definitive answer, ask 1-2 specific follow-up questions.
-- Answer in the same language as the user's question.
-- Don't include URLs directly in your response - they will be provided as clickable buttons.
-- The context below is not seen by the user, only you.
+**CORE RULE:** For all properties, base your answers ONLY on general municipal plan provisions and the guides available via the 'document_search' tool. DO NOT use or assume information from specific zoning plans.
 
-User query: {query}
+**Goal:** Guide users on building rules and permits. Use 'document_search' for local rules (always general municipal plan provisions) and 'spatial_analysis' for map drawings.
 
-Context (not visible to user):
-{context}
+**Available tools:**
+{tools}
+
+**TOOL USAGE AND RESPONSE FORMAT:**
+
+Question: the user's question
+Thought: Your reasoning and plan. Choose tools based on the following:
+    - 'spatial_analysis': Use for map drawings. Analyze placement relative to boundaries, permitted areas, and whether permits (e.g., from a neighbor, road authority) are necessary based on distances/size. Everything MUST be assessed against general municipal plan provisions. The result must be included in 'Final Answer'.
+    - 'document_search': Use for general local building rules (obtained from municipal plan provisions/related guides). Must NOT be used for specific zoning plans.
+    - 'search_internet': Use for national guides (e.g., dibk.no), general info, or if 'document_search' does not provide answers to questions covered by general rules. Avoid searching for specific zoning plans.
+    - Handling missing answers from 'document_search': If you do not find a specific answer in local documents, explain this. Refer to general information (e.g., from DiBK) if relevant, and ALWAYS recommend the user to contact Kristiansand municipality for final clarification.
+Action: one of [{tool_names}]
+Action Input: input for the action.
+Observation: the result of the action.
+... (repeat Thought/Action/Action Input/Observation as needed)
+Thought: I have now attempted to find the information. Assess the result:
+    - Found a clear answer based on general municipal plan provisions: I now have the information. Formulate the answer.
+    - Did NOT find a specific local answer, but found general guidance (e.g., from DiBK): Base the answer on general guidance, and ALWAYS emphasize the need to check with the municipality. Formulate the answer.
+    - Found no relevant information: Inform the user about this and ALWAYS recommend contacting the municipality. Formulate the answer.
+Final Answer: Your answer to the user. The answer MUST contain:
+    - Direct answer to the user's question, based on findings from tools (reflecting general municipal plan provisions).
+    - If map data was used via 'spatial_analysis': Explain how the general rules apply to the drawing, including any permits.
+    - If specific local information was not found: Explain this clearly. Refer to general information (if available), and ALWAYS recommend contacting Kristiansand municipality for final confirmation.
+    - Source references (e.g., "According to the general municipal plan provisions...", "General guidance from DiBK suggests...").
+    - A "Useful links:" section with Markdown links to official resources (`[Text](URL)`).
+    - Optionally, 1-2 relevant follow-up questions.
+
+**START!**
+
+History: {chat_history}
+User: {input}
+Thought: {agent_scratchpad}
 """
-)
-            self._log_token_usage(prompt.format(query=query, context=context), "Final prompt")
-            
-            chain = prompt | self.llm
-            response = chain.invoke({"query": query, "context": context})
-            if hasattr(response, "content"):
-                response_text = response.content
-            elif isinstance(response, dict) and "text" in response:
-                response_text = response.get("text", "")
-            else:
-                response_text = str(response)
-            response_text = self._add_followup_suggestions(response_text, query)
-            
-            logger.info(f"Generated response of length {len(response_text)}")
-            
-            return {
-                "answer": response_text,
-                "guides": guide_buttons
-            }
-            
-        except Exception as e: 
-            logger.error(f"Error processing query: {e}")
-            return {
-                "answer": "Beklager, det oppstod en feil under behandlingen av spørringen din.",
-                "guides": []
-            }
-    
-    def _is_building_related(self, query: str) -> bool:
-        """Check if query is related to building regulations using LLM instead of keywords"""
+        agent_prompt = ChatPromptTemplate.from_template(prompt_template_str)
+        tool_descriptions = "\n".join(f"- {tool.name}: {tool.description}" for tool in self.tools)
+        tool_names = ", ".join([tool.name for tool in self.tools])
+        final_agent_prompt = agent_prompt.partial(tools=tool_descriptions, tool_names=tool_names)
         
-        if len(query.split()) <= 2:
-            quick_check_keywords = ["bygge", "garasje", "tilbygg", "søknad", "avstand"]
-            query_lower = query.lower()
-            if any(keyword in query_lower for keyword in quick_check_keywords):
-                return True
-        
-        building_prompt = PromptTemplate(
-            template="""
-            Analyze the following user query and determine if it is related to building regulations, construction, 
-            building permits, property development, or similar topics.
-            
-            User query: "{query}"
-            
-            Examples of building-related queries:
-            - "Kan jeg bygge garasje på tomten min?"
-            - "Hvor nær nabogrensen kan jeg sette opp en bod?"
-            - "Trenger jeg byggetillatelse for å bygge veranda?"
-            - "Regler for å bygge tilbygg til huset"
-            - "Hva er maks høyde for en garasje?"
-            
-            Examples of non-building-related queries:
-            - "Når åpner biblioteket?"
-            - "Hvordan betaler jeg kommunale avgifter?"
-            - "Hvem er ordføreren i kommunen?"
-            - "Kan jeg få barnehageplass nå?"
-            
-            Respond with only "YES" if the query is about building regulations, construction, property development, 
-            or related topics. Otherwise respond with "NO".
-            """
+        agent = create_react_agent(self.llm, self.tools, final_agent_prompt)
+        self.agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.tools,
+            verbose=True,
+            handle_parsing_errors=True, 
+            max_iterations=6,
+            memory=self.memory,
+            return_intermediate_steps=True,
+            early_stopping_method="force",
         )
+
+    def _prepare_input(self, query: str, spatial_data: Optional[Dict[str, Any]] = None) -> None:
+        if query.lower() in self.RESET_COMMANDS:
+            self.reset_memory()
+            raise self.ResetConversation()
+        logger.info(f"Processing query: '{query[:50]}...' with spatial data: {spatial_data is not None}")
+        if spatial_data and self.spatial_tool and \
+           hasattr(self.spatial_tool, 'update_spatial_context') and \
+           callable(self.spatial_tool.update_spatial_context):
+            self.spatial_tool.update_spatial_context(spatial_data)
+            drawing_type = spatial_data.get('shapeType', 'shape')
+            logger.info(f"Spatial context updated with a {drawing_type} drawing.")
+
+    def _handle_agent_parsing_error(self, agent_result: Dict[str, Any]) -> Optional[str]:
+        """Attempts to recover a 'Final Answer' from intermediate steps if a parsing error occurred."""
+        if "intermediate_steps" not in agent_result:
+            logger.warning("Parsing error recovery: No intermediate steps found.")
+            return None
+
+        steps = agent_result["intermediate_steps"]
+        if not steps:
+            logger.warning("Parsing error recovery: Intermediate steps list is empty.")
+            return None
         
+        last_action_log = steps[-1][0].log
+        if "Final Answer:" in last_action_log:
+            try:
+                final_answer_text = last_action_log.split("Final Answer:", 1)[1].strip()
+                if final_answer_text:
+                    logger.info("Successfully extracted Final Answer from last step after parsing error.")
+                    return final_answer_text
+                else:
+                    logger.warning("Found 'Final Answer:' in logs, but the text after it was empty.")
+                    return self.MSG_PARSING_ERROR_FALLBACK_EMPTY_ANSWER
+            except Exception as extract_err:
+                logger.error(f"Error extracting Final Answer from logs after parsing error: {extract_err}", exc_info=True)
+                return self.MSG_PARSING_ERROR_FALLBACK_GENERIC
+        else:
+            logger.warning("Parsing error occurred, but 'Final Answer:' not found in the last LLM output log.")
+            return self.MSG_PARSING_ERROR_FALLBACK_GENERIC
+
+    def _process_agent_output(self, agent_result: Dict[str, Any], is_async: bool = False) -> Dict[str, Any]:
+        answer = agent_result.get("output")
+
+        if isinstance(answer, str) and "Could not parse LLM output:" in answer:
+            logger.warning("Default parsing error detected, attempting custom recovery.")
+            recovered_answer = self._handle_agent_parsing_error(agent_result)
+            if recovered_answer:
+                answer = recovered_answer
+            else: 
+                answer = self.MSG_PARSING_ERROR_FALLBACK_GENERIC
+
+
+        if not isinstance(answer, str) or not answer.strip(): 
+            default_message = self.MSG_DEFAULT_ASYNC_ERROR if is_async else self.MSG_DEFAULT_SYNC_ERROR
+            logger.warning(f"Agent output was empty or not a string. Using default message: {default_message}")
+            answer = default_message
+            return {"answer": answer, "guides": []}
+
+        answer_text, guides = extract_markdown_links(answer.strip())
+        log_prefix = "(async)" if is_async else ""
+        logger.info(f"Extracted {len(guides)} guides from answer {log_prefix}.")
+        return {"answer": answer_text, "guides": guides}
+
+    def _execute_agent_logic(self, query: str, is_async: bool) -> Dict[str, Any]:
+        """Helper to encapsulate the agent invocation and common error handling."""
         try:
-            response = self.llm.invoke(building_prompt.format(query=query))
-            
-            if hasattr(response, "content"):
-                content = response.content.strip().upper()
+            if is_async:
+                return self.agent_executor.ainvoke({"input": query})
             else:
-                content = str(response).strip().upper()
+                return self.agent_executor.invoke({"input": query})
+        except OutputParserException as e:
+            logger.error(f"OutputParserException during agent execution (is_async={is_async}): {e}", exc_info=True)
             
-            logger.debug(f"Building classification for '{query[:30]}...': {content}")
-            
-            return "YES" in content
-            
+            return {"output": self.MSG_OUTPUT_PARSER_EXCEPTION} 
         except Exception as e:
-            logger.error(f"Error in building classification: {e}")
-            
-            building_keywords = [
-                "bygge", "bygging", "byggeregler", "garasje", "tilbygg", "påbygg", 
-                "hus", "bolig", "enebolig", "rekkehus", "hytte", "bod", "uthus",
-                "søknad", "søknadspliktig", "tillatelse", "regulering",
-                "avstand", "nabogrense", "høyde", "etasje", "areal"
-            ]
-            
-            query_lower = query.lower()
-            return any(keyword in query_lower for keyword in building_keywords)
-    
-    
-    def _find_relevant_guides(self, query: str) -> List[Dict[str, str]]:
-        """Find relevant building guides for the query"""
-        # Implement web search functionality here
-        # For now, return empty list as placeholder
-        return []
-    
-    def _get_property_context(self, property_ids: PropertyIdentifiers) -> str:
-        """Get context for a specific property"""
-        # Here you would implement the retrieval of property-specific documents
-        # For now, return a placeholder
-        return f"Property information for gnr: {property_ids.gnr}, bnr: {property_ids.bnr}"
-    
-    def _is_application_related(self, query: str) -> bool:
-        """Check if query is related to building application processes using LLM classification"""
-        if len(query.split()) <= 3:
-            application_keywords = [
-                "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
-                "tillatelse", "unntatt søknadsplikt", "søknadsprosess", "ansvarlig søker"
-            ]
-            query_lower = query.lower()
-            if any(keyword in query_lower for keyword in application_keywords):
-                return True
-        
-        application_prompt = PromptTemplate(
-            template="""
-            Analyze if this query is about building permit applications, application processes, 
-            documentation requirements, or anything related to permission/permitting processes 
-            for construction.
-            
-            Examples of application-related queries:
-            - "Hvordan søker jeg om å bygge garasje?"
-            - "Trenger jeg å søke om tillatelse for et tilbygg?"
-            - "Hvilken dokumentasjon trenger jeg for byggesøknaden?"
-            - "Er garasjer under 50m² søknadspliktige?"
-            - "Hva er forskjellen mellom søknadspliktig og ikke-søknadspliktig?"
-            
-            Examples of non-application-related queries:
-            - "Hvor høy kan en garasje være?"
-            - "Hva er minsteavstand til nabogrense?"
-            - "Hvilke materialer kan jeg bruke i ytterveggen?"
-            - "Kan jeg bygge på den tomten?"
-            
-            User query: "{query}"
-            
-            Is this query related to building permits or application processes? Answer YES or NO.
-            """
-        )
-        
+            logger.error(f"Unexpected error during agent execution (is_async={is_async}): {e}", exc_info=True)
+            return {"output": self.MSG_UNEXPECTED_ERROR} 
+
+    def process(self, query: str, spatial_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         try:
-            response = self.llm.invoke(application_prompt.format(query=query))
-            
-            if hasattr(response, "content"):
-                content = response.content.strip().upper()
-            else:
-                content = str(response).strip().upper()
-            
-            return "YES" in content
-        except Exception as e:
-            logger.error(f"Error in application classification: {e}")
-            
-            application_keywords = [
-                "søknad", "søke", "søknadspliktig", "byggesøknad", "byggetillatelse",
-                "tillatelse", "unntatt søknadsplikt", "søknadsprosess", "ansvarlig søker"
-            ]
-            
-            query_lower = query.lower()
-            return any(keyword in query_lower for keyword in application_keywords)
-    
-    def _extract_building_keywords(self, query: str) -> List[str]:
-        """Extract relevant building keywords from the query using LLM analysis"""
-        standard_keywords = [
-            "garasje", "tilbygg", "påbygg", "enebolig", "hytte", "bod", 
-            "uthus", "carport", "brygge", "terrasse", "veranda"
-        ]
+            self._prepare_input(query, spatial_data)
+        except self.ResetConversation:
+            return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
         
-        query_lower = query.lower()
-        if len(query.split()) <= 3:
-            return [keyword for keyword in standard_keywords if keyword in query_lower]
-        
-        keyword_prompt = PromptTemplate(
-            template="""
-            Extract the specific building structure types mentioned in this query.
-            
-            Common structure types include:
-            - garasje/carport
-            - tilbygg/påbygg
-            - enebolig
-            - hytte/fritidsbolig
-            - bod/uthus
-            - terrasse/veranda/balkong
-            - brygge
-            - levegg/gjerde
-            
-            User query: "{query}"
-            
-            List only the specific structure types mentioned, one per line. Use Norwegian terms.
-            If no specific structure is mentioned, respond with "none".
-            """
-        )
-        
+        logger.info("Invoking agent executor (synchronously)...")
+        agent_result = self._execute_agent_logic(query, is_async=False)
+        return self._process_agent_output(agent_result, is_async=False)
+
+    async def aprocess(self, query: str, spatial_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         try:
-            response = self.llm.invoke(keyword_prompt.format(query=query))
-            
-            if hasattr(response, "content"):
-                content = response.content.strip()
-            else:
-                content = str(response).strip()
-            
-            if content.lower() == "none":
-                return []
-            
-            extracted_keywords = [kw.strip().lower() for kw in content.split('\n')]
-            
-            extracted_keywords = [kw for kw in extracted_keywords if kw]
-            
-            if not extracted_keywords:
-                return [keyword for keyword in standard_keywords if keyword in query_lower]
-                
-            return extracted_keywords
-            
+            self._prepare_input(query, spatial_data)
+        except self.ResetConversation:
+            return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
+
+        logger.info("Invoking agent executor (asynchronously)...")
+        agent_result = await self._execute_agent_logic(query, is_async=True) 
+        return self._process_agent_output(agent_result, is_async=True)
+
+    async def _execute_agent_logic_async(self, query: str) -> Dict[str, Any]:
+        """Helper to encapsulate the async agent invocation and common error handling."""
+        try:
+            return await self.agent_executor.ainvoke({"input": query})
+        except OutputParserException as e:
+            logger.error(f"OutputParserException during async agent execution: {e}", exc_info=True)
+            return {"output": self.MSG_OUTPUT_PARSER_EXCEPTION}
         except Exception as e:
-            logger.error(f"Error in keyword extraction: {e}")
-            
-            return [keyword for keyword in standard_keywords if keyword in query_lower]
-    
-    def _format_application_types(self, app_types: List) -> str:
-        """Format application types into a readable context string"""
-        context = []
+            logger.error(f"Unexpected error during async agent execution: {e}", exc_info=True)
+            return {"output": self.MSG_UNEXPECTED_ERROR}
+
+    async def aprocess(self, query: str, spatial_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+        try:
+            self._prepare_input(query, spatial_data)
+        except self.ResetConversation:
+            return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
+
+        logger.info("Invoking agent executor (asynchronously)...")
+        agent_result = await self._execute_agent_logic_async(query)
+        return self._process_agent_output(agent_result, is_async=True)
         
-        for app in app_types:
-            app_info = [
-                f"--- {app.name} ({app.id}) ---",
-                f"Beskrivelse: {app.description}",
-                "Krav:",
-            ]
-            
-            for req in app.requirements:
-                app_info.append(f"- {req}")
-                
-            app_info.append(f"Søknadsprosess: {app.application_process}")
-            app_info.append("Nødvendig dokumentasjon:")
-            
-            for doc in app.documentation_needed:
-                app_info.append(f"- {doc}")
-                
-            context.append("\n".join(app_info))
-            
-        return "\n\n".join(context)
+    def _execute_agent_logic_sync(self, query: str) -> Dict[str, Any]:
+        """Helper to encapsulate the sync agent invocation and common error handling."""
+        try:
+            return self.agent_executor.invoke({"input": query})
+        except OutputParserException as e:
+            logger.error(f"OutputParserException during sync agent execution: {e}", exc_info=True)
+            return {"output": self.MSG_OUTPUT_PARSER_EXCEPTION}
+        except Exception as e:
+            logger.error(f"Unexpected error during sync agent execution: {e}", exc_info=True)
+            return {"output": self.MSG_UNEXPECTED_ERROR}
+
+    def process(self, query: str, spatial_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+        try:
+            self._prepare_input(query, spatial_data)
+        except self.ResetConversation:
+            return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
+        
+        logger.info("Invoking agent executor (synchronously)...")
+        agent_result = self._execute_agent_logic_sync(query)
+        return self._process_agent_output(agent_result, is_async=False)
+
+    def reset_memory(self):
+        if self.memory:
+            self.memory.clear()
+        logger.info("Conversation memory reset.")
+

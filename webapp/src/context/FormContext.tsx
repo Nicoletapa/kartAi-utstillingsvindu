@@ -83,7 +83,10 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
 
   return (
-    <FormContext.Provider value={{ applicantFormData, updateApplicantFormData }}>
+    <FormContext.Provider value={{ 
+      applicantFormData, 
+      updateApplicantFormData 
+    }}>
       {children}
     </FormContext.Provider>
   );

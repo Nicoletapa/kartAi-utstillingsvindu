@@ -8,6 +8,7 @@ import Footer from "../components/Footer";
 import { getServerAuthSession } from "~/server/auth";
 import Providers from "../components/Providers";
 import { Toaster } from "react-hot-toast";
+import dynamic from "next/dynamic";
 
 export const metadata: Metadata = {
   title: "KartAI AI-modeller",
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
+const SmallChatbotWithNoSSR = dynamic(
+  () => import('~/components/SmallChatbot'),
+  { ssr: false }
+);
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -23,18 +29,18 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
-     
       <body className="min-h-screen">
         <Providers session={session!}>
           <Navbar />
           <div className="flex min-h-screen flex-col">
             <main className="flex-1">{children}</main>
             <Toaster position="bottom-right" />
-
             <Footer />
           </div>
+          <SmallChatbotWithNoSSR />
         </Providers>
       </body>
     </html>
   );
 }
+

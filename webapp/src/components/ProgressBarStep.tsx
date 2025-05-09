@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle, Check } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
