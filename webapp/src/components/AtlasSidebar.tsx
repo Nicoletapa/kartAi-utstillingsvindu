@@ -1,6 +1,5 @@
 import Sidebar from "./Sidebar";
 
-
 interface AtlasSidebarInterface {
   children: React.ReactNode;
 }

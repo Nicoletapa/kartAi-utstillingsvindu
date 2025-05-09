@@ -8,7 +8,6 @@ interface BruksendreStep2_0Props {
 }
 
  const BruksendreStep2_0: React.FC<BruksendreStep2_0Props> = ({ applicationID, onValidityChange }) => {
-  // Mark this step as valid when component mounts
   useEffect(() => {
     onValidityChange(true);
   }, [onValidityChange]);
@@ -31,9 +30,7 @@ interface BruksendreStep2_0Props {
   }
   return (
     <div>
-      
         <CadaidAtlas applicationID={applicationID} />
-      
     </div>
   );
 };

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 
-interface ChecklistSectionData { // Renamed to avoid conflict if needed elsewhere
+interface ChecklistSectionData {
   title: string;
   items: string[];
 }
@@ -144,22 +144,6 @@ const ChecklistItem = ({
   </label>
 );
 
-// Remove the unused ChecklistSection component definition
-// const ChecklistSection = ({
-//   section
-// }: {
-//   section: ChecklistSectionData
-// }) => (
-//   <div>
-//     <h3 className='text-xl font-semibold text-kartAI-blue mb-3'>{section.title}</h3>
-//     <div className='space-y-3'>
-//       {section.items.map((item, i) => (
-//         <ChecklistItem key={i} item={item} checked={false} onChange={() => { /* Empty function caused error */ }} />
-//       ))}
-//     </div>
-//   </div>
-// );
-
 const ChecklistAtlas = () => {
   const [activeTab, setActiveTab] = useState<'for' | 'under' | 'etter'>('for');
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
@@ -224,7 +208,7 @@ const ChecklistAtlas = () => {
                   key={i}
                   item={item}
                   checked={checkedItems[item] ?? false}
-                  onChange={() => handleCheckboxChange(item)} // Use the actual handler
+                  onChange={() => handleCheckboxChange(item)}
                 />
               ))}
             </div>
