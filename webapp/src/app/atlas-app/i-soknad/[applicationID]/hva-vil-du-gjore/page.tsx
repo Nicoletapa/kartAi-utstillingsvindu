@@ -5,13 +5,15 @@ import ProjectType from "../../../../../components/ProjectType";
 
 export default function Page() {
   const [formData, setFormData] = useState({ description: "" });
+  const [isFormValid, setIsFormValid] = useState<boolean>(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   
   const handleValidityChange = (isValid: boolean) => {
-    console.log("Form validity:", isValid);
+    setIsFormValid(isValid);
   };
   
   const handleUpload = (files: File[]) => {
-    console.log("Files uploaded:", files);
+    setUploadedFiles(files);
   };
 
   return (

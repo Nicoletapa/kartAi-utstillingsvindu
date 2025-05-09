@@ -12,13 +12,9 @@ interface BruksendreStep2_0Props {
     onValidityChange(true);
   }, [onValidityChange]);
   
-  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+  const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
 
   void saveField('progress.currentStep', '2_0');
-
-    useEffect(() => {
-      console.log('Changes Saved:', isSaving);
-    }, [isSaving]);
 
   if (!applicationID) {
     return (

@@ -58,8 +58,6 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     externalSetFormData((prev) => ({ ...prev, [name]: value }));
     checkFormValidity(updatedFormData);
 
-    console.log(`Saving field: ${name} with value:`, value);
-
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
     if (Array.isArray(value)) {

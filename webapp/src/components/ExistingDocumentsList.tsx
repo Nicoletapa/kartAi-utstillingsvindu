@@ -53,7 +53,6 @@ const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      console.log("Files dropped:", acceptedFiles.length);
       onUpload(acceptedFiles);
     }
   }, [onUpload]);

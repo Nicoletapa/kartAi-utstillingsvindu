@@ -10,7 +10,6 @@ import {
 import { RadioGroup, Tooltip } from '../ui/ui-components';
 import type {SmaProsjekterFormData} from '~/types/formTypes';
 
-// Building measurement inputs
 const buildingInputs = [
   { name: 'size', label: 'Størrelse:', placeholder: 'F.eks. 24', unit: 'm²' },
   { name: 'mønehøyde', label: 'Mønehøyde:', placeholder: 'F.eks. 4.5', unit: 'meter' },
@@ -20,14 +19,12 @@ const buildingInputs = [
   { name: 'distance_road', label: 'Avstand til vei:', placeholder: 'F.eks. 5', unit: 'meter' },
 ];
 
-// Distance measurement inputs
 const distanceInputs = [
   { name: 'neighbor_boundary', label: 'Nabogrense:', placeholder: 'F.eks. 4', unit: 'meter' },
   { name: 'road_center', label: 'Midten av vei:', placeholder: 'F.eks. 6', unit: 'meter' },
   { name: 'nearest_building', label: 'Nærmeste bygning på naboeiendom:', placeholder: 'F.eks. 5', unit: 'meter' },
 ];
 
-// Building density inputs
 const buildingDensityInputs = [
   { name: 'allowed_utilization', label: 'Tillatt grad av utnytting:', unit: '', wideLabel: true },
   { name: 'property_net_area', label: 'Tomtens nettoareal:', unit: 'm²', wideLabel: true },
@@ -36,7 +33,6 @@ const buildingDensityInputs = [
   { name: 'utilization_after_project', label: 'Grad av utnytting etter prosjekt:', unit: '', wideLabel: true },
 ];
 
-// Calculation methods - use the constants from formTypes
 const calculationMethodOptions = [
   { label: 'BYA -', value: CALCULATION_METHODS.BYA },
   { label: 'BRA -', value: CALCULATION_METHODS.BRA },
@@ -47,7 +43,6 @@ const calculationMethodOptions = [
   { label: 'U-grad', value: CALCULATION_METHODS.U_GRAD },
 ];
 
-// Environmental conflicts
 const environmentalConflictGroups = [
   [
     { name: 'distance_train_tracks', label: 'Er det mindre enn 30 meter til nærmeste trikke-eller togspor?' },
@@ -82,21 +77,17 @@ const Step1_1: React.FC<Step1_1Props> = ({
 
   const checkFormValidity = (data: SmaProsjekterFormData) => {
     const basicFieldsValid =
-      // Building measurements
       (data.size?.trim() ?? '') !== '' &&
       (data.mønehøyde?.trim() ?? '') !== '' &&
       (data.gesimshøyde?.trim() ?? '') !== '' &&
       (data.distance_road?.trim() ?? '') !== '' &&
       
-      // Distance measurements
       (data.road_center?.trim() ?? '') !== '' &&
       (data.neighbor_boundary?.trim() ?? '') !== '' &&
       (data.nearest_building?.trim() ?? '') !== '' &&
       
-      // Calculation method
       (data.calculation_method?.length ?? 0) > 0 &&
       
-      // Environmental conflicts
       (data.distance_train_tracks === 'Ja' || data.distance_train_tracks === 'Nei') &&
       (data.distance_water_sewer_pipes === 'Ja' || data.distance_water_sewer_pipes === 'Nei') &&
       (data.distance_high_voltage_lines === 'Ja' || data.distance_high_voltage_lines === 'Nei') &&
@@ -105,21 +96,17 @@ const Step1_1: React.FC<Step1_1Props> = ({
       (data.protected_species_present === 'Ja' || data.protected_species_present === 'Nei') &&
       (data.cultural_heritage_site === 'Ja' || data.cultural_heritage_site === 'Nei') &&
       
-      // Building density
       (data.allowed_utilization?.trim() ?? '') !== '' &&
       (data.property_net_area?.trim() ?? '') !== '' &&
       (data.current_area?.trim() ?? '') !== '' &&
       (data.future_area?.trim() ?? '') !== '' &&
       (data.utilization_after_project?.trim() ?? '') !== '' &&
       
-      // Access
       (data.new_driveway === 'Ja' || data.new_driveway === 'Nei') &&
       
-      // Plan compliance
       (data.planCompliance === 'Ja' || data.planCompliance === 'Nei') &&
       (data.planCompliance !== 'Nei' || (data.nonComplianceReason?.trim() ?? '') !== '');
 
-    // Validate road_type only if new driveway is planned
     const drivewayValid = data.new_driveway === 'Nei' || data.road_type !== '';
 
     const isValid = basicFieldsValid && drivewayValid;
@@ -136,23 +123,18 @@ const Step1_1: React.FC<Step1_1Props> = ({
     externalSetFormData((prev) => ({ ...prev, [name]: value }));
     checkFormValidity(updatedFormData);
 
-    console.log(`Saving field: ${name} with value:`, value);
-
-    // Get the mapped field path for saving to the backend
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
-    // Save using the resolved field path
-
     try {
       if (Array.isArray(value)) {
-        void saveField(fieldPath, JSON.stringify(value)); // Added void to handle promise
+        void saveField(fieldPath, JSON.stringify(value));
       } else {
-        void saveField(fieldPath, value.toString()); // Added void to handle promise
+        void saveField(fieldPath, value.toString());
       }
     } catch (error) {
       console.error(`Error saving field ${fieldPath}:`, error);
     }
-  }; // This brace now correctly closes handleFieldChange
+  };
 
   const tooltipContents = {
     buildingDetails: 'Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.',
@@ -171,30 +153,24 @@ const Step1_1: React.FC<Step1_1Props> = ({
     handleFieldChange(e.target.name, e.target.value);
   };
 
-  // Handle calculation method changes
   const handleCalculationMethodChange = (method: string) => {
-    // Since calculation_method is already an array in the type definition,
-    // we don't need to split it
     const currentMethods = formData.calculation_method || [];
     
     const updatedMethods = currentMethods.includes(method)
       ? currentMethods.filter(v => v !== method)
       : [...currentMethods, method];
     
-    // Pass the array directly, no need to join
     handleFieldChange('calculation_method', updatedMethods);
   };
 
   useEffect(() => {
     checkFormValidity(formData);
-  
   }, []); 
 
   return (
     <div className="justify-center flex flex-col w-full">
       <h1 className="text-3xl font-bold justify-center flex">Detaljer til det du vil gjøre</h1>
 
-      {/* Building Details Section */}
       <div className="border-2 border-gray-400 rounded-lg mt-4 p-4" data-cy="main-container">
         <div className="flex flex-col md:flex-row">
           <div className="w-full md:w-3/6" data-cy="left-column">
@@ -298,7 +274,6 @@ const Step1_1: React.FC<Step1_1Props> = ({
         </div>
       </div>
 
-      {/* Building Density Section */}
       <div className="border-2 border-gray-400 rounded-lg mt-4 p-4">
         <h2 className="font-medium inline-flex">
           Utnyttningsgrad
@@ -333,7 +308,6 @@ const Step1_1: React.FC<Step1_1Props> = ({
         </div>
       </div>
 
-      {/* Environmental Conflicts Section */}
       <div className="w-full min-h-28 mt-4 p-4 border-2 border-gray-400 rounded-lg space-y-4">
         <h2 className="font-medium inline-flex">
           Kan byggeplanene dine være i konflikt med omgivelsene?
@@ -365,7 +339,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
           Svarer du ja på noen av disse, må du legge ved tillatelse eller uttalelse fra eier.
         </p>
 
-        {environmentalConflictGroups[1]!.map((item) => ( // Add non-null assertion operator (!)
+        {environmentalConflictGroups[1]!.map((item) => (
           <RadioGroup
             key={item.name}
             name={item.name}
@@ -377,7 +351,6 @@ const Step1_1: React.FC<Step1_1Props> = ({
         ))}
       </div>
 
-      {/* Driveway Section */}
       <div className="border-2 border-gray-400 rounded-lg mt-4 p-4">
         <h2 className="font-medium mb-2 inline-flex">
           Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
@@ -437,7 +410,6 @@ const Step1_1: React.FC<Step1_1Props> = ({
         )}
       </div>
 
-      {/* Plan Compliance Section */}
       <div className="border-2 border-gray-400 rounded-lg mt-4 p-4">
         <h2 className="font-medium mb-2">
           Er tiltaket i samsvar med gjeldende plan?

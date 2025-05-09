@@ -83,7 +83,7 @@ const fetchDetection = async (formData: FormData): Promise<Detection[]> => {
       throw new Error(`API error: ${response.status}`);
     }
     
-    return await response.json();
+    return await response.json() as Detection[];
   } catch (error) {
     console.error("Fetch detection error:", error);
     throw error;
@@ -222,7 +222,6 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({ applicationID }) => {
 
   const handleFileUpload = useCallback(async (uploadedFiles: File[]) => {
     if (state.isProcessing || state.isLoading || !session?.user?.id || !applicationID) {
-      console.log("Upload conditions not met, skipping");
       return;
     }
 

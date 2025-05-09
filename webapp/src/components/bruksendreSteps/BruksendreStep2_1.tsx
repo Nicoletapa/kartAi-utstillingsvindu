@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { ApplicationService } from '~/utils/api-service';
 import ProcessStep2_1 from '../duplicateSteps/ProcessStep2_1';
 
@@ -7,13 +7,9 @@ interface BruksendreStep2_1Props {
 }
 
 const BruksendreStep2_1: React.FC<BruksendreStep2_1Props> = ({ applicationID }) => {
-    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
 
     void saveField('progress.currentStep', '2_1');
-
-    useEffect(() => {
-      console.log('Changes Saved:', isSaving);
-    }, [isSaving]);
 
   return (
     <div>

@@ -13,7 +13,7 @@ const BruksendreStep4_0: React.FC<BruksendreStep4_0Props> = ({ applicationID }) 
 
   return (
     <div>
-       <AndreVedlegg documents={[]} onUpload={() => {}} />
+       <AndreVedlegg onUpload={(files) => console.log('Uploaded files:', files)} />
     </div>
   )
 }

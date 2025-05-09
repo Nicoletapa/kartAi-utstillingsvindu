@@ -7,7 +7,6 @@ import ProgressBarStep from '~/components/ProgressBarStep';
 export default function Bruksendring() {
   const params = useParams();
   const applicationID = parseInt(params.applicationID as string, 10);
-  console.log("BruksEndring page - ApplicationID:", applicationID);
 
   return (
     <div className="min-h-screen">

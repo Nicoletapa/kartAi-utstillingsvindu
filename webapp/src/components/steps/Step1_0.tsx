@@ -42,7 +42,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
     const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
     const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
     
-    const { userData, searchInput, setSearchInput, errorMessage, setErrorMessage } = usePropertySearch();
+    const { userData } = usePropertySearch();
       
     const mapRef = useRef<Map | null>(null);
     
@@ -67,8 +67,6 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
       handleFieldChange(e.target.name, e.target.checked);
     };
     
-    
-
       const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         handleFieldChange(e.target.name, e.target.value);
       };
@@ -96,13 +94,9 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
     
         externalSetFormData((prev) => ({ ...prev, [name]: value }));
         checkFormValidity(updatedFormData);
-    
-        console.log(`Saving field: ${name} with value:`, value);
-    
-        // Get the mapped field path for saving to the backend
+        
         const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
         
-        // Save using the resolved field path
         try {
           if (Array.isArray(value)) {
              void saveField(fieldPath, JSON.stringify(value));
@@ -112,7 +106,6 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
           console.log(`Successfully saved field: ${name}`);
         } catch (error) {
           console.error(`Error saving field ${name}:`, error);
-          // Optionally: Add user feedback about the save error here
         }
       };
 
@@ -283,7 +276,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
-      </div>
+    </div>
   )
 }
 

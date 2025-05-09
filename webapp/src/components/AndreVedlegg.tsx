@@ -122,7 +122,9 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({
     }, []);
 
     const handleMouseEnter = useCallback((box: string) => {
-        timeoutId && clearTimeout(timeoutId);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
         setHoveredBox(box);
     }, [timeoutId]);
 

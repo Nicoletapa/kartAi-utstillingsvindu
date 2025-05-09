@@ -272,7 +272,6 @@ export default function ProgressBarStep({
             isFirstStep: index === 0,
         };
     });
-    console.log("ProgressBarStep rendering with applicationID:", applicationID);
 
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 1;
     const isAtLastStep = currentStep === 6 && currentSubstep === 0; 

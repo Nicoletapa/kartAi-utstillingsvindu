@@ -62,7 +62,8 @@ const checkboxOptions = {
 const ProjectType: React.FC<PageProps> = ({
   formData: externalFormData,
   setFormData: externalSetFormData,
-  onValidityChange = () => {}, 
+  onValidityChange = (isValid: boolean) => {
+    console.log("Form validity changed:", isValid);},  
 }) => {
     const router = useRouter();
     const params = useParams();
@@ -252,7 +253,6 @@ const ProjectType: React.FC<PageProps> = ({
         setPropertyBoundaries([propertyFeature]);
     
         if (!loggedPropertyData.current) {
-          console.log("Current property data:", data[0]);
           loggedPropertyData.current = true;
         }
     

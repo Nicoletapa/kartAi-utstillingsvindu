@@ -19,10 +19,6 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     const sidebarRef = useRef(null);
     const contentRef = useRef(null);
 
-    const isMainPage = () => {
-        return pathname === "/atlas-app" || pathname === "/atlas-app/";
-    }
-
     const sidebarItems = [
         { text: "Min Oversikt", href: "/atlas-app/sidebar/min-oversikt", icon: <LayoutGrid size={20} /> },
         { text: "Før du søker", href: "/atlas-app/sidebar/for-du-soker", icon: <Info size={20} /> },
@@ -50,11 +46,6 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
-    
-    useEffect(() => {
-        console.log('Current pathname:', pathname);
-        console.log('Is main page:', isMainPage());
-    }, [pathname]);
 
     return (
         <div className="flex">

@@ -1,6 +1,5 @@
 'use client';
 import { useRef, useState, useEffect, useCallback } from 'react';
-
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
 import * as L from 'leaflet';
@@ -9,7 +8,6 @@ import type { Feature, Geometry, GeoJsonProperties } from 'geojson';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 import { 
-   
   analyzeSpatialRelationship,
   formatPropertyNumber,
   searchProperty as fetchProperty
@@ -27,7 +25,6 @@ interface DrawControlProps {
   propertyBoundaries?: GeoJSON.Feature[];
 }
 
-// Keep the DrawControl component as is
 const drawnItemsRef = new L.FeatureGroup();
 const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControlProps) => {
   const drawControlRef = useRef<L.Control.Draw | null>(null);
@@ -35,7 +32,6 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControl
   useEffect(() => {
     if (!map) return;
     
-  
     if (!map.hasLayer(drawnItemsRef)) {
       map.addLayer(drawnItemsRef);
     }
@@ -81,16 +77,12 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControl
       const layer = e.layer;
       drawnItemsRef.addLayer(layer);
       
-      // Fix the type safety issues by properly casting the GeoJSON result
       const geoJson = layer.toGeoJSON() as Feature<Geometry, GeoJsonProperties>;
-      console.log('Drawn shape GeoJSON:', geoJson);
       
-      // Perform spatial analysis if we have property boundaries
       let spatialAnalysis: SpatialAnalysisResult | undefined;
       
       if (propertyBoundaries.length > 0) {
         spatialAnalysis = analyzeSpatialRelationship(geoJson, propertyBoundaries);
-        console.log('Spatial analysis:', spatialAnalysis);
       }
       
       if (onShapeDrawn) {
@@ -98,14 +90,11 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControl
       }
     }) as L.LeafletEventHandlerFn;
 
-    // Add event listener
     map.on(L.Draw.Event.CREATED, handleDrawCreated);
 
-    // Also handle edit events to update analysis
     map.on(L.Draw.Event.EDITED, ((e: L.DrawEvents.Edited) => {
       const layers = e.layers;
       layers.eachLayer((layer: L.Layer) => {
-        // Use proper typing for the layer
         const typedLayer = layer as L.Layer & { toGeoJSON: () => GeoJSON.Feature };
         const geoJson = typedLayer.toGeoJSON();
         let spatialAnalysis: SpatialAnalysisResult | undefined;
@@ -121,7 +110,6 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [] }: DrawControl
     }) as L.LeafletEventHandlerFn);
 
     return () => {
-      // Only remove event listener, keep the control and layers
       map.off(L.Draw.Event.CREATED, handleDrawCreated);
       map.off(L.Draw.Event.EDITED);
     };
@@ -157,8 +145,6 @@ const TiltaksAidMap = ({
   const [propertyBoundaries, setPropertyBoundaries] = useState<GeoJSON.Feature[]>([]);
   const [autoZoomAttempted, setAutoZoomAttempted] = useState(false);
   const [autoZoomSuccessful, setAutoZoomSuccessful] = useState(false);
-
-  // Use our custom hook
   const { 
     searchInput, 
     setSearchInput, 
@@ -166,14 +152,11 @@ const TiltaksAidMap = ({
     setErrorMessage
   } = usePropertySearch();
 
-  // Ref to track if we've already triggered map ready callback
   const mapReadyCallbackFired = useRef(false);
   const stableOnMapReady = useRef(onMapReady).current;
 
-  // Add ref to track logging status
   const loggedPropertyData = useRef(false);
 
-  // Handle property search - wrapped in useCallback
   const handlePropertySearch = useCallback(async (propertyNumberToSearch: string = searchInput) => {
     const data = await fetchProperty(propertyNumberToSearch, process.env.NEXT_PUBLIC_SUPABASE_KEY);
     
@@ -187,7 +170,6 @@ const TiltaksAidMap = ({
         mapRef.current.removeLayer(propertyBoundary);
       }
   
-      // Convert the property data to a GeoJSON feature with ID
       const propertyFeature = {
         type: 'Feature',
         geometry: data[0]?.geom,
@@ -197,12 +179,9 @@ const TiltaksAidMap = ({
         }
       } as GeoJSON.Feature;
   
-      // Replace setter with direct assignment to a local constant to prevent unused state
       const currentPropertyData = data[0] ?? null;
       
-      // Only log once per component instance
       if (!loggedPropertyData.current && currentPropertyData) {
-        console.log('Current property data:', currentPropertyData);
         loggedPropertyData.current = true;
       }
       
@@ -226,13 +205,11 @@ const TiltaksAidMap = ({
         
         setAutoZoomSuccessful(true);
       }
-  
       setPropertyBoundary(newBoundary);
       setErrorMessage(null);
     }
   }, [searchInput, propertyBoundary, setErrorMessage, setPropertyBoundaries, setAutoZoomSuccessful]); // Added dependencies for useCallback
 
-  // Force a search when user property data changes
   useEffect(() => {
     if (autoZoomSuccessful || !userGnr || !userBnr) return;
     
@@ -242,12 +219,11 @@ const TiltaksAidMap = ({
       
       if (mapReady && !autoZoomAttempted) {
         setAutoZoomAttempted(true);
-        void handlePropertySearch(propertyNumber); // Use void to ignore promise
+        void handlePropertySearch(propertyNumber);
       }
     }
   }, [userGnr, userBnr, userFnr, userSnr, mapReady, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch, setSearchInput]); // Added handlePropertySearch and setSearchInput
 
-  // Auto-zoom effect
   useEffect(() => {
     if (!mapReady || !autoZoom || autoZoomAttempted || autoZoomSuccessful) return;
     
@@ -256,7 +232,7 @@ const TiltaksAidMap = ({
     const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
     if (propertyNumber) {
       setAutoZoomAttempted(true);
-      void handlePropertySearch(propertyNumber); // Use void to ignore promise
+      void handlePropertySearch(propertyNumber);
     }
   }, [mapReady, userGnr, userBnr, userFnr, userSnr, autoZoom, autoZoomAttempted, autoZoomSuccessful, handlePropertySearch]); // Added handlePropertySearch
 
@@ -280,20 +256,18 @@ const TiltaksAidMap = ({
       
       if (searchInput && !autoZoomAttempted && !autoZoomSuccessful && userGnr && userBnr) {
         setAutoZoomAttempted(true);
-        void handlePropertySearch(searchInput); // Use void to ignore promise
+        void handlePropertySearch(searchInput);
       }
-    }, [map]); // Removed dependencies that are handled by outer component scope or refs
+    }, [map]);
     
     return null;
   };
 
-  // Handle shape drawing with spatial analysis
   const handleShapeDrawn = (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => {
     if (onShapeDrawn) {
       if (!spatialAnalysis && propertyBoundaries.length > 0) {
         spatialAnalysis = analyzeSpatialRelationship(shape, propertyBoundaries);
       }
-      
       onShapeDrawn(shape, spatialAnalysis);
     }
   };
