@@ -1,6 +1,5 @@
 import "~/styles/globals.css";
 import "leaflet/dist/leaflet.css";
-
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import Navbar from "../components/Navbar";
@@ -23,14 +22,12 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
-     
       <body className="min-h-screen">
         <Providers session={session!}>
           <Navbar />
           <div className="flex flex-col">
             <main className="flex-1">{children}</main>
             <Toaster position="bottom-right" />
-
             <Footer />
           </div>
         </Providers>

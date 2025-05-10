@@ -19,7 +19,7 @@ const SmallChatbot = () => {
 
     const { userData } = usePropertySearch()
 
-   const mapInstance = useRef<{ map: Map | null; ready: boolean; containerId: string | null; }>({
+    const mapInstance = useRef<{ map: Map | null; ready: boolean; containerId: string | null; }>({
         map: null,
         ready: false,
         containerId: null,
@@ -42,22 +42,16 @@ const SmallChatbot = () => {
     }
 
     useEffect(() => {
-        // Store the current map instance and container ID for cleanup
         const mapToRemove = mapInstance.current.map;
         const containerIdToRemove = mapInstance.current.containerId;
 
         return () => {
             if (mapToRemove) {
                 try {
-                    // Attempt to remove the map instance
                     mapToRemove.remove();
-                    // Optionally, verify container cleanup if needed, but avoid internal properties like _leaflet_map
-                    // const container = document.getElementById(containerIdToRemove);
-                    // if (container) { /* potentially check classes or attributes if necessary */ }
                 } catch (e) {
                     console.warn('Map cleanup error:', e);
                 } finally {
-                    // Reset the ref only if it hasn't been reassigned
                     if (mapInstance.current.map === mapToRemove) {
                         mapInstance.current = {
                             map: null,
@@ -68,7 +62,7 @@ const SmallChatbot = () => {
                 }
             }
         }
-    }, []) // Dependency array is empty as we capture the initial map instance for cleanup
+    }, [])
 
     const handleToggle = () => {
         if (showChatbot) {
@@ -85,44 +79,41 @@ const SmallChatbot = () => {
 
     const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
         setLastDrawnShape(shape)
-        setSpatialAnalysis(analysis ?? null) // Use nullish coalescing
+        setSpatialAnalysis(analysis ?? null)
     }, [])
 
     return (
         <div>
             <div className='fixed right-10 bottom-14 z-30 group'>
-    <button 
-        onClick={handleToggle} 
-        className='h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer relative'
-    >
-        <Bot size={30} className='text-white' />
-        <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs py-1 px-2 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-            Chatbot
-        </span>
-    </button>
-</div>
-            
-
-            
+                <button
+                    onClick={handleToggle}
+                    className='h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer relative'
+                >
+                    <Bot size={30} className='text-white' />
+                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs py-1 px-2 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        Chatbot
+                    </span>
+                </button>
+            </div>
 
             {showChatbot && (
                 <div
-                className={clsx(
-                    'fixed flex mb-2 bottom-28 right-8 z-40 transition-all duration-300',
-                    expanded ? 'w-[900px]' : 'w-[350px]',
-                    isVisible
-                        ? 'opacity-100 scale-100'
-                        : 'opacity-0 scale-95 pointer-events-none',
-                    'transform transition-all ease-out duration-300'
-                )}
-            >
+                    className={clsx(
+                        'fixed flex mb-2 bottom-28 right-8 z-40 transition-all duration-300',
+                        expanded ? 'w-[900px]' : 'w-[350px]',
+                        isVisible
+                            ? 'opacity-100 scale-100'
+                            : 'opacity-0 scale-95 pointer-events-none',
+                        'transform transition-all ease-out duration-300'
+                    )}
+                >
                     <div className={clsx(
                         'h-[500px] transition-all duration-300',
                         expanded ? 'w-[350px]' : 'w-full'
                     )}>
                         <div className='relative h-full bg-white rounded-l-lg rounded-r-none shadow-lg'>
-                            <button 
-                                onClick={handleExpandToggle} 
+                            <button
+                                onClick={handleExpandToggle}
                                 className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 left-2'
                             >
                                 {expanded ? (
@@ -131,8 +122,8 @@ const SmallChatbot = () => {
                                     <Maximize2 size={20} className='text-white' />
                                 )}
                             </button>
-                            <button 
-                                onClick={handleCloseChat} 
+                            <button
+                                onClick={handleCloseChat}
                                 className='absolute bg-kartAI-lightblue rounded-md p-1 hover:bg-opacity-70 top-2 right-2'
                             >
                                 <X size={20} className='text-white' />
