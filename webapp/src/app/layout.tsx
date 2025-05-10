@@ -27,7 +27,7 @@ export default async function RootLayout({
       <body className="min-h-screen">
         <Providers session={session!}>
           <Navbar />
-          <div className="flex min-h-screen flex-col">
+          <div className="flex flex-col">
             <main className="flex-1">{children}</main>
             <Toaster position="bottom-right" />
 

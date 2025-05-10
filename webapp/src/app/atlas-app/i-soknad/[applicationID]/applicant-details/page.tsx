@@ -16,7 +16,7 @@ export default function ApplicantDetailsPage() {
   };
   
   return (
-    <div>
+    <div className="mb-40">
     <FormProvider>
       <Step_applicant_details 
         applicationID={applicationID} 

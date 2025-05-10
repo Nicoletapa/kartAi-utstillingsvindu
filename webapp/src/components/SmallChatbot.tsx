@@ -90,17 +90,25 @@ const SmallChatbot = () => {
 
     return (
         <div>
-            <button 
-                onClick={handleToggle} 
-                className='fixed right-10 bottom-14 h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer z-30'
-            >
-                <Bot size={30} className='text-white' />
-            </button>
+            <div className='fixed right-10 bottom-14 z-30 group'>
+    <button 
+        onClick={handleToggle} 
+        className='h-14 w-14 bg-kartAI-blue rounded-full justify-center flex items-center cursor-pointer relative'
+    >
+        <Bot size={30} className='text-white' />
+        <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs py-1 px-2 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+            Chatbot
+        </span>
+    </button>
+</div>
+            
+
+            
 
             {showChatbot && (
                 <div
                 className={clsx(
-                    'fixed flex mb-2 bottom-28 right-10 z-40 transition-all duration-300',
+                    'fixed flex mb-2 bottom-28 right-8 z-40 transition-all duration-300',
                     expanded ? 'w-[900px]' : 'w-[350px]',
                     isVisible
                         ? 'opacity-100 scale-100'
