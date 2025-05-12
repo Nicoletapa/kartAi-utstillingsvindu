@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
@@ -277,8 +277,6 @@ export default function ProgressBarStep({
     const isAtLastStep = currentStep === 6 && currentSubstep === 0; 
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
 
-    const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
-
     const handleBackToMain= () => {
         const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
         if (confirmExit) {
@@ -291,9 +289,6 @@ export default function ProgressBarStep({
         }
     };
 
-    // Then update the checklist items to be interactive
-    // For example in your renderChecklist function:
-    // <li key={index} className="flex items-start pt-1" onClick={() => toggleTaskCompletion(index)}>
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
         
@@ -360,16 +355,6 @@ export default function ProgressBarStep({
                     Tilbake
                 </Button>
                 <div className="flex items-center">
-                    {isNextButtonDisabled && (
-                        <div className="flex items-center mr-4 text-red-500 text-sm">
-                            <AlertCircle size={16} className="mr-2 flex-shrink-0" />
-                            <span>
-                                {submitApplication.isPending
-                                    ? 'Vennligst vent...'
-                                    : 'Alle påkrevde felt må fylles ut før du kan gå videre'}
-                            </span>
-                        </div>
-                    )}
                     <Button
                         onClick={handleNext}
                         className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"

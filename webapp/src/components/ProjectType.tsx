@@ -275,9 +275,8 @@ const ProjectType: React.FC<PageProps> = ({
         option: string, 
         checkboxes: string[] = selectedCheckboxes
     ) => {
-        const descriptionText = data?.description || '';
         const isCheckboxValid = (option === "Bygge" || option === "Rive") ? checkboxes.length > 0 : true;
-        const isValid = descriptionText.trim() !== '' && option !== '' && isCheckboxValid;
+        const isValid = option !== '' && isCheckboxValid;
         
         setIsFormValid(isValid);
         
