@@ -4,21 +4,18 @@ Each year, the Norwegian public spends about 5.6 billion NOK on planning and val
 
 KatAI's main goal is to streamline municipal work processes related to cadastre and building case processing using automated, advanced data-driven methods, including artificial intelligence in combination with proactive user and citizen dialogue. The goal is to contribute to automating and streamlining the processing of building cases.
 
-
-
 The scope of the project consists of two primary objectives:
 
-* **Develop a Web Application:** This platform will serve as a centralized hub, integrating the various AI models available through the KartAI project. By bringing these models together, the application will serve as a proof-of-concept (PoC), allowing KartAI to display their assortment of AI tools for different stages of the application process.
+- **Develop a Web Application:** This platform will serve as a centralized hub, integrating the various AI models available through the KartAI project. By bringing these models together, the application will serve as a proof-of-concept (PoC), allowing KartAI to display their assortment of AI tools for different stages of the application process.
 
-* **Create a Summary AI Assistant:** This AI-driven tool analyze documents from submitted applications and generate concise summaries, highlighting key points. The system implements a checklist matching feature. It cross-reference the building application with an official checklist and relevant regulations and inform about the quality of the application. This functionality is designed to support both applicants and case workers, enhancing the overall efficiency and clarity of the application process
-
+- **Create a Summary AI Assistant:** This AI-driven tool analyze documents from submitted applications and generate concise summaries, highlighting key points. The system implements a checklist matching feature. It cross-reference the building application with an official checklist and relevant regulations and inform about the quality of the application. This functionality is designed to support both applicants and case workers, enhancing the overall efficiency and clarity of the application process
 
 ## Final Product
+
 The following is a brief overview of the final product, including the system architecture and screenshots of the web application and the AI Summary Assistant.
 ![System Architecture](/docs/images/system-architecture.png)
 
 ### Screenshots of the Final Product
-
 
 <details>
 <summary><b>Click to see Web Application screenshots</b></summary>
@@ -75,7 +72,6 @@ The following is a brief overview of the final product, including the system arc
     The dashboard where applicants can review their applications using various AI models.  
     ![User Dashboard](docs/images/web-application/user-dashboard.png)
 
-
 </details>
 
 <details>
@@ -85,9 +81,9 @@ The following is a brief overview of the final product, including the system arc
    The graph showing the AI agent structure.
    ![AI Summary Assistant](docs/images/ai-summary-assistant/ai-system-graph.jpeg)
 2. **LangSmith tracking**
-   The monitoring of the agent showing what choices it makes.
-   Here one can see the agent have retrieved relevant laws and regulations from vector database and done a web search, as well reflect on the output of it self before marking the checkpoint and giving its reasoning.
-   ![LangSmith tracking](docs/images/ai-summary-assistant/langsmith-tracking.png)
+The monitoring of the agent showing what choices it makes.
+Here one can see the agent have retrieved relevant laws and regulations from vector database and done a web search, as well reflect on the output of it self before marking the checkpoint and giving its reasoning.
+![LangSmith tracking](docs/images/ai-summary-assistant/langsmith-tracking.png)
 </details>
 
 ## Prerequisites
@@ -124,7 +120,6 @@ docker compose down
 
 - [Developer Setup](/docs/manuals/developer_setup.md)
 - [T3 Start Guide](/docs/manuals/t3_guide.md)
-
 
 ## Team
 

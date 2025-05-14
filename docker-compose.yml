@@ -39,11 +39,18 @@ services:
       - NEXT_PUBLIC_SUPABASE_KEY=${NEXT_PUBLIC_SUPABASE_KEY}
       - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
       - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - ./webapp:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev # Override the command to use dev mode
 
   api:
     platform: 'linux/amd64'
