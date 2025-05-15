@@ -19,10 +19,6 @@ export default function Sidebar({ children }: { children: ReactNode }) {
     const sidebarRef = useRef(null);
     const contentRef = useRef(null);
 
-    const isMainPage = () => {
-        return pathname === "/atlas-app" || pathname === "/atlas-app/";
-    }
-
     const sidebarItems = [
         { text: "Min Oversikt", href: "/atlas-app/sidebar/min-oversikt", icon: <LayoutGrid size={20} /> },
         { text: "Før du søker", href: "/atlas-app/sidebar/for-du-soker", icon: <Info size={20} /> },
@@ -50,11 +46,6 @@ export default function Sidebar({ children }: { children: ReactNode }) {
 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
-    
-    useEffect(() => {
-        console.log('Current pathname:', pathname);
-        console.log('Is main page:', isMainPage());
-    }, [pathname, isMainPage]);
 
     return (
         <div className="flex">
@@ -63,7 +54,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
             <nav className="max-h-100 flex flex-col bg-kartAI-blue rounded-r-lg">
                 <div className="p-2 pb-2 pt-2 flex justify-end group">
                     <span className={`overflow-hidden transition-all duration-300 mt-1 font-bold text-white ${expanded ? "w-32 pl-8" : "w-0"}`}>Meny</span>
-                    <button onClick={() => setExpanded(!expanded)} className="flex items-center py-2 px-2 font-medium
+                    <button onClick={() => setExpanded(!expanded)} aria-label="openCloseMenu" className="flex items-center py-2 px-2 font-medium
                              rounded-md cursor-pointer transition-colors group text-gray-400 hover:text-white hover:bg-kartAI-lightblue">
                         {expanded ? <ChevronFirst /> : <ChevronLast />}
 

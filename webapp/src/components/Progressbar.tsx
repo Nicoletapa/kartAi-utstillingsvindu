@@ -11,10 +11,13 @@ interface StepProps {
   isLastStep: boolean
   stepNumber: number
   isFirstStep: boolean
+  onMainStepClick?: () => void
+  onSubstepClick?: (substepIndex: number) => void
 }
 
 interface StepperProps {
-  steps: StepProps[]
+  steps: Omit<StepProps, "isLastStep" | "isFirstStep" | "stepNumber">[]
+  onStepClick?: (stepIndex: number, substepIndex?: number) => void
 }
 
 const Step: React.FC<StepProps> = ({
@@ -26,6 +29,8 @@ const Step: React.FC<StepProps> = ({
   isLastStep,
   stepNumber,
   isFirstStep,
+  onMainStepClick,
+  onSubstepClick,
 }) => {
   const hasSingleSubstep = totalSubsteps === 1;
   
@@ -39,8 +44,10 @@ const Step: React.FC<StepProps> = ({
               ? "border-kartAI-blue bg-kartAI-blue text-primary-foreground"
               : isActive
               ? "border-kartAI-blue"
-              : "border-muted-foreground"
+              : "border-muted-foreground",
+              onMainStepClick ? "cursor-pointer hover:bg-gray-100" : "cursor-default"
           )}
+          onClick={onMainStepClick}
         >
           {isCompleted ? (
             <Check className="h-6 w-6" />
@@ -68,8 +75,10 @@ const Step: React.FC<StepProps> = ({
                   (isFirstStep && index === 0) || 
                   (index < substepsCompleted && (isCompleted || isActive)) 
                     ? "border-kartAI-blue bg-kartAI-blue"
-                    : "border-muted-foreground"
+                    : "border-muted-foreground",
+                  onSubstepClick ? "cursor-pointer hover:scale-110" : "cursor-default"
                 )}
+                onClick={() => onSubstepClick?.(index)}
               />
             </React.Fragment>
           ))}
@@ -94,7 +103,7 @@ const Step: React.FC<StepProps> = ({
   );
 };
 
-export const ProgressBar: React.FC<StepperProps> = ({ steps }) => {
+export const ProgressBar: React.FC<StepperProps> = ({ steps, onStepClick }) => {
   return (
     <div className="w-full">
       <div className="flex items-start">
@@ -105,6 +114,8 @@ export const ProgressBar: React.FC<StepperProps> = ({ steps }) => {
             isLastStep={index === steps.length - 1} 
             isFirstStep={index === 0} 
             stepNumber={index + 1} 
+            onMainStepClick={() => onStepClick?.(index)}
+            onSubstepClick={(substepIndex) => onStepClick?.(index, substepIndex)}
           />
         ))}
       </div>

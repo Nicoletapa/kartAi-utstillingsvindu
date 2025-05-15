@@ -7,15 +7,12 @@ import { FormProvider } from "~/context/FormContext";
 import { Loader2 } from 'lucide-react'
 
 export default function ApplicationDetailPage() {
-  // Get the applicationID from the URL parameters
   const params = useParams();
   const applicationID = parseInt(params.applicationID as string, 10);
   
-  // Fetch the application data using TRPC
   const { data: application, isLoading, error } = api.application.getApplication.useQuery({ 
     applicationID 
   }, {
-    // Only fetch if we have a valid applicationID
     enabled: !isNaN(applicationID)
   });
 
@@ -55,7 +52,6 @@ export default function ApplicationDetailPage() {
         {application.applicationType.replace(/_/g, ' ')}
       </h1>
       
-      {/* Pass the applicationID to the ProgressBarStep component */}
       <FormProvider>
         <ProgressBarStep applicationID={applicationID} />
       </FormProvider>

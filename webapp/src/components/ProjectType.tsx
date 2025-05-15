@@ -16,7 +16,6 @@ import { usePropertySearch } from "../hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "../utils/propertyUtils";
 import SmallChatbot from "../components/SmallChatbot";
 
-
 interface PageProps {
   onUpload: (files: File[]) => void;
   formData?: {
@@ -29,8 +28,6 @@ interface PageProps {
 }
 
 const MAX_ZOOM = 19;
-
-
 const options = [
     {
         value: "Bruksendring",
@@ -65,8 +62,8 @@ const checkboxOptions = {
 const ProjectType: React.FC<PageProps> = ({
   formData: externalFormData,
   setFormData: externalSetFormData,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  onValidityChange = () => {}, 
+  onValidityChange = (isValid: boolean) => {
+    console.log("Form validity changed:", isValid);},  
 }) => {
     const router = useRouter();
     const params = useParams();
@@ -184,13 +181,6 @@ const ProjectType: React.FC<PageProps> = ({
         return null;
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        const updatedFormData = { ...formData, [name]: value };
-        updateFormData(updatedFormData);
-        checkFormValidity(updatedFormData, selectedOption);
-    };
-
     const handleCheckboxChange = (checkboxValue: string) => {
         const newCheckboxes = selectedCheckboxes.includes(checkboxValue)
             ? selectedCheckboxes.filter((value) => value !== checkboxValue)
@@ -263,7 +253,6 @@ const ProjectType: React.FC<PageProps> = ({
         setPropertyBoundaries([propertyFeature]);
     
         if (!loggedPropertyData.current) {
-          console.log("Current property data:", data[0]);
           loggedPropertyData.current = true;
         }
     
@@ -286,9 +275,8 @@ const ProjectType: React.FC<PageProps> = ({
         option: string, 
         checkboxes: string[] = selectedCheckboxes
     ) => {
-        const descriptionText = data?.description || '';
         const isCheckboxValid = (option === "Bygge" || option === "Rive") ? checkboxes.length > 0 : true;
-        const isValid = descriptionText.trim() !== '' && option !== '' && isCheckboxValid;
+        const isValid = option !== '' && isCheckboxValid;
         
         setIsFormValid(isValid);
         
@@ -299,10 +287,6 @@ const ProjectType: React.FC<PageProps> = ({
 
     const handleBack = () => {
         router.push(`/atlas-app/i-soknad/${applicationID}/applicant-details`);
-    };
-
-    const determineApplicationType = (): ApplicationType | null => {
-        return getApplicationTypeFromSelection(selectedOption);
     };
 
     const handleNext = async () => {
@@ -329,7 +313,6 @@ const ProjectType: React.FC<PageProps> = ({
     } catch (error: unknown) {
         console.error("Error updating application type:", error);
         
-        // Type-safe error message handling
         let errorMessage = 'Something went wrong';
         if (error instanceof Error) {
             errorMessage = error.message;
@@ -386,10 +369,9 @@ const ProjectType: React.FC<PageProps> = ({
             <h1 className="text-3xl font-bold justify-center flex">
                 Hva vil du gjøre på eiendommen din?
             </h1>
-
-            <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 w-full" data-cy="main-container">
+            <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 w-full">
                 <div className="flex flex-col md:flex-row gap-8">
-                    <div className="w-full md:w-3/6" data-cy="left-column">
+                    <div className="w-full">
                         <h1 className="font-medium">Hva gjelder tiltaket?</h1>
                         <div className="flex flex-col space-y-4 mt-2">
                             {options.map((option) => (
@@ -413,43 +395,8 @@ const ProjectType: React.FC<PageProps> = ({
                             ))}
                         </div>
                     </div>
-
-                    <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400 md:pl-8" data-cy="right-column">
-                        <h2 className="font-medium inline-flex">
-                            Beskrivelse av tiltaket
-                            <div className="relative flex">
-                                <Info
-                                    size={14}
-                                    className="ml-1 hover:cursor-pointer"
-                                    onMouseEnter={() => handleMouseEnter('beskrivelse')}
-                                    onMouseLeave={handleMouseLeave}
-                                />
-                                {hoveredBox === 'beskrivelse' && (
-                                    <div
-                                        className="absolute top-0 left-6 bg-white shadow-lg border rounded-lg p-3 w-64 text-sm z-10"
-                                        onMouseEnter={() => handleMouseEnter('beskrivelse')}
-                                        onMouseLeave={handleMouseLeave}
-                                    >
-                                        Her kan du gi en detaljert beskrivelse av tiltaket du planlegger å gjennomføre.
-                                    </div>
-                                )}
-                            </div>
-                        </h2>            
-                        <textarea
-                            name="description"
-                            className="w-full min-h-60 mt-2 p-4 text-md border-2 border-gray-300 rounded-lg"
-                            placeholder="Skriv her ..."
-                            value={formData?.description || ""}
-                            onChange={handleInputChange}
-                            required
-                        />
-                        {!formData?.description?.trim() && (
-                            <p className="text-red-500 text-sm mt-1">Dette feltet er påkrevd</p>
-                        )}
-                    </div>
                 </div>
             </div>
-
             <div className="border-2 border-gray-400 rounded-lg mt-4 p-4 w-full">
                 <h1 className="font-medium inline-flex mb-2">
                     Tegninger
@@ -493,7 +440,7 @@ const ProjectType: React.FC<PageProps> = ({
                         )}
                     </div>
                 )}
-
+                
                 <PropertySearchBar
                     searchInput={searchInput}
                     onSearchInputChange={setSearchInput}
@@ -511,7 +458,6 @@ const ProjectType: React.FC<PageProps> = ({
                         autoZoom={true}
                     />
                 </div>
-                
             </div>
 
             <div className="mt-5 w-full flex justify-center mb-4 gap-4">
@@ -539,7 +485,7 @@ const ProjectType: React.FC<PageProps> = ({
                     <ArrowRight className="w-5 h-5 transition-transform duration-300" />
                 </Button>
             </div>
-            <SmallChatbot /> 
+            <SmallChatbot />
         </div>
 
     );

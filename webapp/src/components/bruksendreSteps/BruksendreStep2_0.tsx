@@ -8,18 +8,13 @@ interface BruksendreStep2_0Props {
 }
 
  const BruksendreStep2_0: React.FC<BruksendreStep2_0Props> = ({ applicationID, onValidityChange }) => {
-  // Mark this step as valid when component mounts
   useEffect(() => {
     onValidityChange(true);
   }, [onValidityChange]);
   
-  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+  const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
 
   void saveField('progress.currentStep', '2_0');
-
-    useEffect(() => {
-      console.log('Changes Saved:', isSaving);
-    }, [isSaving]);
 
   if (!applicationID) {
     return (
@@ -31,9 +26,7 @@ interface BruksendreStep2_0Props {
   }
   return (
     <div>
-      
         <CadaidAtlas applicationID={applicationID} />
-      
     </div>
   );
 };

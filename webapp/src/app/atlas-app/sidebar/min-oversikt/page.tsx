@@ -10,14 +10,8 @@ export default function MyOverviewPage() {
   );
   return (
     <AtlasSidebar>
-      
-        <MyOverview />
-     
-      <div className='mt-8' id='main-chatbot-section'>
-        <h2 className='flex justify-center text-xl mb-4'>Få veiledning fra chatbotten vår!</h2>
-        <MapChatIntegrationWithNoSSR />
-      </div>
-
+      <MyOverview />
+      <SmallChatbot />
     </AtlasSidebar>
   )
 }

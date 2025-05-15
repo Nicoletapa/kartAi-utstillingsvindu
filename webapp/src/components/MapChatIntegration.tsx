@@ -11,9 +11,10 @@ export function MapChatIntegration() {
   const [mapReady, setMapReady] = useState(false); // Keep this if PlanPrat still uses it internally, otherwise remove
   const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
   const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
-
+  const [isPlanPratOpen, setIsPlanPratOpen] = useState(true);
+  
   const { userData } = usePropertySearch();
-
+ 
   const handleMapReady = useCallback((map: Map) => {
     if (mapStateRef.current.map) return;
     mapStateRef.current = { map, ready: true };

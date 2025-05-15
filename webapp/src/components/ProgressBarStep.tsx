@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, AlertCircle, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
 import { Button } from "./ui/button";
 import { useRouter, usePathname } from "next/navigation";
@@ -272,13 +272,10 @@ export default function ProgressBarStep({
             isFirstStep: index === 0,
         };
     });
-    console.log("ProgressBarStep rendering with applicationID:", applicationID);
 
     const isAtSubmissionStep = currentStep === 4 && currentSubstep === 1;
     const isAtLastStep = currentStep === 6 && currentSubstep === 0; 
     const CurrentStepComponent = stepComponents[currentStep]?.[currentSubstep];
-
-    const isNextButtonDisabled = (currentStep === 1 && currentSubstep === 0 && !isStep1_0Valid) || submitApplication.isPending;
 
     const handleBackToMain= () => {
         const confirmExit = window.confirm("Er du sikker på at du vil forlate siden?");
@@ -292,9 +289,6 @@ export default function ProgressBarStep({
         }
     };
 
-    // Then update the checklist items to be interactive
-    // For example in your renderChecklist function:
-    // <li key={index} className="flex items-start pt-1" onClick={() => toggleTaskCompletion(index)}>
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
         
@@ -307,6 +301,19 @@ export default function ProgressBarStep({
         );
     };
 
+    const getAbsoluteStepIndex = (stepIndex: number, substepIndex?: number) => {
+        let absoluteIndex = 0;
+        for (let i = 0; i < stepIndex; i++) {
+            absoluteIndex += steps[i]?.totalSubsteps ?? 0;
+        }
+
+        if (substepIndex !== undefined) {
+            absoluteIndex += substepIndex;
+        }
+
+        return absoluteIndex;
+    }
+
     return (
         <div>
             <div className="mx-20 mt-6">
@@ -317,7 +324,13 @@ export default function ProgressBarStep({
             
             <div className="container px-4 flex mx-20 flex-col">
             <div className="mb-8 top-0 ml-20 bg-background pt-4 pb-8 z-10">
-                <ProgressBar steps={stepsWithStatus} />
+                <ProgressBar 
+                steps={stepsWithStatus}
+                onStepClick={(stepIndex, substepIndex) => {
+                    const absoluteIndex = getAbsoluteStepIndex(stepIndex, substepIndex);
+                    setCurrentOverallStep(absoluteIndex);
+                }}
+                />
             </div>
 
             <div className="flex space-x-8 flex-1">
@@ -342,16 +355,6 @@ export default function ProgressBarStep({
                     Tilbake
                 </Button>
                 <div className="flex items-center">
-                    {isNextButtonDisabled && (
-                        <div className="flex items-center mr-4 text-red-500 text-sm">
-                            <AlertCircle size={16} className="mr-2 flex-shrink-0" />
-                            <span>
-                                {submitApplication.isPending
-                                    ? 'Vennligst vent...'
-                                    : 'Alle påkrevde felt må fylles ut før du kan gå videre'}
-                            </span>
-                        </div>
-                    )}
                     <Button
                         onClick={handleNext}
                         className="border-2 bg-white text-kartAI-blue border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"

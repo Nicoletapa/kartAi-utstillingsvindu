@@ -58,8 +58,6 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     externalSetFormData((prev) => ({ ...prev, [name]: value }));
     checkFormValidity(updatedFormData);
 
-    console.log(`Saving field: ${name} with value:`, value);
-
     const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
     
     if (Array.isArray(value)) {
@@ -86,7 +84,6 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     onValidityChange(isValid);
   };
 
-  // Helper component for radio buttons
   const RadioField = ({ name, label }: { name: string; label: string; value: string }) => (
     <div className='flex justify-between items-center mr-4'>
       <span>{label}</span>
@@ -117,7 +114,6 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     </div>
   );
 
-  // Helper component for checkboxes
   const CheckboxField = ({ name, label }: { name: string; label: string }) => (
     <label className='items-center gap-x-2 flex whitespace-nowrap mr-4'>
       <input 
@@ -130,7 +126,6 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     </label>
   );
 
-  // Helper component for info tooltip
   const InfoTooltip = ({ content, boxName }: { content: string; boxName: string }) => (
     <div className="relative flex">
       <Info

@@ -6,10 +6,8 @@ import SmallChatbot from "~/components/SmallChatbot"
 export default function ApplicationsPage() {
     return (
       <AtlasSidebar>
-      <div>
         <MyApplications />
-      </div>
-      <SmallChatbot />
+        <SmallChatbot />
       </AtlasSidebar>
     );
   }
