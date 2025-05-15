@@ -1,8 +1,7 @@
 'use client';
 import { useRef, useState, useEffect, useCallback } from 'react';
-
 import dynamic from 'next/dynamic';
-import { MapContainer, TileLayer, useMap, WMSTileLayer } from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 import * as L from 'leaflet';
 import type { Map } from 'leaflet';
 import type { Feature, Geometry, GeoJsonProperties } from 'geojson';
@@ -18,6 +17,10 @@ import {
 import { usePropertySearch } from '~/hooks/usePropertySearch';
 import type { SpatialAnalysisResult, PropertyData } from '~/utils/propertyUtils';
 
+// Dynamically import Leaflet components to prevent hydration issues
+const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false });
+const WMSTileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.WMSTileLayer), { ssr: false });
 const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
 const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
 const Overlay = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.Overlay), { ssr: false });
@@ -189,6 +192,9 @@ const TiltaksAidMap = ({
   const stableOnMapReady = useRef(onMapReady).current;
   const loggedPropertyData = useRef(false);
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
+
   // Function to clear map layers and state
   const clearMapState = useCallback(() => {
     if (propertyBoundary && mapRef.current) {
@@ -205,6 +211,25 @@ const TiltaksAidMap = ({
     setInitialSearchSuccessful(false);
     loggedPropertyData.current = false;
   }, [propertyBoundary, setErrorMessage]);
+
+  // --- Fetch Allowed Building Area ---
+  const fetchAllowedAreaForProperty = async (propertyNumber: string) => {
+    if (propertyNumber) {
+      try {
+        const allowedArea = await fetchAllowedBuildingArea(
+          propertyNumber,
+          supabaseUrl,
+          supabaseKey
+        );
+        
+        if (allowedArea) {
+          setAllowedAreaGeoJson(allowedArea);
+        }
+      } catch (error) {
+        console.error("Error fetching allowed building area:", error);
+      }
+    }
+  };
 
   // --- Handle property search ---
   const handlePropertySearch = useCallback(async (propertyNumberToSearch: string = searchInput) => {
@@ -258,18 +283,7 @@ const TiltaksAidMap = ({
           });
           setInitialSearchSuccessful(true);
 
-          // --- Fetch Allowed Building Area ---
-          const allowedArea = await fetchAllowedBuildingArea(
-            propertyNumberToSearch,
-            process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.NEXT_PUBLIC_SUPABASE_KEY
-          );
-          if (allowedArea) {
-            console.log("Setting allowed area GeoJSON:", allowedArea);
-            setAllowedAreaGeoJson(allowedArea);
-          } else {
-            console.warn("No allowed building area found or error fetching for property:", propertyNumberToSearch);
-          }
+          fetchAllowedAreaForProperty(propertyNumberToSearch);
 
         } else {
           setErrorMessage('Map not ready to display property boundary.');

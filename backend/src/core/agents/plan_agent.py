@@ -96,77 +96,115 @@ class PlanAgent(BaseAgent):
         self._initialize_agent_executor()
         logger.info("PlanAgent initialized.")
 
+    # In PlanAgent class
     def _initialize_tools(self):
         """Initializes and collects all tools for the agent."""
         self.tools = []
+        self.doc_search_tool: Optional[DocumentSearchTool] = None
+        self.search_tool: Optional[SearchTool] = None
+        self.spatial_tool: Any = None # Can be SpatialAnalysisTool or LangchainCoreTool
+
         try:
-            self.doc_search_tool = DocumentSearchTool()
-            self.tools.append(self.doc_search_tool)
+            tool_instance = DocumentSearchTool()
+            self.doc_search_tool = tool_instance
+            self.tools.append(tool_instance)
             logger.info("DocumentSearchTool initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize DocumentSearchTool: {e}", exc_info=True)
-            self.doc_search_tool = None
+            # self.doc_search_tool remains None
 
         try:
-            self.search_tool = SearchTool()
-            self.tools.append(self.search_tool)
+            tool_instance = SearchTool()
+            self.search_tool = tool_instance
+            self.tools.append(tool_instance)
             logger.info("SearchTool initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize SearchTool: {e}", exc_info=True)
-            self.search_tool = None
+            # self.search_tool remains None
 
         try:
-            self.spatial_tool = SpatialAnalysisTool()
-            self.tools.append(self.spatial_tool)
+            tool_instance = SpatialAnalysisTool()
+            self.spatial_tool = tool_instance
+            self.tools.append(tool_instance)
             logger.info("SpatialAnalysisTool initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize SpatialAnalysisTool: {e}", exc_info=True)
-            self.spatial_tool = LangchainCoreTool(
-                name="spatial_analysis",
-                func=lambda _: "Spatial analysis is currently unavailable. Please try again later.",
-                description="Analyze spatial data (currently unavailable)"
+            fallback_spatial_tool = LangchainCoreTool(
+                name="spatial_analysis", # Must match the name used in prompts
+                func=lambda _: ("Spatial analysis tool is currently unavailable due to an internal error. "
+                                "Please inform the user and try to answer without it if possible, "
+                                "or suggest they try again later."),
+                description=("Analyzes spatial data like coordinates and drawings from a map. "
+                            "Use this to determine distances, check against boundaries, etc. "
+                            "Currently unavailable if initialization failed.")
             )
-            self.tools.append(self.spatial_tool)
-        
-        self.tools = [tool for tool in self.tools if tool is not None]
+            self.spatial_tool = fallback_spatial_tool # self.spatial_tool becomes the fallback
+            self.tools.append(fallback_spatial_tool)
+
+        # Filter out any tools that might be None if not initialized and no fallback was added
+        # self.tools = [tool for tool in self.tools if tool is not None]
+                                                                
+        if not self.tools: # Added check after all initializations
+            logger.critical("No tools were successfully initialized or have fallbacks. Agent may not function properly.")
+        elif not any(tool.name == "document_search" for tool in self.tools): # Example critical tool check
+            logger.warning("Critical tool 'document_search' is not available. Functionality will be limited.")
+
 
     def _initialize_agent_executor(self):
         """Sets up the prompt, agent, and agent executor."""
         prompt_template_str = """
-You are a helpful assistant for building regulations in Kristiansand municipality. Speak English. Be polite and clear.
+You are a dedicated and helpful assistant specializing in building regulations for Kristiansand municipality. Your primary function is to guide users on general building rules and permit requirements. Always be polite, clear, and respond in the same language as the user's question.
 
-**CORE RULE:** For all properties, base your answers ONLY on general municipal plan provisions and the guides available via the 'document_search' tool. DO NOT use or assume information from specific zoning plans.
-
-**Goal:** Guide users on building rules and permits. Use 'document_search' for local rules (always general municipal plan provisions) and 'spatial_analysis' for map drawings.
+**CORE MISSION AND DIRECTIVES:**
+1.  **Strict Adherence to General Plans:** Your answers concerning properties MUST ONLY be based on **general municipal plan provisions** and official guides for these provisions, accessible via the 'document_search' tool.
+2.  **NO SPECIFIC ZONING PLANS:** You MUST NOT use, reference, or infer information from specific zoning plans (e.g., "reguleringsplaner"). If a user's query seems to require this level of detail, you must state that you can only provide guidance based on general municipal plan provisions and recommend they contact the municipality for specifics related to zoning plans.
+3.  **Accuracy and Sourcing:** Clearly state the source of your information (e.g., "According to the general municipal plan provisions...", "General guidance from DiBK suggests...").
+4.  **Guidance, Not Approval:** Emphasize that your advice is for guidance based on general rules and final confirmation/permits must be obtained from Kristiansand municipality.
 
 **Available tools:**
 {tools}
 
-**TOOL USAGE AND RESPONSE FORMAT:**
+**TOOL USAGE STRATEGY AND REASONING PROTOCOL (ReAct Framework):**
 
-Question: the user's question
-Thought: Your reasoning and plan. Choose tools based on the following:
-    - 'spatial_analysis': Use for map drawings. Analyze placement relative to boundaries, permitted areas, and whether permits (e.g., from a neighbor, road authority) are necessary based on distances/size. Everything MUST be assessed against general municipal plan provisions. The result must be included in 'Final Answer'.
-    - 'document_search': Use for general local building rules (obtained from municipal plan provisions/related guides). Must NOT be used for specific zoning plans.
-    - 'search_internet': Use for national guides (e.g., dibk.no), general info, or if 'document_search' does not provide answers to questions covered by general rules. Avoid searching for specific zoning plans.
-    - Handling missing answers from 'document_search': If you do not find a specific answer in local documents, explain this. Refer to general information (e.g., from DiBK) if relevant, and ALWAYS recommend the user to contact Kristiansand municipality for final clarification.
-Action: one of [{tool_names}]
-Action Input: input for the action.
-Observation: the result of the action.
-... (repeat Thought/Action/Action Input/Observation as needed)
-Thought: I have now attempted to find the information. Assess the result:
-    - Found a clear answer based on general municipal plan provisions: I now have the information. Formulate the answer.
-    - Did NOT find a specific local answer, but found general guidance (e.g., from DiBK): Base the answer on general guidance, and ALWAYS emphasize the need to check with the municipality. Formulate the answer.
-    - Found no relevant information: Inform the user about this and ALWAYS recommend contacting the municipality. Formulate the answer.
-Final Answer: Your answer to the user. The answer MUST contain:
-    - Direct answer to the user's question, based on findings from tools (reflecting general municipal plan provisions).
-    - If map data was used via 'spatial_analysis': Explain how the general rules apply to the drawing, including any permits.
-    - If specific local information was not found: Explain this clearly. Refer to general information (if available), and ALWAYS recommend contacting Kristiansand municipality for final confirmation.
-    - Source references (e.g., "According to the general municipal plan provisions...", "General guidance from DiBK suggests...").
-    - A "Useful links:" section with Markdown links to official resources (`[Text](URL)`).
-    - Optionally, 1-2 relevant follow-up questions.
+Question: The user's question.
+Thought:
+    1.  Analyze the user's question: What specific information are they seeking? Does it involve spatial aspects (requiring a map drawing) or purely regulatory information?
+    2.  Recall **CORE MISSION AND DIRECTIVES**: My answer must be based on **general municipal plan provisions**. I must avoid specific zoning plans.
+    3.  Plan tool usage:
+        * For questions about local building rules, regulations, or requirements from the **general municipal plan provisions**: Prioritize 'document_search'.
+        * If the question involves understanding the placement of a structure, distances to boundaries, or requires visual assessment on a map: Use 'spatial_analysis'. The output of 'spatial_analysis' (e.g., distances, coordinates) MUST then be interpreted strictly against the **general municipal plan provisions** (likely found via 'document_search' or known general rules).
+        * If 'document_search' does not yield answers covered by **general municipal plan provisions**, or for national-level building guides (e.g., from dibk.no) or general information: Use 'search_internet'. Explicitly avoid using 'search_internet' to find specific zoning plans for Kristiansand.
+    4.  If I need to use multiple tools, I will plan the sequence. For example, use 'spatial_analysis' to get measurements, then 'document_search' to find the relevant general rules that apply to those measurements.
+Action: One of [{tool_names}]
+Action Input: The input for the selected tool.
+Observation: The result from the tool.
+... (Repeat Thought/Action/Action Input/Observation as needed. After each Observation, reassess if the **general municipal plan provisions** are being correctly applied.)
 
-**START!**
+Thought: I have now gathered information using the tools. I will assess the results against my **CORE MISSION AND DIRECTIVES**:
+    * **Scenario 1: Clear Answer Found (based on general municipal plan provisions):** I have found a direct answer within the general municipal plan provisions or associated guides. I can now formulate the response.
+    * **Scenario 2: No Specific Local Answer, but General Guidance Available:** 'document_search' did not provide a specific local answer from the general municipal plan. However, I found relevant general guidance (e.g., from DiBK via 'search_internet'). I will base my answer on this general guidance, clearly state that specific local provisions were not found, and STRONGLY emphasize the need to check with Kristiansand municipality for definitive local interpretation.
+    * **Scenario 3: No Relevant Information Found:** Neither local general provisions nor general national guidance seems to directly address the query. I will inform the user about this lack of specific information and ALWAYS recommend contacting Kristiansand municipality.
+Final Answer: (Construct the answer according to the "Final Answer Construction" section below.)
+
+**FINAL ANSWER CONSTRUCTION:**
+Your final answer to the user MUST include the following components, in a clear and organized manner:
+1.  **Direct Response:** A clear answer to the user's question, explicitly stating that it is based on **general municipal plan provisions** (or general national guidance if local general provisions are not found).
+2.  **Spatial Analysis Explanation (if 'spatial_analysis' was used):**
+    * Describe the relevant findings from the map analysis (e.g., distances, location relative to boundaries).
+    * Crucially, explain how the **general municipal plan provisions** (found via 'document_search' or known general rules) apply to these spatial findings. For example, "The drawing shows the structure is X meters from the boundary. According to the general municipal plan provisions, structures of this type must be at least Y meters from the boundary, unless a neighbor's consent is obtained."
+    * Indicate if any permits or consents (e.g., from neighbors, road authority) appear necessary based on these general rules and the spatial analysis.
+3.  **Transparency about Information Source & Limitations:**
+    * If specific information from local **general municipal plan provisions** was not found, clearly state this.
+    * If relying on general national guidance (e.g., DiBK), mention this and its general nature.
+4.  **Source References & Citations:** Integrate references directly into your explanation where appropriate (e.g., "The general municipal plan provisions state that X [Article Y]," or "According to DiBK's guide on Z..."). Additionally, list the primary documents or guides consulted under a distinct heading named **"Referanser:"** (if responding in Norwegian) or **"Sources:"** (if responding in English). For example:
+    "Referanser:
+    * Kristiansand kommunes Kommuneplanens arealdel (generelle bestemmelser)
+    * Veileder fra Direktoratet for byggkvalitet (dibk.no) om [topic]"
+5.  **Recommendation for Official Confirmation:** ALWAYS include a polite closing statement recommending the user to contact Kristiansand municipality for final clarification, verification, and to discuss specific zoning plans if relevant to their property. For example: "Please note that this information is based on general municipal plan provisions. For a definitive answer regarding your specific property and to discuss any applicable specific zoning plans, we strongly recommend you contact Kristiansand municipality's planning and building department."
+6.  **Useful Links:** A section titled "Useful links:" with 1-3 Markdown formatted links to official resources (e.g., Kristiansand municipality's website, relevant DiBK pages). Example: `[Kristiansand Municipality - Planning and Building](URL_HERE)`
+7.  **Follow-up Questions (Optional):** 1-2 relevant, open-ended follow-up questions to further assist the user, if appropriate.
+
+**BEGIN!**
 
 History: {chat_history}
 User: {input}
@@ -187,6 +225,7 @@ Thought: {agent_scratchpad}
             memory=self.memory,
             return_intermediate_steps=True,
             early_stopping_method="force",
+            streaming=True
         )
 
     def _prepare_input(self, query: str, spatial_data: Optional[Dict[str, Any]] = None) -> None:
@@ -252,41 +291,6 @@ Thought: {agent_scratchpad}
         logger.info(f"Extracted {len(guides)} guides from answer {log_prefix}.")
         return {"answer": answer_text, "guides": guides}
 
-    def _execute_agent_logic(self, query: str, is_async: bool) -> Dict[str, Any]:
-        """Helper to encapsulate the agent invocation and common error handling."""
-        try:
-            if is_async:
-                return self.agent_executor.ainvoke({"input": query})
-            else:
-                return self.agent_executor.invoke({"input": query})
-        except OutputParserException as e:
-            logger.error(f"OutputParserException during agent execution (is_async={is_async}): {e}", exc_info=True)
-            
-            return {"output": self.MSG_OUTPUT_PARSER_EXCEPTION} 
-        except Exception as e:
-            logger.error(f"Unexpected error during agent execution (is_async={is_async}): {e}", exc_info=True)
-            return {"output": self.MSG_UNEXPECTED_ERROR} 
-
-    def process(self, query: str, spatial_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
-        try:
-            self._prepare_input(query, spatial_data)
-        except self.ResetConversation:
-            return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
-        
-        logger.info("Invoking agent executor (synchronously)...")
-        agent_result = self._execute_agent_logic(query, is_async=False)
-        return self._process_agent_output(agent_result, is_async=False)
-
-    async def aprocess(self, query: str, spatial_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
-        try:
-            self._prepare_input(query, spatial_data)
-        except self.ResetConversation:
-            return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
-
-        logger.info("Invoking agent executor (asynchronously)...")
-        agent_result = await self._execute_agent_logic(query, is_async=True) 
-        return self._process_agent_output(agent_result, is_async=True)
-
     async def _execute_agent_logic_async(self, query: str) -> Dict[str, Any]:
         """Helper to encapsulate the async agent invocation and common error handling."""
         try:
@@ -305,7 +309,7 @@ Thought: {agent_scratchpad}
             return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
 
         logger.info("Invoking agent executor (asynchronously)...")
-        agent_result = await self._execute_agent_logic_async(query)
+        agent_result = await self._execute_agent_logic_async(query) # Ensure this calls the async helper
         return self._process_agent_output(agent_result, is_async=True)
         
     def _execute_agent_logic_sync(self, query: str) -> Dict[str, Any]:
@@ -326,7 +330,7 @@ Thought: {agent_scratchpad}
             return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
         
         logger.info("Invoking agent executor (synchronously)...")
-        agent_result = self._execute_agent_logic_sync(query)
+        agent_result = self._execute_agent_logic_sync(query) # Ensure this calls the sync helper
         return self._process_agent_output(agent_result, is_async=False)
 
     def reset_memory(self):

@@ -8,7 +8,7 @@ import { usePropertySearch } from '~/hooks/usePropertySearch';
 
 export function MapChatIntegration() {
   const mapStateRef = useRef<{ map: Map | null; ready: boolean }>({ map: null, ready: false });
-  const [mapReady, setMapReady] = useState(false); // Keep this if PlanPrat still uses it internally, otherwise remove
+  const [mapReady, setMapReady] = useState(false); 
   const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
   const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
 
@@ -17,7 +17,7 @@ export function MapChatIntegration() {
   const handleMapReady = useCallback((map: Map) => {
     if (mapStateRef.current.map) return;
     mapStateRef.current = { map, ready: true };
-    setMapReady(true); // Keep if needed
+    setMapReady(true); 
   }, []);
 
   const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
