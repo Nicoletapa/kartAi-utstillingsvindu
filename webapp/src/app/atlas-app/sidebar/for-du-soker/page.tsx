@@ -5,10 +5,8 @@ import ForDuSoker from '~/components/ForDuSoker';
 export default function ForDuSokerPage() {
   return (
     <AtlasSidebar>
-      <div>
-        <ForDuSoker />
-      </div>
-
+      <ForDuSoker />
+ 
     </AtlasSidebar>
   )
 }

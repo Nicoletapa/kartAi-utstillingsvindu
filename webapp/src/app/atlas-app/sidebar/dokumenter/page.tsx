@@ -5,10 +5,8 @@ import MyDocuments from "~/components/MyDocuments";
 export default function DocumentsPage() {
   return (
     <AtlasSidebar>
-      <div>
-        <MyDocuments />
-      </div>
- 
+      <MyDocuments />
+
     </AtlasSidebar>
   )
 }

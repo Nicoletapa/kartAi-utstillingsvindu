@@ -9,12 +9,9 @@ export function usePropertySearch() {
   const [searchInput, setSearchInput] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  
   const sessionProcessed = useRef(false);
   
-  
   useEffect(() => {
-    
     if (sessionProcessed.current || status !== 'authenticated' || !session?.user) {
       return;
     }
@@ -33,12 +30,8 @@ export function usePropertySearch() {
         
         snr: typeof session.user.snr === 'number' ? session.user.snr : 
              typeof session.user.snr === 'string' ? parseInt(session.user.snr, 10) : undefined
-      };
-      
-     
-      console.log('User property data for map:', propertyData);
+      };     
       setUserData(propertyData);
-      
       
       const propertyNumber = formatPropertyNumber(
         propertyData.gnr,
@@ -51,7 +44,6 @@ export function usePropertySearch() {
         setSearchInput(propertyNumber);
       }
       
-     
       sessionProcessed.current = true;
     } else {
       console.log('User is authenticated but has no property data');

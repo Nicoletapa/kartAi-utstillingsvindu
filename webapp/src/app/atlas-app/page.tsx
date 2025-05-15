@@ -2,7 +2,6 @@
 
 import React from "react";
 import dynamic from 'next/dynamic';
-
 import Link from "next/link";
 import { GeistSans } from "geist/font/sans";
 import AtlasSidebar from "~/components/AtlasSidebar";

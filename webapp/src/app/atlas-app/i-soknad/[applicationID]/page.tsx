@@ -52,7 +52,6 @@ export default function ApplicationDetailPage() {
         {application.applicationType.replace(/_/g, ' ')}
       </h1>
       
-      {/* Pass the applicationID to the ProgressBarStep component */}
       <FormProvider>
         <ProgressBarStep applicationID={applicationID} />
       </FormProvider>

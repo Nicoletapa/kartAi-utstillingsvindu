@@ -8,14 +8,13 @@ interface Step2_0Props {
 }
 
 const Step2_0: React.FC<Step2_0Props> = ({ applicationID, onValidityChange }) => {
-    const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
-  // Mark this step as valid when component mounts
+    const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+    
   useEffect(() => {
     onValidityChange(true);
   }, [onValidityChange]);
 
   void saveField('progress.currentStep', '2_0');
-
 
   if (!applicationID) {
     return (
@@ -27,9 +26,7 @@ const Step2_0: React.FC<Step2_0Props> = ({ applicationID, onValidityChange }) =>
   }
   return (
     <div>
-      
         <CadaidAtlas applicationID={applicationID} />
-      
     </div>
   );
 };

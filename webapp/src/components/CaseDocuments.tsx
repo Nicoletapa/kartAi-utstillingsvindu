@@ -12,7 +12,7 @@ interface DocumentsComponentProps {
 
 const CaseDocumentsComponent: React.FC<DocumentsComponentProps> = ({ documents }) => {
   return (
-    <div className="border rounded-lg p-4 w-full w-1/2">
+    <div className="border rounded-lg p-4 w-full">
       <h2 className="flex justify-center text-lg font-semibold mb-4" data-cy="case-documents-header">Sakens dokumenter</h2>
       <ul>
         {documents.map((doc, index) => (

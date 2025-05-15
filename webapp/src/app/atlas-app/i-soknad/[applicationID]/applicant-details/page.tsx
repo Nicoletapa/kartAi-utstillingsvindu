@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Step_applicant_details from "~/components/steps/Step_applicant_details";
 import { FormProvider } from "~/context/FormContext";
@@ -14,14 +14,10 @@ export default function ApplicantDetailsPage() {
   const handleValidityChange = (isValid: boolean) => {
     setIsFormValid(isValid);
   };
-
-  useEffect(() => {
-    console.log('Form validity changed:', isFormValid);
-  }, [isFormValid]);
   
   return (
-    <div>
-          <FormProvider>
+    <div className="mb-40">
+    <FormProvider>
       <Step_applicant_details 
         applicationID={applicationID} 
         onValidityChange={handleValidityChange}

@@ -6,9 +6,7 @@ import SmallChatbot from '~/components/SmallChatbot';
 export default function MessagesPage() {
   return (
     <AtlasSidebar>
-      <div>
-        <Meldinger />
-      </div>
+      <Meldinger />
       <SmallChatbot />
     </AtlasSidebar>
   )
