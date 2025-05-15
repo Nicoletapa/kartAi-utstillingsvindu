@@ -1,4 +1,22 @@
 services:
+  db:
+    image: mysql:latest
+    container_name: ntnu-kpro-ai-assistant-mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=ntnu-kpro-ai-assistant
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p${DB_PASSWORD}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   webapp:
     platform: 'linux/amd64'
     build:
@@ -6,23 +24,34 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_CLIENTVAR: 'clientvar'
+      platforms:
+        - 'linux/amd64'
     working_dir: /app
     ports:
       - '3000:3000'
     image: t3-app
     environment:
-      - PLANPRAT_URL=http://host.docker.internal:8000/plan-prat/
+      - PLANPRAT_URL=${PLANPRAT_URL}
       - CADAID_URL=${CADAID_URL}
       - DATABASE_URL=${DATABASE_URL}
       - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXT_PUBLIC_SUPABASE_KEY=${NEXT_PUBLIC_SUPABASE_KEY}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
-    # platform: 'linux/amd64'
+    platform: 'linux/amd64'
     build:
       context: ./backend
       dockerfile: Dockerfile
+      platforms:
+        - 'linux/amd64'
     ports:
       - '8000:8000'
     volumes:
@@ -35,7 +64,6 @@ services:
       - TAVILY_API_KEY=${TAVILY_API_KEY}
       - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
       - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
-      - ARKIVGPT_URL=${ARKIVGPT_URL}
       - CADAID_URL=${CADAID_URL}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_API_KEY_MODEL=${GOOGLE_API_KEY_MODEL}
@@ -44,3 +72,8 @@ services:
       - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT}
       - CHROMA_PATH=${CHROMA_PATH}
       - LOG_LEVEL=${LOG_LEVEL}
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:

@@ -7,12 +7,12 @@ import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import type { ApplicationType } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
+//import dynamic from "next/dynamic";
 
-const MapChatIntegrationWithNoSSR = dynamic(
-  () => import("~/components/MapChatIntegration"),
-  { ssr: false }
-);
+// const MapChatIntegrationWithNoSSR = dynamic(
+//   () => import("~/components/MapChatIntegration"),
+//   { ssr: false }
+// );
 
 type ApplicationCardProps = {
   app: {
@@ -245,10 +245,10 @@ const MyOverview = () => {
         />
       </div>
 
-      <div className='mt-8'>
+      {/* <div className='mt-8'>
         <h2 className='flex justify-center text-xl mb-4'>Få veiledning fra chatbotten vår!</h2>
         <MapChatIntegrationWithNoSSR />
-      </div>
+      </div> */}
     </div>
   );
 };

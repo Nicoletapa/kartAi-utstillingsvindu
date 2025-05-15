@@ -2,7 +2,6 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import axios, { AxiosError, type AxiosResponse } from "axios";
 
-
 interface GuideButton {
   title: string;
   url: string;
@@ -12,9 +11,11 @@ interface GuideButton {
 interface PlanpratResponse {
   answer: string;
   guides?: GuideButton[];
+  error?: string;
 }
 
-const PLANPRAT_URL = process.env.PLANPRAT_URL ?? "";
+// Use PLANPRAT_URL environment variable directly
+const FASTAPI_PLANPRAT_URL = "http://api:8000/api/plan-prat"; 
 
 export const planpratRouter = createTRPCRouter({
   fetchResponse: publicProcedure
@@ -28,19 +29,19 @@ export const planpratRouter = createTRPCRouter({
 
       try {
         const response: AxiosResponse<PlanpratResponse> = await axios.post(
-          PLANPRAT_URL,
+          FASTAPI_PLANPRAT_URL,
           {
             query: query,
           },
         );
 
-        return response.data as unknown as PlanpratResponse;
+        return response.data;
       } catch (error) {
+        console.error("tRPC fetchResponse error:", error);
         if (error instanceof AxiosError) {
-          throw new Error(`Failed to retrieve response: ${error.message}`);
+          throw new Error(`Failed to retrieve response from backend: ${error.message}`);
         } else {
-          console.error(error);
-          throw new Error(`Unkown error`);
+          throw new Error(`Unknown error while fetching response: ${String(error)}`);
         }
       }
     }),

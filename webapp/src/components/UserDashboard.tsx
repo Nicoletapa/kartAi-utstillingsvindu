@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { PickAddress } from "~/components/PickAddress";
 import { TodoList } from "~/components/TodoList";
 import { CadaidWidget } from "~/components/CadaidWidget";
@@ -33,20 +33,24 @@ export default function UserDashboard({ BASE_URL }: UserDashboardProps) {
     router.push("https://www.kristiansand.kommune.no/");
   };
 
-  const [documentList, setDocumentList] = useState<typeof documents>([]);
+  const [documentList, setDocumentList] = useState<Array<{ name: string; url: string }>>([]);
 
-  const documents = [
-    { name: "Plantegning.pdf", url: BASE_URL + "/" + "Plantegning.pdf" },
-    { name: "Snitt_øst.jpg", url: BASE_URL + "/" + "Snitt_øst.jpg" },
-    { name: "Snitt_vest.jpg", url: BASE_URL + "/" + "Snitt_vest.jpg" },
-    { name: "Snitt_nord.jpg", url: BASE_URL + "/" + "Snitt_nord.jpg" },
-  ];
+  // Use useMemo to prevent recreating the documents array on every render
+  const documents = useMemo(
+    () => [
+      { name: "Plantegning.pdf", url: BASE_URL + "/" + "Plantegning.pdf" },
+      { name: "Snitt_øst.jpg", url: BASE_URL + "/" + "Snitt_øst.jpg" },
+      { name: "Snitt_vest.jpg", url: BASE_URL + "/" + "Snitt_vest.jpg" },
+      { name: "Snitt_nord.jpg", url: BASE_URL + "/" + "Snitt_nord.jpg" },
+    ],
+    [BASE_URL]
+  ); // Only re-create if BASE_URL changes
 
   useEffect(() => {
     if (hasInputCadaidWidget) {
       setDocumentList((prevList) => [...prevList, ...documents]);
     }
-  }, [hasInputCadaidWidget, documents]);
+  }, [hasInputCadaidWidget, documents]); // Now documents won't cause unnecessary re-renders
 
   return (
     <div className="ml-14 mr-14 min-h-screen">
