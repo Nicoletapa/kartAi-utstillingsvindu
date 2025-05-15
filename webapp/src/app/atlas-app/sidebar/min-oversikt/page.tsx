@@ -11,7 +11,9 @@ export default function MyOverviewPage() {
   return (
     <AtlasSidebar>
       <MyOverview />
-      <SmallChatbot />
+      <div className='mt-10'>
+        <MapChatIntegrationWithNoSSR />
+      </div>
     </AtlasSidebar>
   )
 }

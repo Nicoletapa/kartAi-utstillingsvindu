@@ -129,13 +129,13 @@ const SmallChatbot = () => {
                                 <X size={20} className='text-white' />
                             </button>
                             <PlanPrat
-                                onClose={handleCloseChat}
-                                mapRef={mapInstance}
-                                lastDrawnShape={lastDrawnShape}
-                                spatialAnalysis={spatialAnalysis}
-                                disableTopRightRadius={expanded}
-                                disableBottomRightRadius={expanded}
-                            />
+  onClose={handleCloseChat}
+  mapRefFromStore={{ map: mapInstance.current.map, ready: mapInstance.current.ready }}
+  lastDrawnShapeFromStore={lastDrawnShape}
+  spatialAnalysisFromStore={spatialAnalysis}
+  disableTopRightRadius={expanded}
+  disableBottomRightRadius={false}
+/>
                         </div>
                     </div>
 
