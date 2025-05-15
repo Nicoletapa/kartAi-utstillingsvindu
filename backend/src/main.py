@@ -57,7 +57,7 @@ app.add_middleware(
 
 # --- Include Routers ---
 app.include_router(planprat.router, prefix="/api", tags=["planning"]) 
-# app.include_router(guidance.router, prefix="/api/guidance", tags=["guidance"])
+
 
 # --- Health Check ---
 @app.get("/health", tags=["health"])
