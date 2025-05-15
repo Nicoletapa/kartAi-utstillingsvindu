@@ -6,94 +6,116 @@ import type { SpatialAnalysisResult } from './TiltaksAidMap';
 import { SendHorizonal } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import { useChatStore, type ChatItem } from '~/store/chatStore'; 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
-// Helper function to apply bold formatting
-const applyBold = (lineText: string): string =>
-  lineText.replace(
-    /(\*\*|__)(.*?)\1/g, // Matches **bold** or __bold__
-    '<strong class="font-semibold">$2</strong>'
-  );
+// It's good practice to define this component outside PlanPrat or in its own file.
+// For this change, I'll modify it in place as per its current location.
+interface TypewriterMarkdownProps {
+  text: string;
+  delayPerChar?: number; // Time in ms each character "takes" to appear
+  skipAnimation?: boolean;
+}
 
-// Helper function to check if a line is a list item
-const isListItem = (lineText: string): boolean =>
-  /^[-*•]\s+/.test(lineText); // Starts with -, *, or •, followed by one or more spaces
+const TypewriterMarkdown: React.FC<TypewriterMarkdownProps> = ({
+  text,
+  delayPerChar = 20, // Default to 20ms per character
+  skipAnimation = false,
+}) => {
+  const [displayedText, setDisplayedText] = useState(skipAnimation ? text : "");
+  const animationFrameIdRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const currentIndexRef = useRef<number>(skipAnimation ? text.length : 0);
 
-const formatText = (text: string): JSX.Element[] => {
-  const outputElements: JSX.Element[] = [];
-  if (!text?.trim()) {
-    return outputElements; 
-  }
+  useEffect(() => {
+    // Always cancel any ongoing animation if props change before starting a new one
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
 
-  // Split the text into major blocks based on double newlines (paragraph breaks)
-  const majorBlocks = text.split(/\n\n+/);
+    if (skipAnimation) {
+      setDisplayedText(text);
+      currentIndexRef.current = text.length;
+      return;
+    }
 
-  majorBlocks.forEach((block, blockIdx) => {
-    if (!block.trim()) return; // Skip empty blocks
+    // Reset for new animation if not skipping
+    // (useState already handles initial "" if not skipping)
+    // If text changes, we need to reset animation state.
+    if (displayedText !== "" || currentIndexRef.current !== 0) {
+        setDisplayedText("");
+        currentIndexRef.current = 0;
+    }
+    startTimeRef.current = null; // Reset start time for the new animation
 
-    const lines = block.split('\n'); // Split each block into individual lines
-    let currentParagraphLines: string[] = [];
-    let currentListItems: string[] = [];
-
-    // Function to flush (render) accumulated paragraph lines
-    const flushParagraph = (key: string) => {
-      if (currentParagraphLines.length > 0) {
-        outputElements.push(
-          <p
-            key={`p-${key}`}
-            className="my-2" // Add some vertical margin for paragraphs
-            dangerouslySetInnerHTML={{ __html: currentParagraphLines.join('<br />') }}
-          />
-        );
-        currentParagraphLines = [];
-      }
-    };
-
-    // Function to flush (render) accumulated list items
-    const flushList = (key: string) => {
-      if (currentListItems.length > 0) {
-        outputElements.push(
-          <ul key={`ul-${key}`} className="list-disc ml-5 my-2"> {/* Standard list styling */}
-            {currentListItems.map((item, itemIdx) => (
-              <li
-                key={`li-${key}-${itemIdx}`}
-                className="mb-1" // Small margin below each list item
-                dangerouslySetInnerHTML={{ __html: item.replace(/^[-*•]\s+/, '') }} // Remove marker before rendering
-              />
-            ))}
-          </ul>
-        );
-        currentListItems = [];
-      }
-    };
-
-    lines.forEach((line, lineIdx) => {
-      // Apply bolding to the line content, preserve original line for structural checks if needed
-      const boldedLine = applyBold(line); 
-      const trimmedLineForCheck = line.trim(); // Use a trimmed version for structural checks
-
-      if (!trimmedLineForCheck) {
-        // If an effectively empty line is encountered, it can act as a break.
-        // Flush existing paragraph or list.
-        flushParagraph(`block-${blockIdx}-line-${lineIdx}-empty-p`);
-        flushList(`block-${blockIdx}-line-${lineIdx}-empty-ul`);
-        return; // Continue to the next line
+    const animate = (timestamp: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = timestamp; // Initialize startTime on the first frame
       }
 
-      if (isListItem(trimmedLineForCheck)) {
-        flushParagraph(`block-${blockIdx}-line-${lineIdx}-p`); // If starting a list, finish current paragraph
-        currentListItems.push(boldedLine); // Add the original (now bolded) line to list items
+      const elapsedTime = timestamp - startTimeRef.current;
+      const targetCharsToShow = Math.floor(elapsedTime / delayPerChar);
+
+      if (currentIndexRef.current < text.length) {
+        if (targetCharsToShow > currentIndexRef.current) {
+          const newIndex = Math.min(targetCharsToShow, text.length);
+          setDisplayedText(text.slice(0, newIndex));
+          currentIndexRef.current = newIndex;
+        }
       } else {
-        flushList(`block-${blockIdx}-line-${lineIdx}-ul`); // If starting a paragraph, finish current list
-        currentParagraphLines.push(boldedLine); // Add to paragraph lines
+        // Animation complete, ensure full text is displayed
+        if (displayedText !== text) {
+          setDisplayedText(text);
+        }
+        animationFrameIdRef.current = null;
+        return; // Stop animation
       }
-    });
 
-    // After processing all lines in a block, flush any remaining content
-    flushParagraph(`block-${blockIdx}-final-p`);
-    flushList(`block-${blockIdx}-final-ul`);
-  });
+      if (currentIndexRef.current < text.length) {
+        animationFrameIdRef.current = requestAnimationFrame(animate);
+      } else {
+        // Ensure final text is set if loop finishes due to text.length
+        if (displayedText !== text) {
+            setDisplayedText(text);
+        }
+        animationFrameIdRef.current = null;
+      }
+    };
 
-  return outputElements;
+    // Start the animation only if there's text and not skipping
+    if (text.length > 0) {
+      animationFrameIdRef.current = requestAnimationFrame(animate);
+    } else {
+      setDisplayedText(""); // Handle empty text case
+      currentIndexRef.current = 0;
+    }
+
+    return () => { // Cleanup
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
+    };
+  }, [text, delayPerChar, skipAnimation]); // Effect dependencies
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw]}
+      components={{
+        p: ({...props}) => <p className="my-2" {...props} />,
+        ul: ({...props}) => <ul className="list-disc ml-5 my-2" {...props} />,
+        li: ({...props}) => <li className="mb-1" {...props} />,
+        a: ({...props}) => <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+        strong: ({...props}) => <strong className="font-semibold" {...props} />,
+        h3: ({...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
+      }}
+    >
+      {displayedText}
+    </ReactMarkdown>
+  );
 };
 
 interface PlanPratProps {
@@ -129,6 +151,8 @@ export function PlanPrat({
   const lastDrawnShape = lastDrawnShapeFromStore;
   const spatialAnalysis = spatialAnalysisFromStore;
   // ------------------------------------------
+
+
 
   // Handle sending messages when user clicks send button
   const handleSendMessage = () => {
@@ -281,7 +305,7 @@ export function PlanPrat({
 
   const handleSubmit = async (): Promise<void> => {
     if (isTyping) {
-      return; // Don't allow submissions while already processing
+      return; 
     }
     
     if (text.trim()) {
@@ -293,7 +317,7 @@ export function PlanPrat({
       setIsTyping(true); 
 
       try {
-        // Create a comprehensive payload with detailed spatial data
+        
         const payload = {
           text: sendText,
           spatialData: spatialAnalysisFromStore ? {
@@ -321,7 +345,6 @@ export function PlanPrat({
           return;
         }
 
-        // Check for error responses
         if (response.error) {
           console.error("API error:", response.error);
           setError(typeof response.error === 'string' ? response.error : "An error occurred");
@@ -388,39 +411,56 @@ export function PlanPrat({
             </li>
           )}
 
-          {chatItems.map((chatItem, index) => (
-            <li
-              data-cy="chat-output"
-              className={
-                chatItem.isUser
-                  ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100 max-w-[80%]"
-                  : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black max-w-[80%]"
-              }
-              key={chatItem.timestamp ?? index} 
-            >
-              {chatItem.isUser ? chatItem.text : formatText(chatItem.text)}
-              {!chatItem.isUser && chatItem.guides && Array.isArray(chatItem.guides) && chatItem.guides.length > 0 && (
-                <div className="mt-2 flex flex-col gap-2">
-                  {chatItem.guides.map((guide, guideIndex) => (
-                    <a
-                      key={guideIndex}
-                      href={guide.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm mb-1"
-                    >
-                      <span className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        {guide.title}
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </li>
-          ))}
+          {chatItems.map((chatItem, index) => {
+            const isLastItem = index === chatItems.length - 1;
+            const isBotMessage = !chatItem.isUser;
+            // Animate only if it's the last message in the chat AND it's a bot message.
+            // Otherwise, skip animation (display text immediately).
+            const shouldAnimate = isBotMessage && isLastItem;
+
+            return (
+              <li
+                data-cy="chat-output"
+                className={
+                  chatItem.isUser
+                    ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100 max-w-[80%]"
+                    : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black max-w-[80%]"
+                }
+                key={chatItem.timestamp ?? index} 
+              >
+                {chatItem.isUser ? (
+                  chatItem.text
+                ) : (
+                  <TypewriterMarkdown
+                    text={chatItem.text}
+                    skipAnimation={!shouldAnimate}
+                    delayPerChar={15} // Adjust for desired speed (e.g., 15-30ms)
+                  />
+                )}
+              
+                {!chatItem.isUser && chatItem.guides && Array.isArray(chatItem.guides) && chatItem.guides.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {chatItem.guides.map((guide, guideIndex) => (
+                      <a
+                        key={guideIndex}
+                        href={guide.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm mb-1"
+                      >
+                        <span className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          {guide.title}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
         <div className="relative w-full mt-auto">
           <textarea
