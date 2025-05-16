@@ -38,14 +38,14 @@ export async function fetchAllowedBuildingArea(
   try {
     console.log(`Fetching allowed building area for: ${matrikkelnummer}`);
     
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_allowedbuildingarea`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_allowedbuildingarea_by_eiendom`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
       },
-      body: JSON.stringify({ matrikkelnummer })
+      body: JSON.stringify({ eiendom: matrikkelnummer })
     });
 
     if (!response.ok) {
