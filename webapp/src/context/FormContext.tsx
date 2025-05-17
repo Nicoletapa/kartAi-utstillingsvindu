@@ -59,7 +59,9 @@ const defaultFormData: FormDataType = {
 
 const FormContext = createContext<FormContextType>({
   applicantFormData: defaultFormData,
-  updateApplicantFormData: () => {},
+  updateApplicantFormData: () => {
+    throw new Error('updateApplicantFormData must be used within a FormProvider');
+  },
 });
 
 export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
