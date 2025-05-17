@@ -1,3 +1,39 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is part of the building application process and is used to create a dispensasjonssøknad (dispensation application).
+ * It includes sections for the header, applicant information, building details, and a signature section.
+ * 
+ * @features
+ * - Available information is gathered from the database using TRPC
+ *      - api.application.getApplication
+ *      - api.user.getUserDetails
+ * 
+ * @props
+ * - `application` (object): The application object containing the applicationID.
+ * - `user` (object): The user object containing user details such as email, address, name, gnr, and bnr.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - The "Send dispensasjonssøknad" button is not functional yet.
+ * 
+ * @usage
+ * const dispensasjonProps = {
+        application: {
+            applicationID: applicationData.applicationID,
+        },
+        user: {
+            email: userData.email ?? '', 
+            address: userData.address ?? '',
+            name: userData.name ?? '',
+            gnr: userData.gnr ?? 0, 
+            bnr: userData.bnr ?? 0,
+        }
+    }; 
+ * <Dispensasjon {...dispensasjonProps} />
+ */
+
 import React from 'react'
 import { api } from "~/trpc/react";
 import { useEffect, useState } from 'react';

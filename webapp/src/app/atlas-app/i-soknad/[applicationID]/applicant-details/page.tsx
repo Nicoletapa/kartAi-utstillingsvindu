@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Step_applicant_details from "~/components/steps/Step_applicant_details";
 import { FormProvider } from "~/context/FormContext";
-import SmallChatbot from "~/components/SmallChatbot";
 
 export default function ApplicantDetailsPage() {
   const params = useParams();
@@ -23,7 +22,6 @@ export default function ApplicantDetailsPage() {
         onValidityChange={handleValidityChange}
       />
     </FormProvider>
-    <SmallChatbot />
     </div>
 
   );

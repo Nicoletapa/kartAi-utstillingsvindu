@@ -1,3 +1,29 @@
+/**
+ * This file is used in Utsillingsvindu 2.0
+ * 
+ * @description
+ * This is the main page for the Atlas application.
+ * It includes the sidebar, the main content area, and the minified chatbot.
+ * The page is made up of the components "AtlasSidebar", "FrontPage", "SendAppNow".
+ * 
+ * @features
+ * - Sidebar navigation
+ * - Main content area
+ * - Minified chatbot
+ * - Link to the main page
+ * 
+ * @props
+ * - `children` (ReactNode): The React tree that will have access to the form context.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * 
+ * @usage
+ * ```tsx
+ * import AtlasPage from './AtlasPage';
+
+ */
+
 "use client";
 
 import React from "react";
@@ -8,17 +34,12 @@ import AtlasSidebar from "~/components/AtlasSidebar";
 import { SendAppNow } from "~/components/SendAppNow";
 import FrontPage from "~/components/FrontPage";
 
-const SmallChatbot = dynamic(() => import('~/components/SmallChatbot'), {
-  ssr: false,
-});
-
 export default function AtlasPage() {
   return (
     <div className={`relative min-h-screen ${GeistSans.variable}`}>
       <AtlasSidebar>
         <FrontPage />
         <SendAppNow />
-        <SmallChatbot />
       </AtlasSidebar>
         
         <Link

@@ -1,3 +1,27 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * Currently renders hard-coded messages about updates on the user's building application.
+ * 
+ * @features
+ * - Displays a list of messages with details
+ * - Allows users to expand/collapse messages
+ * - Marks messages as read when expanded
+ * 
+ * @props
+ * - `messages` (Message[]): Array of messages to display.
+ * - `onToggle` (function): Function to handle message toggle.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - The messages are currently hard-coded for demonstration purposes.
+ * 
+ * @usage
+ * <Meldinger />
+ */
+
+
 "use client"
 
 import React, { useState } from 'react'

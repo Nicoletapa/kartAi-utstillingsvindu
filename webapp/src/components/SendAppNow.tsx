@@ -1,4 +1,32 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is used on the front page, AtlasPage.
+ * It acts as a button to send the user directly to the application creation process,
+ * in instances where the user already knows they need to apply.
+ * 
+ * @features
+ * - Button to send the user to the application creation process
+ * - Loading state while the application is being created
+ * - Error handling for the application creation process
+ * 
+ * @props
+ * - `isNewApplication` (boolean): Optional prop to indicate if this is a new application.
+ * - `onTypeSelect` (function): Optional callback function to handle the application ID after creation.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses the `useMutation` hook from `trpc` to handle the application creation process.
+ * - It uses the `useRouter` hook from `next/navigation` to navigate to the application details page after creation.
+ * - It uses the `toast` library to display success and error messages.
+ * 
+ * @usage
+ * <SendAppNow />
+ */
+
 "use client";
+
 import React from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { ApplicationType } from "@prisma/client";
@@ -13,7 +41,7 @@ type TemplateProps = {
   onTypeSelect?: (applicationID: number) => void;
 };
 
-export function SendAppNow({ isNewApplication, onTypeSelect }: TemplateProps) {
+export function SendAppNow({ onTypeSelect }: TemplateProps) {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
 
@@ -42,11 +70,9 @@ export function SendAppNow({ isNewApplication, onTypeSelect }: TemplateProps) {
     }
   });
 
-  // Simplified application creation without type
   const handleCreateApplication = async () => {
     setIsCreating(true);
     
-    // Use a default/temporary application type
     const temporaryType = "pending" as ApplicationType; 
     
     await createApplication.mutateAsync({

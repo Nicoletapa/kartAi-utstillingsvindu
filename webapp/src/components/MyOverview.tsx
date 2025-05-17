@@ -1,3 +1,31 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component provides recently started/submitted applications (max 3), buttons to start a new
+ * building application, and a button to go to "Mine Søknader" page. 
+ * 
+ * @features
+ * - Displays a list of recent applications with details
+ * - Allows users to expand/collapse application details
+ *    - Users can choose to continue or delete the application
+ * - Provides buttons to create a new application and view all applications
+ * 
+ * @props
+ * - `app` (object): The application object containing details like ID, type, submission date, and status.
+ * - `expandedAppId` (number|null): The ID of the currently expanded application.
+ * - `onExpand` (function): Function to handle expanding/collapsing applications.
+ * - `onDelete` (function): Function to handle deleting applications.
+ * - `router` (object): The Next.js router object for navigation.
+ * 
+ * @note
+ * - On the web page, this page displays the full-size chatbot (PlanChatAtlas.tsx). 
+ * - The chatbot directly on the page min-oversikt/page.tsx
+ * 
+ * @usage
+ * <MyOverview />
+ */
+
 "use client"
 
 import React, { useState } from 'react'
@@ -7,12 +35,6 @@ import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import type { ApplicationType } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-//import dynamic from "next/dynamic";
-
-// const MapChatIntegrationWithNoSSR = dynamic(
-//   () => import("~/components/MapChatIntegration"),
-//   { ssr: false }
-// );
 
 type ApplicationCardProps = {
   app: {
@@ -149,22 +171,22 @@ const MyOverview = () => {
   const [expandedAppId, setExpandedAppId] = useState<number | null>(null);
 
   const { data: users } = api.user.getUserDetails.useQuery();
-  const { 
+  const {
     data: allApplications,
     isLoading,
-    error, 
+    error,
     refetch,
   } = api.application.getAllApplications.useQuery();
 
   const createApplication = api.application.createApplication.useMutation({
     onSuccess: (data) => {
       setIsCreating(false);
-      
+
       if (!data?.applicationID) {
         toast.error("Noe gikk galt ved oppretting av søknad");
         return;
       }
-      
+
       toast.success("Søknad opprettet");
       router.push(`/atlas-app/i-soknad/${data.applicationID}/applicant-details`);
     },
@@ -189,7 +211,7 @@ const MyOverview = () => {
     const temporaryType = "pending" as ApplicationType;
     await createApplication.mutateAsync({
       applicationType: temporaryType,
-      subTypeId: "pending", 
+      subTypeId: "pending",
       submissionDate: new Date(),
       updatedDate: new Date(),
       status: "Pabegynt"
@@ -244,11 +266,6 @@ const MyOverview = () => {
           onViewAll={handleViewAllApplications}
         />
       </div>
-
-      {/* <div className='mt-8'>
-        <h2 className='flex justify-center text-xl mb-4'>Få veiledning fra chatbotten vår!</h2>
-        <MapChatIntegrationWithNoSSR />
-      </div> */}
     </div>
   );
 };

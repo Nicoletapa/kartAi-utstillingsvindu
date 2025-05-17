@@ -1,3 +1,56 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is part of the building application process.
+ * It displays a template for the application form.
+ * Data that the user has filled out in the application form is 
+ * displayed here throught the database, where the inputs are stored.
+ * 
+ * @features
+ * - Data is gathered from the database using TRPC, and displayed in the appropriate fields.
+ *      - api.user.getUserDetails
+ *      - api.application.getApplication
+ *      - api.userDocuments.getUserDocuments
+ * - The "Send søknad" button is not functional yet.
+ * 
+ * @props
+ * - `application` (object): The application data fetched from the database.
+ * - `user` (object): The user data fetched from the database.
+ * - `userDocuments` (object): The user documents data fetched from the database.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - The data is fetched using TRPC, and the component is wrapped in a React functional component.
+ * 
+ * @usage
+ * const soknadenProps = {
+    application: {
+      applicationID: applicationData.applicationID,
+      applicationType: String(applicationData.applicationType ?? 'Ikke spesifisert'),
+    },
+    user: {
+      email: userData.email ?? '',
+      address: userData.address ?? '',
+      name: userData.name ?? '',
+      gnr: userData.gnr ?? 0,
+      bnr: userData.bnr ?? 0,
+      postalCode: userData.postalCode ?? '',
+      postalArea: userData.postalArea ?? '',
+    },
+    userDocuments: userDocumentsData
+      .filter(doc => doc.applicationID !== null)
+      .map(doc => ({
+        documentID: doc.documentID,
+        fileName: doc.fileName ?? 'Ukjent filnavn',
+        documentType: doc.document ?? 'Ukjent type',
+        applicationID: doc.applicationID!,
+      }))
+  };
+
+ * <Soknaden {...soknadenProps}
+ */
+
 import React, { useEffect, useState } from 'react'
 import { api } from "~/trpc/react";
 import { Info } from 'lucide-react';

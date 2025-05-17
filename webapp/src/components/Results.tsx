@@ -1,9 +1,39 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is used in CadaidAtlas to display a summary of the validation results.¨
+ * It shows the required drawing types and their status (found/missing) in the uploaded documents.
+ * The component also provides a list of documents where each drawing type was found.
+ * The results are displayed in a table format with icons indicating the status.
+ * 
+ * @features
+ * - Displays a summary of required drawing types and their status
+ * - Lists documents where each drawing type was found
+ * - Uses icons to indicate status (found/missing)
+ * - Handles both existing documents and newly uploaded results
+ * 
+ * @props
+ * - `results` (Detection[]): Array of detection results to be displayed.
+ * - `existingDocuments` (ExistingDocument[]): Array of existing documents to be displayed.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses the `requiredDrawingTypes` utility to determine the required drawing types.
+ * - The `capitalize` utility is used to format the drawing type names.
+ * 
+ * @usage
+ * <Results
+ *    results={state.results} 
+ *    existingDocuments={documentsQuery.data ?? []}
+ * />
+ */
+
 import React from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { requiredDrawingTypes, capitalize } from '../utils/helpers';
 import type { Detection } from '~/types/detection';
 
-// Types for document data structure
 interface ExistingDocument {
   documentID: number;
   fileName: string;
@@ -17,17 +47,14 @@ interface ExistingDocument {
 }
 
 interface ResultsProps {
-  results: Detection[];           // New detection results
-  existingDocuments?: ExistingDocument[]; // Previously uploaded documents
+  results: Detection[];       
+  existingDocuments?: ExistingDocument[]; 
 }
 
 const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) => {
-  // Combine existing and new documents for analysis
   const allDocuments = [...existingDocuments, ...results];
 
-  // Generate summary of drawing types found across all documents
   const drawingTypeSummary = requiredDrawingTypes.map(requiredType => {
-    // Find documents containing each required drawing type
     const foundInDocuments = allDocuments.filter(doc => {
       const types = 'drawing_type' in doc
         ? Array.isArray(doc.drawing_type)
@@ -37,7 +64,6 @@ const Results: React.FC<ResultsProps> = ({ results, existingDocuments = [] }) =>
       return types.includes(requiredType);
     });
 
-    // Get unique filenames for documents containing the drawing type
     const uniqueDocuments = [...new Set(foundInDocuments.map(doc => 
       'fileName' in doc ? doc.fileName : doc.file_name
     ))];

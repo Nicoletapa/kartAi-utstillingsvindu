@@ -1,3 +1,27 @@
+/**
+ * This file is used in Utsillingsvindu 1.0 and 2.0
+ * 
+ * @description
+ * This is the root layout for the overall application.
+ * It includes the global styles, metadata, and the main layout structure.
+ * 
+ * @features
+ * - Global styles
+ * - Metadata for the application
+ * - Navbar and footer components
+ * - Session management
+ * - Providers for context and state management
+ * 
+ * @props
+ * - `children` (ReactNode): The React tree that will have access to the form context.
+ * 
+ * @note
+ * - This component is designed to be used in a server-side context.
+ * 
+ * @usage
+ * 
+ */
+
 import "~/styles/globals.css";
 import "leaflet/dist/leaflet.css";
 import { GeistSans } from "geist/font/sans";

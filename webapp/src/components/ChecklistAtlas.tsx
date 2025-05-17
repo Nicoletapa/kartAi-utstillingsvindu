@@ -1,3 +1,29 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * An interactive checklist with a progress bar, intended for users to get an overview of
+ * the documents and information required for a complete application.
+ * Stages include "Før", "Under", and "Etter" the application process.
+ * 
+ * @features
+ * - Interactive checklist with checkboxes
+ * - Progress bar indicating completion percentage
+ * 
+ * @props
+ * - `checklistData` (ChecklistData): The data structure containing the checklist items and their categories.
+ * - `CustomCheckbox` (CustomCheckboxProps): A custom checkbox component for the checklist items.
+ * - `ProgressBar` (ProgressBarProps): A progress bar component to visualize the completion percentage.
+ * - `ChecklistItem` (ChecklistItemProps): A component representing each checklist item.
+ * - `ChecklistAtlas` (ChecklistAtlasProps): The main component that renders the checklist and handles state.
+ * 
+ * @note
+ * - Checkboxes are custom styled for consistent appearance.
+ * 
+ * @usage
+ * <ChecklistAtlas />
+ */
+
 "use client"
 
 import React, { useState } from 'react'
@@ -159,7 +185,7 @@ const ChecklistAtlas = () => {
     section.flatMap(sub => sub.items)
   );
   const checkedCount = Object.keys(checkedItems).filter(key => checkedItems[key]).length;
-  const progressPercent = allItems.length > 0 ? Math.round((checkedCount / allItems.length) * 100) : 0; // Avoid division by zero
+  const progressPercent = allItems.length > 0 ? Math.round((checkedCount / allItems.length) * 100) : 0;
 
   return (
     <div className='p-4'>

@@ -1,3 +1,27 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component provides an overview of all the user's applications. They can create a new application,
+ * or edit an already made one. The user can also delete applications, the status is also shown.
+ * 
+ * @features
+ * - Displays a list of applications with their status
+ * - Allows the user to create a new application
+ * - Allows the user to delete an application
+ * - Uses TRPC for data fetching and mutation
+ * - Applications are saved in the database
+ * 
+ * @props
+ * - `onClose` (function): Callback function to close the modal.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * 
+ * @usage
+ * <MyApplications />
+ */
+
 "use client"
 
 import { api } from "~/trpc/react";
@@ -7,8 +31,6 @@ import { Trash2, PlusCircle, Info, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes";
 import { useState } from "react";
-
-
 
 const ApplicationModal = ({ onClose }: { onClose: () => void }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={onClose}>

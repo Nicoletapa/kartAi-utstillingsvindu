@@ -1,3 +1,25 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is used at the bottom of the components ForDuSoker.tsx and MyProperty.tsx.
+ * It provides the user with options to start a new application, go to the checklist, or start a chat with the chatbot for guidance.
+ * 
+ * @features
+ * - Action links for starting a new application, going to the checklist, or starting a chat with the chatbot.
+ * 
+ * @props
+ * - `title` (string): The title of the section.
+ * - `children` (ReactNode): The content of the section.
+ * - `className` (string): Additional CSS classes for styling.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * 
+ * @usage
+ * <KlarForASoke />
+ */
+
 "use client";
 
 import { Bot, Check, Plus } from 'lucide-react';

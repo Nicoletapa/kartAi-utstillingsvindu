@@ -1,6 +1,35 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component handles the logic and rendering of the progress bar and 
+ * steps in the building application process.
+ * It includes the steps for the application process, such as "Oversikt", 
+ * "Dokumentsjekk", "Nabovarsel", "Søknaden", "Status", and "Veien videre".
+ * It also displays confirmation messages on certain steps and the "Tilbake" and "Neste" button logic.
+ * 
+ * @features
+ * - Displays the current step and substep in the application process.
+ * - Handles the logic for navigating between steps.
+ * - Displays a progress bar indicating the current step.
+ * - Handles the submission of the application.
+ * - Displays a checklist for the application.
+ * - Handles the rendering of different step components based on the current step and substep.
+ * - Validates the form data and updates the state accordingly.
+ * 
+ * @props
+ * - `applicationID` (number): The ID of the application being processed.
+ * - `currentStep` (number): The current step in the application process.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * 
+ * @usage
+ * <ProgressBarStep applicationID={applicationID} currentStep={0}
+ */
+
 "use client";
 
-import dynamic from 'next/dynamic';
 import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ProgressBar } from "./Progressbar";
@@ -24,9 +53,6 @@ import {
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
-const SmallChatbot = dynamic(() => import('~/components/SmallChatbot'), {
-  ssr: false,
-});
 
 interface CommonStepProps<TFormData = Record<string, unknown>> {
     applicationID?: number;
@@ -373,8 +399,6 @@ export default function ProgressBarStep({
                 </div>
             </div>
         </div>
-        <SmallChatbot />
         </div>
-        
     );
 }

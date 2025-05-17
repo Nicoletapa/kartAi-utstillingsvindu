@@ -1,3 +1,28 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component provides information and guidance for users before they start their application process.
+ * It includes sections on whether they need to apply, what kind of documents they need, an informational video,
+ * and a link to the DiBK veiviseren.
+ * 
+ * @features
+ * - Video embedded
+ * - Link to DiBK veiviseren
+ * - Shortcuts at the end of the page to relevant pages
+ * 
+ * @props
+ * - `title` (string): The title of the section.
+ * - `children` (ReactNode): The content of the section.
+ * - `className` (string): Additional CSS classes for styling.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * 
+ * @usage
+ * <ForDuSoker />
+ */
+
 "use client"
 
 import { Bot } from 'lucide-react';
@@ -20,7 +45,6 @@ const Section: React.FC<SectionProps> = ({ title, children, className = '' }) =>
 const BulletList: React.FC<{ items: React.ReactNode[] }> = ({ items }) => (
   <ul className='list-disc ml-8 space-y-1 mb-4'>
     {items.map((item, index) => (
-      // The key should be on the outermost element returned by map
       <li key={index}>{item}</li>
     ))}
   </ul>
@@ -34,7 +58,7 @@ const VideoEmbed: React.FC = () => (
     title="YouTube video player"
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-    allowFullScreen // Use allowFullScreen instead of allowfullscreen
+    allowFullScreen
     className="rounded-lg shadow-md"
   />
 );
@@ -49,12 +73,10 @@ const TwoColumnList: React.FC<{
     <div className="flex flex-col md:flex-row">
       <div data-cy="left-column" className='flex flex-col w-full md:w-1/2 pr-4'>
         <h1 className='font-medium text-center mb-1'>{leftTitle}</h1>
-        {/* Pass React nodes directly, BulletList handles the key */}
         <BulletList items={leftItems.map((item, index) => <span key={index}>{item}</span>)} />
       </div>
       <div data-cy="right-column" className='flex flex-col w-full md:w-1/2 md:border-l-2 md:border-gray-500 md:pl-4'>
         <h1 className='font-medium text-center mb-1'>{rightTitle}</h1>
-        {/* Pass React nodes directly, BulletList handles the key */}
         <BulletList items={rightItems.map((item, index) => <span key={index}>{item}</span>)} />
       </div>
     </div>
@@ -93,7 +115,6 @@ const ForDuSoker = () => {
         <div className="flex flex-col md:flex-row gap-8 mb-8">
           <div data-cy="left-column" className='w-full md:w-1/2'>
             <h1 className='font-medium mb-2'>Dette må du vite før du starter søknaden:</h1>
-            {/* BulletList handles keys internally */}
             <BulletList items={[
               "Seksjon 1: Trenger du å søke?",
               "Seksjon 2: Hva gjelder for din eiendom?",
@@ -143,14 +164,12 @@ const ForDuSoker = () => {
           Før du søker, bør du finne ut hvilke regler som gjelder for din eiendom. Det er disse som avgjør hva du kan bygge - og hvordan.
         </p>
         <h2 className='font-medium'>Sjekk spesielt:</h2>
-        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Kommuneplanen - overordnede føringer for arealbruk",
           "Reguleringsplanen - detaljerte regler for akkurat ditt område",
           "Områdeplanen - hvis det finnes, gir ekstra detaljer og hensyn"
         ]} />
         <h2>Planene viser:</h2>
-        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Hva eiendommen er regulert til (f.eks. bolig, fritidsbolig, næring)",
           "Om det finnes byggegrenser eller verneverdier",
@@ -167,7 +186,6 @@ const ForDuSoker = () => {
 
       <Section title="Hvilke tiltak støtter løsningen?">
         <p>I denne løsningen kan du søke digitalt om tre tiltakstyper:</p>
-        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Bruksendring - f.eks. gjøre om bog til oppholdsrom",
           "Bygge - f.eks. tilbygg, garasje, bod eller nybygg",
@@ -177,7 +195,6 @@ const ForDuSoker = () => {
 
       <Section title="Hva bør du ha klart før du starter søknaden?">
         <p>For å kunne lage en komplett søknad, er det lurt å ha disse tingene klare:</p>
-        {/* BulletList handles keys internally */}
         <BulletList items={[
           "Situasjonskart over eiendommen",
           "Tegninger (plan, fasade, snitt)",
