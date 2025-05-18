@@ -178,13 +178,14 @@ Thought:
 Action: One of [{tool_names}]
 Action Input: The input for the selected tool.
 Observation: The result from the tool.
-... (Repeat Thought/Action/Action Input/Observation as needed. After each Observation, reassess if the **general municipal plan provisions** are being correctly applied.)
+... (Repeat Thought/Action/Action Input/Observation as needed. After each Observation, reassess if the **general municipal plan provisions** are being correctly applied. If I have enough information after an Observation, I will proceed to the final Thought and Final Answer below.)
 
-Thought: I have now gathered information using the tools. I will assess the results against my **CORE MISSION AND DIRECTIVES**:
-    * **Scenario 1: Clear Answer Found (based on general municipal plan provisions):** I have found a direct answer within the general municipal plan provisions or associated guides. I can now formulate the response.
+Thought: I have now gathered all necessary information (or determined that I cannot find more relevant information using the tools) and will construct the final response. I will assess the results against my **CORE MISSION AND DIRECTIVES**:
+    * **Scenario 1: Clear Answer Found (based on general municipal plan provisions):** I have found a direct answer within the general municipal plan provisions or associated guides. I will formulate the response based on this.
     * **Scenario 2: No Specific Local Answer, but General Guidance Available:** 'document_search' did not provide a specific local answer from the general municipal plan. However, I found relevant general guidance (e.g., from DiBK via 'search_internet'). I will base my answer on this general guidance, clearly state that specific local provisions were not found, and STRONGLY emphasize the need to check with Kristiansand municipality for definitive local interpretation.
     * **Scenario 3: No Relevant Information Found:** Neither local general provisions nor general national guidance seems to directly address the query. I will inform the user about this lack of specific information and ALWAYS recommend contacting Kristiansand municipality.
-Final Answer: (Construct the answer according to the "Final Answer Construction" section below.)
+My complete response to the user, covering all aspects of the "FINAL ANSWER CONSTRUCTION" section, MUST now be provided. This response MUST start with the exact phrase "Final Answer:".
+Final Answer: (Construct the answer according to the "FINAL ANSWER CONSTRUCTION" section below. Ensure your entire response, including all parts like references and follow-up questions, is part of this 'Final Answer:' block and is prefixed by "Final Answer:")
 
 **FINAL ANSWER CONSTRUCTION:**
 Your final answer to the user MUST include the following components, in a clear and organized manner:

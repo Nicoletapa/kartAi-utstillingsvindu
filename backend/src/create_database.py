@@ -15,7 +15,7 @@ load_dotenv()
 
 CHROMA_PATH = os.getenv("CHROMA_PATH")
 
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backend/src/data")
+DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backend", "src", "data")
 
 def main():
     generate_data_store()
@@ -28,9 +28,24 @@ def generate_data_store():
 
 
 def load_documents():
-    loader = DirectoryLoader(DATA_PATH, glob="**/*.*", use_multithreading=True, show_progress=True)
-    documents = loader.load()
-    print(f"Loaded {len(documents)} documents from {DATA_PATH}") 
+    all_documents = []
+    file_patterns = ("**/*.txt", "**/*.pdf", "**/*.md")
+    for pattern in file_patterns:
+        
+        loader = DirectoryLoader(DATA_PATH, glob=pattern, use_multithreading=True, show_progress=True)
+        try:   
+            
+            documents = loader.load()
+            all_documents.extend(documents)
+            print(f"Loaded {len(documents)} documents from {DATA_PATH}") 
+        except Exception as e:
+            print(f"Error loading documents: {e}")
+    
+    print(f"Loaded {len(all_documents)} documents from {DATA_PATH}")
+    return all_documents
+
+        
+
 
     return documents
 
