@@ -10,113 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
-// It's good practice to define this component outside PlanPrat or in its own file.
-// For this change, I'll modify it in place as per its current location.
-interface TypewriterMarkdownProps {
-  text: string;
-  delayPerChar?: number; // Time in ms each character "takes" to appear
-  skipAnimation?: boolean;
-}
 
-const TypewriterMarkdown: React.FC<TypewriterMarkdownProps> = ({
-  text,
-  delayPerChar = 20, // Default to 20ms per character
-  skipAnimation = false,
-}) => {
-  const [displayedText, setDisplayedText] = useState(skipAnimation ? text : "");
-  const animationFrameIdRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const currentIndexRef = useRef<number>(skipAnimation ? text.length : 0);
-
-  useEffect(() => {
-    // Always cancel any ongoing animation if props change before starting a new one
-    if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-      animationFrameIdRef.current = null;
-    }
-
-    if (skipAnimation) {
-      setDisplayedText(text);
-      currentIndexRef.current = text.length;
-      return;
-    }
-
-    // Reset for new animation if not skipping
-    // (useState already handles initial "" if not skipping)
-    // If text changes, we need to reset animation state.
-    if (displayedText !== "" || currentIndexRef.current !== 0) {
-        setDisplayedText("");
-        currentIndexRef.current = 0;
-    }
-    startTimeRef.current = null; // Reset start time for the new animation
-
-    const animate = (timestamp: number) => {
-      if (startTimeRef.current === null) {
-        startTimeRef.current = timestamp; // Initialize startTime on the first frame
-      }
-
-      const elapsedTime = timestamp - startTimeRef.current;
-      const targetCharsToShow = Math.floor(elapsedTime / delayPerChar);
-
-      if (currentIndexRef.current < text.length) {
-        if (targetCharsToShow > currentIndexRef.current) {
-          const newIndex = Math.min(targetCharsToShow, text.length);
-          setDisplayedText(text.slice(0, newIndex));
-          currentIndexRef.current = newIndex;
-        }
-      } else {
-        // Animation complete, ensure full text is displayed
-        if (displayedText !== text) {
-          setDisplayedText(text);
-        }
-        animationFrameIdRef.current = null;
-        return; // Stop animation
-      }
-
-      if (currentIndexRef.current < text.length) {
-        animationFrameIdRef.current = requestAnimationFrame(animate);
-      } else {
-        // Ensure final text is set if loop finishes due to text.length
-        if (displayedText !== text) {
-            setDisplayedText(text);
-        }
-        animationFrameIdRef.current = null;
-      }
-    };
-
-    // Start the animation only if there's text and not skipping
-    if (text.length > 0) {
-      animationFrameIdRef.current = requestAnimationFrame(animate);
-    } else {
-      setDisplayedText(""); // Handle empty text case
-      currentIndexRef.current = 0;
-    }
-
-    return () => { // Cleanup
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
-      }
-    };
-  }, [text, delayPerChar, skipAnimation]); // Effect dependencies
-
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
-      components={{
-        p: ({...props}) => <p className="my-2" {...props} />,
-        ul: ({...props}) => <ul className="list-disc ml-5 my-2" {...props} />,
-        li: ({...props}) => <li className="mb-1" {...props} />,
-        a: ({...props}) => <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-        strong: ({...props}) => <strong className="font-semibold" {...props} />,
-        h3: ({...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
-      }}
-    >
-      {displayedText}
-    </ReactMarkdown>
-  );
-};
 
 interface PlanPratProps {
   mapRefFromStore?: { map: Map | null; ready: boolean };
@@ -412,12 +306,7 @@ export function PlanPrat({
           )}
 
           {chatItems.map((chatItem, index) => {
-            const isLastItem = index === chatItems.length - 1;
-            const isBotMessage = !chatItem.isUser;
-            // Animate only if it's the last message in the chat AND it's a bot message.
-            // Otherwise, skip animation (display text immediately).
-            const shouldAnimate = isBotMessage && isLastItem;
-
+           
             return (
               <li
                 data-cy="chat-output"
@@ -431,12 +320,22 @@ export function PlanPrat({
                 {chatItem.isUser ? (
                   chatItem.text
                 ) : (
-                  <TypewriterMarkdown
-                    text={chatItem.text}
-                    skipAnimation={!shouldAnimate}
-                    delayPerChar={15} // Adjust for desired speed (e.g., 15-30ms)
-                  />
-                )}
+                   <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+    rehypePlugins={[rehypeRaw]}
+    components={{
+      p: ({...props}) => <p className="my-2" {...props} />,
+     
+      li: ({...props}) => <li className="mb-1" {...props} />,
+      a: ({...props}) => <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+      strong: ({...props}) => <strong className="font-semibold" {...props} />,
+      h3: ({...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
+    }}
+  >
+    {chatItem.text}
+  </ReactMarkdown>
+)}
+               
               
                 {!chatItem.isUser && chatItem.guides && Array.isArray(chatItem.guides) && chatItem.guides.length > 0 && (
                   <div className="mt-2 flex flex-col gap-2">
@@ -449,7 +348,7 @@ export function PlanPrat({
                         className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm mb-1"
                       >
                         <span className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
                           {guide.title}
