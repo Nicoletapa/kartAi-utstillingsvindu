@@ -20,59 +20,6 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-def extract_markdown_links(text: str) -> Tuple[str, List[Dict[str, str]]]:
-    """
-    Extracts markdown links from text.
-    Returns the text with the markdown links, their associated "Useful links:"
-    or "Nyttige lenker:" header, and any raw URLs (that were also in markdown links)
-    removed. It also returns a list of guide objects.
-    """
-    guides = []
-    # Pattern to find markdown links like [Title](URL)
-    link_pattern = r'\[([^\]]+)\]\(([^)]+)\)'
-    
-    # 1. Find all markdown links and store them
-    matches = re.findall(link_pattern, text)
-    urls_in_markdown_links = set()
-    for title, url in matches:
-        guides.append({"title": title, "url": url})
-        urls_in_markdown_links.add(url)
-
-    modified_text = text
-    
-    # 2. Remove all occurrences of the markdown link pattern from the text
-    if matches: # Only modify if markdown links were found
-        modified_text = re.sub(link_pattern, '', modified_text)
-    
-    # 3. Remove standalone raw URLs from the text if they were already captured as markdown links
-    if urls_in_markdown_links:
-        lines = modified_text.splitlines()
-        processed_lines = []
-        for line in lines:
-            stripped_line = line.strip()
-            # If the line, when stripped, is one of the URLs we've captured in a markdown link,
-            # it's a redundant raw URL and should be skipped.
-            if stripped_line in urls_in_markdown_links:
-                continue 
-            processed_lines.append(line)
-        modified_text = "\n".join(processed_lines)
-
-    # 4. Remove the "Useful links:" or "Nyttige lenker:" header line.
-    # Using re.MULTILINE to ensure ^ matches start of lines for header removal.
-    header_patterns = [
-        r"^\s*(\*\*Useful links:\*\*|\bUseful links:)\s*?\n?",
-        r"^\s*(\*\*Nyttige lenker:\*\*|\bNyttige lenker:)\s*?\n?"
-    ]
-    for pattern in header_patterns:
-        modified_text = re.sub(pattern, "", modified_text, flags=re.IGNORECASE | re.MULTILINE)
-        
-    # 5. Clean up blank lines and whitespace
-    # Collapse 3 or more newlines into 2 (to preserve paragraph breaks like \n\n)
-    modified_text = re.sub(r'\n{3,}', '\n\n', modified_text)
-    # Remove any leading/trailing newlines and other whitespace from the entire text block
-    modified_text = modified_text.strip()
-        
-    return modified_text, guides
 
 
 class PlanAgent(BaseAgent):
@@ -218,32 +165,34 @@ Thought: I have now gathered all necessary information (or determined that I can
 My complete response to the user, covering all aspects of the "FINAL ANSWER CONSTRUCTION" section, MUST now be provided. This response MUST start with the exact phrase "Final Answer:".
 Final Answer: (Construct the answer according to the "FINAL ANSWER CONSTRUCTION" section below. Ensure your entire response, including all parts like references and follow-up questions, is part of this 'Final Answer:' block and is prefixed by "Final Answer:". The language of this final answer must match the user's input language.)
 
-# FINAL ANSWER CONSTRUCTION:
-# Your final answer to the user MUST include the following components, in a clear and organized manner:
-# 1.  **Direct Response:** A clear answer to the user's question, explicitly stating that it is based on **general municipal plan provisions** (or general national guidance if local general provisions are not found).
-# 2.  **Spatial Analysis Explanation (if 'spatial_analysis' was used):**
-#     * Describe the relevant findings from the map analysis (e.g., distances, location relative to boundaries).
-#     * Crucially, explain how the **general municipal plan provisions** (ideally citing an official online source found via 'search_internet', or from 'document_search' if no online source was found) apply to these spatial findings.
-#     * Indicate if any permits or consents appear necessary based on these general rules and spatial analysis.
+FINAL ANSWER CONSTRUCTION:
+Your final answer to the user MUST include the following components, in a clear and organized manner:
+1.  **Direct Response:** A clear answer to the user's question, explicitly stating that it is based on **general municipal plan provisions** (or general national guidance if local general provisions are not found).
+2.  **Spatial Analysis Explanation (if 'spatial_analysis' was used):**
+    * Describe the relevant findings from the map analysis (e.g., distances, location relative to boundaries).
+    * Crucially, explain how the **general municipal plan provisions** (ideally citing an official online source found via 'search_internet', or from 'document_search' if no online source was found) apply to these spatial findings.
+    * Indicate if any permits or consents appear necessary based on these general rules and spatial analysis.
 
-# 3.  **Transparency about Information Source & Limitations:**
-#     * Clearly state if information is from an official online source (and provide the URL), from internal documents ('document_search'), or general national guidance.
-#     * If specific information from local **general municipal plan provisions** was sought but not found (neither online nor internally), clearly state this.
-#     * If relying on general national guidance (e.g., DiBK), mention this and its general nature.
+3.  **Transparency about Information Source & Limitations:**
+    * Clearly state if information is from an official online source (and provide the URL), from internal documents ('document_search'), or general national guidance.
+    * If specific information from local **general municipal plan provisions** was sought but not found (neither online nor internally), clearly state this.
+    * If relying on general national guidance (e.g., DiBK), mention this and its general nature.
 
-# 4.  **Source References & Citations:** Integrate references directly into your explanation where appropriate (e.g., "The general municipal plan provisions, as stated on [Official Kristiansand URL], specify that X...", or "According to DiBK's guide on Z [URL]..."). 
-# 5.  **Recommendation for Official Confirmation:** ALWAYS include a polite closing statement recommending the user to contact Kristiansand municipality for final clarification, verification, and to discuss specific zoning plans if relevant to their property.
-# 6.  **Useful Links:** A section titled "Useful links:" (or "Nyttige lenker:" if responding in Norwegian). Provide 1-3 Markdown formatted links to **official resources**. 
-# 7.  **Follow-up Questions (Optional):** 1-2 relevant, open-ended follow-up questions to further assist the user, if appropriate.
+4.  **Source References & Citations:** Integrate references directly into your explanation where appropriate (e.g., "The general municipal plan provisions, as stated on [Official Kristiansand URL], specify that X...", or "According to DiBK's guide on Z [URL]..."). 
+5.  **Recommendation for Official Confirmation:** ALWAYS include a polite closing statement recommending the user to contact Kristiansand municipality for final clarification, verification, and to discuss specific zoning plans if relevant to their property.
+6.  **Useful Links:** A section titled "Useful links:" (or "Nyttige lenker:" if responding in Norwegian). Provide 1-3 Markdown formatted links to **official resources**. Format the links as follows:
+    * [Link Description](URL)
+    
+7.  **Follow-up Questions (Optional):** 1-2 relevant, open-ended follow-up questions to further assist the user, if appropriate.
 
-# **Language Note:** While your final response to the user must be in the language of their question (e.g., Norwegian for a Norwegian question), your internal "Thought" process can remain in English if it's more effective for your reasoning, as long as the "Final Answer" is correctly translated and natural-sounding in the user's language.
+**Language Note:** While your final response to the user must be in the language of their question (e.g., Norwegian for a Norwegian question), your internal "Thought" process can remain in English if it's more effective for your reasoning, as long as the "Final Answer" is correctly translated and natural-sounding in the user's language.
 
-# **BEGIN!**
+**BEGIN!**
 
-# History: {chat_history}
-# User: {input}
-# Thought: {agent_scratchpad}
-# """
+History: {chat_history}
+User: {input}
+Thought: {agent_scratchpad}
+"""
         agent_prompt = ChatPromptTemplate.from_template(prompt_template_str)
         tool_descriptions = "\n".join(f"- {tool.name}: {tool.description}" for tool in self.tools)
         tool_names = ", ".join([tool.name for tool in self.tools])
@@ -304,26 +253,28 @@ Final Answer: (Construct the answer according to the "FINAL ANSWER CONSTRUCTION"
 
     def _process_agent_output(self, agent_result: Dict[str, Any], is_async: bool = False) -> Dict[str, Any]:
         answer = agent_result.get("output")
+        log_prefix = "(async)" if is_async else ""
 
         if isinstance(answer, str) and "Could not parse LLM output:" in answer:
-            logger.warning("Default parsing error detected, attempting custom recovery.")
+            logger.warning(f"{log_prefix} Default parsing error detected, attempting custom recovery.")
             recovered_answer = self._handle_agent_parsing_error(agent_result)
             if recovered_answer:
                 answer = recovered_answer
             else: 
                 answer = self.MSG_PARSING_ERROR_FALLBACK_GENERIC
 
-
         if not isinstance(answer, str) or not answer.strip(): 
             default_message = self.MSG_DEFAULT_ASYNC_ERROR if is_async else self.MSG_DEFAULT_SYNC_ERROR
-            logger.warning(f"Agent output was empty or not a string. Using default message: {default_message}")
+            logger.warning(f"{log_prefix} Agent output was empty or not a string. Using default message: {default_message}")
             answer = default_message
-            return {"answer": answer, "guides": []}
+            # Ensure all expected fields are returned
+            return {"answer": answer, "guides": [], "original_header": None}
 
-        answer_text, guides = extract_markdown_links(answer.strip())
-        log_prefix = "(async)" if is_async else ""
-        logger.info(f"Extracted {len(guides)} guides from answer {log_prefix}.")
-        return {"answer": answer_text, "guides": guides}
+        # The 'answer' is now the raw Markdown output from the LLM.
+        # 'guides' and 'original_header' are no longer explicitly extracted here.
+        # The frontend will handle rendering the Markdown, including any links.
+        logger.info(f"{log_prefix} Passing raw agent output to frontend.")
+        return {"answer": answer.strip(), "guides": [], "original_header": None}
 
     async def _execute_agent_logic_async(self, query: str) -> Dict[str, Any]:
         """Helper to encapsulate the async agent invocation and common error handling."""

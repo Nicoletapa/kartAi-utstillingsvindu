@@ -5,7 +5,7 @@ import type { Map } from 'leaflet';
 import type { SpatialAnalysisResult } from './TiltaksAidMap'; 
 import { SendHorizonal } from 'lucide-react';
 import { useSession } from "next-auth/react";
-import { useChatStore, type ChatItem } from '~/store/chatStore'; 
+import { useChatStore, type ChatItem, type Guide } from '~/store/chatStore'; 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -247,11 +247,14 @@ export function PlanPrat({
 
         console.log("Response from API:", response);
         console.log("Response guides:", response.guides);
+        console.log("Response original_header:", response.original_header);
+
 
         const botMessage: ChatItem = {
           text: response.answer,
           isUser: false,
-          guides: Array.isArray(response.guides) ? response.guides : []
+          guides: Array.isArray(response.guides) ? response.guides : [],
+          original_header: response.original_header ?? null,
         };
         
         addMessage(botMessage);
@@ -306,6 +309,46 @@ export function PlanPrat({
           )}
 
           {chatItems.map((chatItem, index) => {
+            const GUIDES_PLACEHOLDER = "%%GUIDES_PLACEHOLDER%%"; // Make sure this matches the backend
+            let textBeforePlaceholder = chatItem.text;
+            const hasPlaceholder = !chatItem.isUser && chatItem.text.includes(GUIDES_PLACEHOLDER);
+
+            if (hasPlaceholder) {
+              const parts = chatItem.text.split(GUIDES_PLACEHOLDER);
+              textBeforePlaceholder = parts[0] ?? "";
+              // In case placeholder appears multiple times, though it shouldn't with current backend logic
+            }
+            
+            const renderGuidesComponent = (guides: Guide[] | undefined, headerText?: string | null) => {
+              if (!guides || !Array.isArray(guides) || guides.length === 0) {
+                return null;
+              }
+              // Use captured header or default to "Kilder". Remove markdown bolding for display.
+              const displayHeader = (headerText ?? "Kilder:").replace(/\*\*/g, '').replace(/\*/g, '');
+
+              return (
+                <div className="mt-3 mb-2 flex flex-col gap-2">
+                  {displayHeader && <h4 className="font-semibold text-md mb-1">{displayHeader}</h4>}
+                  {guides.map((guide, guideIndex) => (
+                    <a
+                      key={guideIndex}
+                      href={guide.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm " // Removed mb-1 to control spacing via gap-2 on parent
+                    >
+                      <span className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+
+                        {guide.title}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              );
+            };
            
             return (
               <li
@@ -318,44 +361,42 @@ export function PlanPrat({
                 key={chatItem.timestamp ?? index} 
               >
                 {chatItem.isUser ? (
-                  chatItem.text
-                ) : (
-                   <ReactMarkdown
-    remarkPlugins={[remarkGfm]}
-    rehypePlugins={[rehypeRaw]}
-    components={{
-      p: ({...props}) => <p className="my-2" {...props} />,
-     
-      li: ({...props}) => <li className="mb-1" {...props} />,
-      a: ({...props}) => <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-      strong: ({...props}) => <strong className="font-semibold" {...props} />,
-      h3: ({...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
-    }}
-  >
-    {chatItem.text}
-  </ReactMarkdown>
-)}
-               
-              
-                {!chatItem.isUser && chatItem.guides && Array.isArray(chatItem.guides) && chatItem.guides.length > 0 && (
-                  <div className="mt-2 flex flex-col gap-2">
-                    {chatItem.guides.map((guide, guideIndex) => (
-                      <a
-                        key={guideIndex}
-                        href={guide.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm mb-1"
-                      >
-                        <span className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                          {guide.title}
-                        </span>
-                      </a>
-                    ))}
+                  <div className="prose prose-sm max-w-none break-words whitespace-pre-wrap">
+                    {chatItem.text}
                   </div>
+                ) : (
+                  <>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                      components={{
+                        p: ({...props}) => <p className="my-2" {...props} />,
+                        li: ({...props}) => <li className="mb-1 ml-4" {...props} />,
+                        a: ({children, href, ...props}) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-left inline-block px-3 py-2 my-1 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm"
+                            {...props}
+                          >
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              {children}
+                            </span>
+                          </a>
+                        ),
+                        strong: ({...props}) => <strong className="font-semibold" {...props} />,
+                        h3: ({...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                      }}
+                    >
+                      {textBeforePlaceholder}
+                    </ReactMarkdown>
+
+                    {hasPlaceholder && renderGuidesComponent(chatItem.guides, chatItem.original_header)}
+                  </>
                 )}
               </li>
             );
