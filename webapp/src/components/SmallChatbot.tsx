@@ -86,7 +86,6 @@ const SmallChatbot = () => {
 
     useEffect(() => {
         const mapToRemove = mapInstance.current.map;
-        const containerIdToRemove = mapInstance.current.containerId;
 
         return () => {
             if (mapToRemove) {

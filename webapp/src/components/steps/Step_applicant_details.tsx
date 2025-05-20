@@ -411,29 +411,33 @@ const NavigationButtons: React.FC<{
   onBack: () => void;
   onNext: () => void;
   isSaving: boolean;
-}> = ({ onBack, onNext, isSaving }) => (
-  <div className="mt-5 w-full flex justify-center gap-4">
-    <Button 
-      onClick={onBack} 
-      className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
-    >
-      <ArrowLeft size={18} className="mr-2" />
-      <span className="relative inline-block">Tilbake</span>
-    </Button>
+}> = ({ onNext, isSaving }) => {
+  const router = useRouter();
+  
+  return (
+    <div className="mt-5 w-full flex justify-center gap-4">
+      <Button 
+        onClick={() => router.back()} 
+        className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
+      >
+        <ArrowLeft size={18} className="mr-2" />
+        <span className="relative inline-block">Tilbake</span>
+      </Button>
 
-    <Button 
-      onClick={onNext}
-      className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
-    >
-      {isSaving ? (
-        <Loader2 className="animate-spin text-gray-500" size={24} />
-      ) : null}
-      <span className="relative inline-block">
-        Neste
-      </span>
-      <ArrowRight size={18} className="ml-2" />    
-    </Button>
-  </div>
-);
+      <Button 
+        onClick={onNext}
+        className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
+      >
+        {isSaving ? (
+          <Loader2 className="animate-spin text-gray-500" size={24} />
+        ) : null}
+        <span className="relative inline-block">
+          Neste
+        </span>
+        <ArrowRight size={18} className="ml-2" />    
+      </Button>
+    </div>
+  );
+};
 
 export default Step_applicant_details;
