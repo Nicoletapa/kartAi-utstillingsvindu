@@ -15,7 +15,7 @@ interface PlanpratResponse {
 }
 
 // Use PLANPRAT_URL environment variable directly
-const FASTAPI_PLANPRAT_URL = process.env.PLANPRAT_URL || "http://localhost:8000/api/planprat"; 
+const FASTAPI_PLANPRAT_URL = process.env.PLANPRAT_URL ?? "http://localhost:8000/api/planprat";
 
 export const planpratRouter = createTRPCRouter({
   fetchResponse: publicProcedure

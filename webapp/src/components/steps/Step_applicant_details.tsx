@@ -1,3 +1,36 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ *
+ * @description
+ * Renders and manages the applicant and property information section
+ * within a multi-step application form. It fetches application data, pre-fills values from the 
+ * user's session and previously saved application fields, allows for updates, and saves the
+ * information back to the database.
+ * 
+ * @features
+ * - Fetches and displays applicant and property details
+ * - Auto-fills data from authenticated user session
+ * - Loads exisiting application data from API
+ * - Validates required form fields
+ * - Persists form changes to backend on navigation
+ * - Displays contextual tooltips
+ * 
+ * @props
+ * - applicationID?: numer - ID of the application being edited
+ * - onValidityChange: (isValid: boolean) => void - callback to notify parent about form validity
+ * 
+ * @note
+ * - Depends on FormContext for state management
+ * - Requires active session from next-auth
+ * - Uses debounce saving with `useSaveFormData`for autosave
+ * 
+ * @usage
+ * <Step_applicant_details 
+ *   applicationID={123}
+ *   onValidityChange={(isValid) => setStepValid(isValid)}
+ * />
+*/
+
 import React, { useState, useEffect } from 'react';
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
@@ -10,7 +43,6 @@ import { useRouter } from "next/navigation";
 import { ApplicationService, UIComponents, FormService } from '~/utils/api-service';
 import { Loader2 } from 'lucide-react';
 
-// Types
 interface StepApplicantDetailsProps {
   applicationID?: number;
   onValidityChange: (isValid: boolean) => void;
@@ -26,7 +58,6 @@ interface FieldDisplay {
   value: string;
 }
 
-// Move this outside the component or memoize it
 const checkFormValidity = (data: FormDataType) => {
   const safeString = (value: string | undefined | null): string => 
     (value === undefined || value === null) ? '' : String(value).trim();
@@ -42,40 +73,32 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
   applicationID, 
   onValidityChange
 }) => {
-  // Add this state to track validity internally
   const [isFormValid, setIsFormValid] = useState(false);
 
-  // Context and navigation hooks
   const { applicantFormData, updateApplicantFormData } = useFormContext();
   const router = useRouter();
   const { data: session } = useSession();
   const tooltip = UIComponents.useTooltip();
-  
-  // Form validation
 
-  // Replace your custom form state with FormService
   const { 
     formData, 
     setFormData, 
     isDirty, 
     setIsDirty, 
-    handleInputChange 
   } = FormService.useForm<FormDataType>(
     applicantFormData,
     checkFormValidity
   );
   
-  // Replace manual save state with ApplicationService
   const { saveField, isSaving } = ApplicationService.useSaveFormData(
     applicationID ?? 0, 
-    'sma-prosjekter', // Or whatever application type is appropriate
+    'sma-prosjekter',
     1000
   );
   
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   
-  // API queries
   const { 
     data: application, 
     isLoading: isLoadingApplication 
@@ -89,9 +112,6 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     { enabled: !!session }
   );
 
-  // Form validation
-
-  // Load data from application
   useEffect(() => {
     if (!application?.application_fields || application.application_fields.length === 0) {
       return;
@@ -123,14 +143,12 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     checkFormValidity(newFormData);
   }, [application, setFormData]);
 
-// In your component, use this effect instead:
 useEffect(() => {
   const isValid = checkFormValidity(formData);
   setIsFormValid(isValid);
   onValidityChange(isValid);
-}, [formData, onValidityChange]); // Only run when formData changes
+}, [formData, onValidityChange]);
 
-  // Property selection handler
   const handlePropertyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const propertyId = e.target.value;
     setSelectedPropertyId(propertyId);
@@ -147,19 +165,15 @@ useEffect(() => {
     }
   };
 
-  // Save all form data at once - for navigation or other bulk saves
   const saveAllFormData = async () => {
     if (!applicationID) return false;
     
     try {
-      // Create array of fields to save
       const fields = [
-        // Applicant fields
         { name: 'applicant.name', value: formData.applicant.name ?? '' },
         { name: 'applicant.email', value: formData.applicant.email ?? '' },
         { name: 'applicant.phone', value: formData.applicant.phone ?? '' },
         
-        // Property fields
         { name: 'property.address', value: formData.property.address ?? '' },
         { name: 'property.property_number', value: formData.property.property_number ?? '' },
         { name: 'property.usage_number', value: formData.property.usage_number ?? '' },
@@ -169,7 +183,6 @@ useEffect(() => {
         { name: 'property.municipality', value: formData.property.municipality ?? '' },
       ];
       
-      // Use individual saveField calls for each field
       await Promise.all(
         fields.map(field => saveField(field.name, field.value))
       );
@@ -183,7 +196,6 @@ useEffect(() => {
     }
   };
 
-  // Navigation handlers
   const handleNext = async () => {
     if (isDirty) {
       await saveAllFormData();
@@ -202,12 +214,10 @@ useEffect(() => {
     }
   };
 
-  // Sync with context
   useEffect(() => {
     updateApplicantFormData(formData);
   }, [formData, updateApplicantFormData]);
 
-  // Load user properties
   useEffect(() => {
     if (userDetails) {
       setProperties([
@@ -216,11 +226,9 @@ useEffect(() => {
     }
   }, [userDetails]);
   
-  // Auto-fill form with user data
   useEffect(() => {
     if (!userDetails || isDirty) return;
     
-    // Only auto-fill if all fields are empty
     const shouldAutoFill = 
       !formData.applicant.name && 
       !formData.applicant.email && 
@@ -245,7 +253,6 @@ useEffect(() => {
     }
   }, [userDetails, isDirty, formData.applicant.email, formData.applicant.name, setFormData]); 
 
-  // Load data from application
   useEffect(() => {
     if (!application?.application_fields) return;
   
@@ -277,13 +284,8 @@ useEffect(() => {
 
   useEffect(() => {
     if (!isDirty || !applicationID) return;
-    
-    // Don't need to implement auto-save here, as each field change will trigger saveField
-    // from FormService's handleInputChange method
-    // This is already handled by the ApplicationService.useSaveFormData hook
   }, [isDirty, applicationID]);
 
-  // Prepare display data
   const personalData: FieldDisplay[] = [
     { label: "Navn:", value: formData.applicant.name ?? 'Ikke angitt' },
     { label: "E-post:", value: formData.applicant.email ?? 'Ikke angitt' },
@@ -409,29 +411,33 @@ const NavigationButtons: React.FC<{
   onBack: () => void;
   onNext: () => void;
   isSaving: boolean;
-}> = ({ onBack, onNext, isSaving }) => (
-  <div className="mt-5 w-full flex justify-center gap-4">
-    <Button 
-      onClick={onBack} 
-      className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
-    >
-      <ArrowLeft size={18} className="mr-2" />
-      <span className="relative inline-block">Tilbake</span>
-    </Button>
+}> = ({ onNext, isSaving }) => {
+  const router = useRouter();
+  
+  return (
+    <div className="mt-5 w-full flex justify-center gap-4">
+      <Button 
+        onClick={() => router.back()} 
+        className="border-2 bg-white text-gray-500 border-gray-500 hover:bg-gray-500 hover:text-white w-44"
+      >
+        <ArrowLeft size={18} className="mr-2" />
+        <span className="relative inline-block">Tilbake</span>
+      </Button>
 
-    <Button 
-      onClick={onNext}
-      className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
-    >
-      {isSaving ? (
-        <Loader2 className="animate-spin text-gray-500" size={24} />
-      ) : null}
-      <span className="relative inline-block">
-        Neste
-      </span>
-      <ArrowRight size={18} className="ml-2" />    
-    </Button>
-  </div>
-);
+      <Button 
+        onClick={onNext}
+        className="border-2 text-kartAI-blue bg-white border-kartAI-blue hover:text-white hover:bg-kartAI-blue w-44"
+      >
+        {isSaving ? (
+          <Loader2 className="animate-spin text-gray-500" size={24} />
+        ) : null}
+        <span className="relative inline-block">
+          Neste
+        </span>
+        <ArrowRight size={18} className="ml-2" />    
+      </Button>
+    </div>
+  );
+};
 
 export default Step_applicant_details;

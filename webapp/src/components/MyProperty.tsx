@@ -1,3 +1,36 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * Provides information about the user's property, including address, property number, among other details.
+ * It also includes a map view (TiltaksAidMap) and a property search bar for users to find other properties
+ * in cases where they want to build on a property they have not bought yet.
+ * This component fetches property data from an API and displays it on the map.
+ * 
+ * @features
+ * - Displays property information such as address, property number, and postal area.
+ * - Allows users to search for properties using a search bar.
+ * - Integrates with a map component (TiltaksAidMap) to show the property location.
+ *
+ * @props
+ * - `formData` (object): Contains property and regulation information.
+ * - `properties` (array): List of properties associated with the user.
+ * - `selectedPropertyId` (string): ID of the currently selected property.
+ * - `propertyBoundary` (L.Layer): Leaflet layer representing the property boundary.
+ * - `propertyBoundaries` (array): List of GeoJSON features representing property boundaries.
+ * - `lastDrawnShape` (GeoJSON.Feature): The last drawn shape on the map.
+ * - `spatialAnalysis` (SpatialAnalysisResult): Result of the spatial analysis.
+ * - `mapReady` (boolean): Indicates if the map is ready.
+ * - `autoZoomSuccessful` (boolean): Indicates if auto zoom was successful.
+ * 
+ * @note
+ * - Currently, the certain input fields do not display information from the database, because
+ * the information is not in the database yet.
+ * 
+ * @usage
+ * <MyProperty />
+ */
+
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
@@ -170,9 +203,6 @@ const MyProperty = () => {
 
   const propertyData: FieldDisplay[] = [
     { label: "Adresse:", value: formData.property.address || "Ikke angitt" },
-    { label: "Gårdsnr.:", value: formData.property.gnr || "Ikke angitt" },
-    { label: "Bruksnr.:", value: formData.property.bnr || "Ikke angitt" },
-    { label: "Kommune:", value: formData.property.postalArea || "Ikke angitt" },
     { label: "Gårdsnr.:", value: formData.property.gnr || "Ikke angitt" },
     { label: "Bruksnr.:", value: formData.property.bnr || "Ikke angitt" },
     { label: "Kommune:", value: formData.property.postalArea || "Ikke angitt" },

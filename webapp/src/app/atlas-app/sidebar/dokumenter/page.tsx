@@ -6,7 +6,6 @@ export default function DocumentsPage() {
   return (
     <AtlasSidebar>
       <MyDocuments />
-
     </AtlasSidebar>
   )
 }

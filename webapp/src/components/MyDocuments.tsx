@@ -1,5 +1,28 @@
-"use client"
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * Manages and displays all uploaded documents associated with a user's building applications.
+ * It provides functionality to preview, download, replace, and delete documents.
+ * 
+ * @features
+ * - Preview documents
+ * - Download documents
+ * - Replace documents
+ * - Delete documents
+ * - Validation tags: Shows detected `drawingType` tags after AI/ML validation.
+ * 
+ * @props
+ * - `existingDocuments` (optional): An array of existing documents to display.
+ * 
+ * @note
+ * - Currently fetches its own documents using api.documentgetAllUserDocuments rather than relying on props.
+ * 
+ * @usage
+ * <MydDocuments />
+ */
 
+"use client"
 
 import React, { useState } from 'react'
 import { Download, Eye, Info, Repeat, Trash2, Loader2 } from 'lucide-react'
@@ -7,7 +30,7 @@ import { api } from "~/trpc/react"
 import type { ApplicationType } from "@prisma/client"
 import { toast } from "react-hot-toast"
 import { APPLICATION_TYPE_DISPLAY_NAMES } from "~/utils/applicationTypes"
-import { DocumentPreviewModal } from "./DocumentPreviewModal"; 
+import { DocumentPreviewModal } from "./DocumentPreviewModal";
 
 interface ExistingDocument {
   documentID: number;
@@ -67,13 +90,11 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
     onSuccess: () => {
       toast.success("Dokumentet ble oppdatert.")
       resetReplacement()
-      // Explicitly ignore the promise returned by refetchDocuments
       void refetchDocuments()
     },
     onError: (error) => {
       if (error.message.includes('File was replaced but could not validate')) {
         toast(error.message, { icon: '⚠️' })
-        // Explicitly ignore the promise returned by refetchDocuments
         void refetchDocuments()
       } else {
         toast.error(`Erstatning feilet: ${error.message}`)
@@ -129,7 +150,7 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
         Mine Dokumenter
         <Info size={18} className="ml-2 hover:cursor-pointer text-kartAI-blue" onClick={() => setOpenModal(true)} />
       </h1>
-      
+
       {openModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={() => setOpenModal(false)}>
           <div className="bg-white mx-80 p-6 rounded-lg shadow-lg w-full transform transition-all scale-95 opacity-0 animate-fadeIn"
@@ -152,15 +173,15 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
         </div>
       )}
 
-{previewDocument && (
-  <DocumentPreviewModal
-    document={previewDocument}
-    onClose={() => setPreviewDocument(null)}
-  />
-)}
+      {previewDocument && (
+        <DocumentPreviewModal
+          document={previewDocument}
+          onClose={() => setPreviewDocument(null)}
+        />
+      )}
 
       <p className="text-xl md:mx-20 px-6 mb-4 flex justify-center">
-        Her finner du alle dokumentene du har lastet opp til søknadene dine. 
+        Her finner du alle dokumentene du har lastet opp til søknadene dine.
         Du kan se, laste ned, eller erstatte filer, og legge til nye dokumenter ved behov.
       </p>
 
@@ -169,16 +190,16 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
           <div className="space-y-4 px-6 py-6 rounded-lg md:mx-20 bg-white">
             {applications.map((application) => {
               const applicationDocuments = allDocuments?.filter(doc => doc.applicationID === application.applicationID) ?? []
-              
+
               return (
                 <div key={application.applicationID} className="border bg-white rounded-md p-4 shadow-sm hover:bg-gray-100">
                   <div className="flex gap-x-2">
                     <h2 className="text-lg font-semibold">
-                      SAK{application.applicationID} - {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType ]}
+                      SAK{application.applicationID} - {APPLICATION_TYPE_DISPLAY_NAMES[application.applicationType]}
                     </h2>
                   </div>
                   <div className="border border-gray-300 my-2" />
-                  
+
                   {applicationDocuments.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full table-auto text-left border-separate">
@@ -195,40 +216,40 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
                             <tr key={document.documentID}>
                               <td className="w-1/4">{document.fileName}</td>
                               <td className="w-1/4">
-  {document.validations.length > 0 ? (
-    <div className="flex flex-wrap gap-1">
-      {document.validations.map((validation) => (
-        <span 
-          key={validation.id} 
-          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-        >
-          {validation.drawingType}
-        </span>
-      ))}
-    </div>
-  ) : (
-    <span className="text-gray-500">Ikke validert</span>
-  )}
-</td>
+                                {document.validations.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {document.validations.map((validation) => (
+                                      <span
+                                        key={validation.id}
+                                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                                      >
+                                        {validation.drawingType}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-500">Ikke validert</span>
+                                )}
+                              </td>
                               <td className="w-1/4 whitespace-nowrap">
                                 {formatDate(document.createdAt)}
                               </td>
                               <td className="w-1/4">
                                 <div className="flex items-center gap-2 space-x-2">
-                                <Eye 
-  size={20} 
-  className="text-gray-500 hover:text-gray-700 cursor-pointer" 
-  onClick={() => {
-    setPreviewDocument({
-      fileName: document.fileName,
-      document: Array.from(document.document),
-      documentType: document.fileName.split('.').pop()?.toLowerCase() ?? ''
-    });
-  }}
-/>
-                                  <Repeat 
-                                    size={20} 
-                                    className="text-gray-500 hover:text-gray-700 cursor-pointer" 
+                                  <Eye
+                                    size={20}
+                                    className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                                    onClick={() => {
+                                      setPreviewDocument({
+                                        fileName: document.fileName,
+                                        document: Array.from(document.document),
+                                        documentType: document.fileName.split('.').pop()?.toLowerCase() ?? ''
+                                      });
+                                    }}
+                                  />
+                                  <Repeat
+                                    size={20}
+                                    className="text-gray-500 hover:text-gray-700 cursor-pointer"
                                     onClick={() => setReplaceDocumentId(document.documentID)}
                                   />
                                   <button
@@ -238,11 +259,10 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
                                       }
                                     }}
                                     disabled={deleteDocument.isPending && deleteDocument.variables?.documentId === document.documentID}
-                                    className={`text-red-500 hover:text-red-700 p-1 rounded transition-colors ${
-                                      deleteDocument.isPending && deleteDocument.variables?.documentId === document.documentID
+                                    className={`text-red-500 hover:text-red-700 p-1 rounded transition-colors ${deleteDocument.isPending && deleteDocument.variables?.documentId === document.documentID
                                         ? 'opacity-50 cursor-not-allowed'
                                         : ''
-                                    }`}
+                                      }`}
                                     title="Slett dokument"
                                   >
                                     {deleteDocument.isPending && deleteDocument.variables?.documentId === document.documentID ? (
@@ -251,9 +271,9 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
                                       <Trash2 size={20} />
                                     )}
                                   </button>
-                                  <Download 
-                                    size={20} 
-                                    className="text-gray-500 hover:text-gray-700 cursor-pointer" 
+                                  <Download
+                                    size={20}
+                                    className="text-gray-500 hover:text-gray-700 cursor-pointer"
                                     onClick={() => handleDownload({
                                       fileName: document.fileName,
                                       document: Array.from(document.document)
@@ -262,8 +282,8 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
                                 </div>
                                 {replaceDocumentId === document.documentID && (
                                   <div className="mt-2 flex items-center gap-2">
-                                    <input 
-                                      type="file" 
+                                    <input
+                                      type="file"
                                       onChange={handleFileChange}
                                       className="text-sm"
                                     />

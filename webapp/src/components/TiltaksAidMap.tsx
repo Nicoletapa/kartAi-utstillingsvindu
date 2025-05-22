@@ -283,7 +283,7 @@ const TiltaksAidMap = ({
           });
           setInitialSearchSuccessful(true);
 
-          fetchAllowedAreaForProperty(propertyNumberToSearch);
+          void fetchAllowedAreaForProperty(propertyNumberToSearch);
 
         } else {
           setErrorMessage('Map not ready to display property boundary.');

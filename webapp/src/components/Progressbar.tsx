@@ -1,3 +1,34 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This is part of the ProgressBarStep.tsx component, in the building application process.
+ * It contains the styling of the progress bar and provides a visual representation of the progress through a series of steps.
+ * Each step can have multiple substeps, and the component allows for interaction with both main steps and substeps.
+ * 
+ * @features
+ * - Visual representation of progress through steps
+ * - Clickable main steps and substeps
+ * - Dynamic styling based on completion and activity status
+ * 
+ * @props
+ * - `steps` (array): An array of step objects, each containing properties like title, completion status, and substep details.
+ * - `onStepClick` (function): A callback function to handle clicks on main steps and substeps.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses the `cn` utility function for conditional class names.
+ * 
+ * @usage
+ * <ProgressBar 
+ *    steps={stepsWithStatus}
+ *    onStepClick={(stepIndex, substepIndex) => {
+ *        const absoluteIndex = getAbsoluteStepIndex(stepIndex, substepIndex);
+ *        setCurrentOverallStep(absoluteIndex);
+ *    }}
+ * />
+ */
+
 import React from "react"
 import { Check } from "lucide-react"
 import { cn } from "~/lib/utils"

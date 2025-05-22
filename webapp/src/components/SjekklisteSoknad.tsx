@@ -1,3 +1,34 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is used in the building application process and is rendered in ProgressBarStep.tsx.
+ * It displays a checklist of tasks to be completed for the current step in the application process.
+ * Certain tasks are hidden based on the current step and substep, and will be displayed when the user
+ * navigates to the next step.
+ * 
+ * @features
+ * - Displays a checklist of tasks for the current step in the application process
+ * - Hides or shows tasks based on the current step and substep
+ * - Uses icons to indicate the status of each task (completed/not completed) (not yet impplemented)
+ * 
+ * @props
+ * - `currentStep` (number): The current step in the application process.
+ * - `currentSubstep` (number): The current substep in the application process.
+ * - `applicationID` (number): The ID of the application (optional).
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses the `usePathname` and `useRouter` hooks from Next.js to handle routing.
+ * - It uses the `useState` and `useEffect` hooks to manage the state of the checklist.
+ * - It uses the `useMemo` hook to memoize the checklist data based on the current step and substep.
+ * 
+ * @usage
+ * <SjekklisteSoknad 
+ *    currentStep={currentStep} 
+ *    currentSubstep={currentSubstep} />
+ */
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";

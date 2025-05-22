@@ -1,3 +1,46 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is the minified chatbot (PlanChatAtlas.tsx) that appears on the right side of the screen,
+ * The user can click on it to expand and interact with the chatbot.
+ * If expanded, it shows a map (TiltaksAidMap) on the right side.
+ * 
+ * @features
+ * - Minified chatbot icon
+ * - Expandable to show the chatbot and map
+ * - Map integration (TiltaksAidMap)
+ * - Close button to hide the chatbot
+ * 
+ * @props
+ * - `showChatbot` (boolean): State to control the visibility of the chatbot.
+ * - `expanded` (boolean): State to control the expanded state of the chatbot.
+ * - `isVisible` (boolean): State to control the visibility of the chatbot.
+ * - `lastDrawnShape` (GeoJSON.Feature | null): State to store the last drawn shape on the map.
+ * - `spatialAnalysis` (SpatialAnalysisResult | null): State to store the spatial analysis result.
+ * - `mapInstance` (ref): Ref to store the map instance.
+ * - `mapContainerId` (string): Unique ID for the map container.
+ * - `handleMapReady` (function): Callback function to handle when the map is ready.
+ * - `handleCloseChat` (function): Callback function to handle closing the chatbot.
+ * - `handleToggle` (function): Callback function to handle toggling the chatbot visibility.
+ * - `handleExpandToggle` (function): Callback function to handle expanding/collapsing the chatbot.
+ * - `handleShapeDrawn` (function): Callback function to handle when a shape is drawn on the map.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses the `useState`, `useRef`, `useCallback`, and `useEffect` hooks from React.
+ * - It uses the `usePropertySearch` hook to get user data.
+ * - It uses the `clsx` library for conditional class names.
+ * 
+ * @usage
+ * const SmallChatbotWithNoSSR = dynamic(
+ *      () => import('~/components/SmallChatbot'),
+ *      { ssr: false }
+ * );
+ * 
+ * <SmallChatbotWithNoSSR />
+ */
+
 "use client"
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
@@ -43,7 +86,6 @@ const SmallChatbot = () => {
 
     useEffect(() => {
         const mapToRemove = mapInstance.current.map;
-        const containerIdToRemove = mapInstance.current.containerId;
 
         return () => {
             if (mapToRemove) {
@@ -130,11 +172,11 @@ const SmallChatbot = () => {
                             </button>
                             <PlanPrat
                                 onClose={handleCloseChat}
-                                mapRef={mapInstance}
-                                lastDrawnShape={lastDrawnShape}
-                                spatialAnalysis={spatialAnalysis}
+                                mapRefFromStore={{ map: mapInstance.current.map, ready: mapInstance.current.ready }}
+                                lastDrawnShapeFromStore={lastDrawnShape}
+                                spatialAnalysisFromStore={spatialAnalysis}
                                 disableTopRightRadius={expanded}
-                                disableBottomRightRadius={expanded}
+                                disableBottomRightRadius={false}
                             />
                         </div>
                     </div>

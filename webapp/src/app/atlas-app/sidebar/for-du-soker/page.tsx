@@ -6,7 +6,6 @@ export default function ForDuSokerPage() {
   return (
     <AtlasSidebar>
       <ForDuSoker />
- 
     </AtlasSidebar>
   )
 }

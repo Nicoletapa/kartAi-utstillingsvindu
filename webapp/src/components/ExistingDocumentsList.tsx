@@ -1,7 +1,40 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component allows users to upload, delete and preview documents.
+ * This component is part of CadaidAtlas, as the means for uploading documents.
+ * The documents are saved in the database and can be retrieved later.
+ * 
+ * @features
+ * - Drag and drop file upload
+ * - Preview of uploaded documents
+ * - Delete documents
+ * - Accepts multiple file types (images, PDFs, DWG, DXF)
+ * - Documents are saved in the database
+ * 
+ * @props
+ * - `documents` (array): List of existing documents with their details.
+ * - `onDelete` (function): Callback function to handle document deletion.
+ * - `onUpload` (function): Callback function to handle file uploads.
+ * - `onImageClick` (function): Callback function to handle image click events.
+ * 
+ * @note
+ * 
+ * @usage
+ * Subsequent functions need to be made.
+ * <ExistingDocumentsList 
+ *    documents={documentsQuery.data ?? []}
+ *    onUpload={handleFileUpload}
+ *    onDelete={handleDocumentDelete}
+ *    onImageClick={handleImageClick}
+ * />
+ */
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { FaTrash } from 'react-icons/fa';
 import { api } from '~/trpc/react';
-import Image from 'next/image'; // Add Next.js Image component
+import Image from 'next/image';
 import { Upload } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
@@ -19,19 +52,16 @@ interface ExistingDocumentsListProps {
 
 const ExistingDocumentsList: React.FC<ExistingDocumentsListProps> = ({ documents, onDelete, onUpload, onImageClick }) => {
   const utils = api.useUtils();
-  // Change index signature to Record type
   const [documentImages, setDocumentImages] = useState<Record<number, string>>({});
 
   const deleteDocument = api.userDocuments.deleteDocument.useMutation({
     onSuccess: async () => {
-      // Add await to fix floating promise
       await utils.userDocuments.getUserDocuments.invalidate();
       setDocumentImages({});
     },
   });
 
   useEffect(() => {
-    // Change index signature to Record type
     const newImages: Record<number, string> = {};
     documents.forEach(doc => {
       if (doc.document) {

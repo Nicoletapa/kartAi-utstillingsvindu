@@ -1,3 +1,30 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is part of CadaidAtlas, as a means for displaying invalid files.
+ * It shows a list of invalid files that the user has uploaded, allowing them to remove them.
+ * 
+ * @features
+ * - Displays a list of invalid files
+ * - Allows users to remove invalid files
+ * 
+ * @props
+ * - `invalidFiles` (array): List of invalid files with their details.
+ * - `onRemove` (function): Callback function to handle file removal.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It is used in conjunction with the file upload functionality to provide feedback to the user.
+ * 
+ * @usage
+ * Subsequent functions need to be made.
+ * <InvalidFilesList 
+ *    invalidFiles={state.invalidFiles}
+ *    onRemove={handleFileRemove}
+ * />
+ */
+
 import React from 'react';
 
 interface InvalidFilesListProps {

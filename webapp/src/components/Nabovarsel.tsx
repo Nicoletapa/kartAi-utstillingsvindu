@@ -1,3 +1,25 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is part of the building application process.
+ * It displays a template for a "Nabovarsel" (neighbor notification) letter.
+ * 
+ * @features
+ * - Data is gathered from the database using TRPC, and displayed in the appropriate fields.
+ * - The "Send nabovarsel" button is not functional yet.
+ * 
+ * @props
+ * - `users` (object): The user data fetched from the database.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - The data is fetched using TRPC, and the component is wrapped in a React functional component.
+ * 
+ * @usage
+ * <Nabovarsel />
+ */
+
 import React, { useState } from 'react'
 import { api } from "~/trpc/react";
 import { Info } from 'lucide-react';

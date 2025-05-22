@@ -1,3 +1,26 @@
+/** 
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * A navbar component for the Atlas application. 
+ * It includes a link to the Atlas app and a sign-in/sign-out button.
+ * 
+ * @features
+ * - Displays the Atlas app link
+ * - Displays the user's email if logged in
+ * - Sign-in and sign-out functionality
+ * 
+ * @props
+ * - `className` (string): Additional CSS classes for styling.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses NextAuth for authentication.
+ * 
+ * @usage
+ * <NavbarAtlas />
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -29,9 +52,8 @@ const NavbarAtlas = () => {
           </Link>
         </div>
 
-        {/* Set a condition that if you are logged in, display name instead of logg inn */}
         <div className="mt-1 flex cursor-pointer items-center justify-end space-x-4">
-          { session ? (
+          {session ? (
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-700">{session.user.email}</span>
               <button 

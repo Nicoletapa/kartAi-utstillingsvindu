@@ -1,3 +1,36 @@
+/**
+ * This file is Used in utstillingsvindu 2.0
+ * 
+ * @description
+ * This component is the child of the AtlasSidebar.tsx component.
+ * It contains the sidebar navigation and the main content area.
+ * The sidebar is collapsible and contains links to different sections of the application.
+ * The main content area is where the children components are rendered.
+ * Sidebar items are defined in the sidebarItems array.
+ * If the sidebar is collapsed, text of the items are displayed as tooltips.
+ * 
+ * @features
+ * - Collapsible sidebar
+ * - Sidebar items with icons
+ * - Sidebar items with tooltips
+ * - Sidebar items with links
+ * - Sidebar items with active state
+ * 
+ * @props
+ * - `children` (ReactNode): The React tree that will have access to the form context.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - It uses the `usePathname` hook from Next.js to get the current pathname.
+ * - It uses the `useEffect` hook to handle window resize events and update the sidebar state.
+ * - It uses the `useRef` hook to reference the sidebar and content elements.
+ * 
+ * @usage
+ * <Sidebar>
+ *   <YourComponent />
+ * </Sidebar>
+ */
+
 "use client";
 
 import { ChevronFirst, ChevronLast, Info, ListChecks, House, FileStack, ArrowRight, Folder, Bell, LayoutGrid } from "lucide-react";
@@ -12,7 +45,6 @@ interface SidebarContextType {
 
 export const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
-
 export default function Sidebar({ children }: { children: ReactNode }) {
     const [expanded, setExpanded] = useState(true);
     const pathname = usePathname();
@@ -23,7 +55,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         { text: "Min Oversikt", href: "/atlas-app/sidebar/min-oversikt", icon: <LayoutGrid size={20} /> },
         { text: "Før du søker", href: "/atlas-app/sidebar/for-du-soker", icon: <Info size={20} /> },
         { text: "Sjekkliste", href: "/atlas-app/sidebar/sjekkliste", icon: <ListChecks size={20} /> },
-        { text: "Min Eiendom", href: "/atlas-app/sidebar/arkivgpt", icon: <House size={20} /> },
+        { text: "Min Eiendom", href: "/atlas-app/sidebar/min-eiendom", icon: <House size={20} /> },
         { text: "Mine Søknader", href: "/atlas-app/sidebar/soknader", icon: <FileStack size={20} /> },
         { text: "Mine Dokumenter", href: "/atlas-app/sidebar/dokumenter", icon: <Folder size={20} /> },
         { text: "Meldinger", href: "/atlas-app/sidebar/meldinger", icon: <Bell size={20} /> },

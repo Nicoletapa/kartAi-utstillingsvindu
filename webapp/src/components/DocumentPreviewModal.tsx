@@ -1,3 +1,27 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component allows the user to preview an uploaded document.
+ * It displays the document name, a download button, and a close button.
+ * 
+ * @features
+ * - Document preview
+ * - Download button
+ * - Close button
+ * 
+ * @props
+ * - `document` (object): The document to be previewed. It contains the file name, document data, and document type.
+ * - `onClose` (function): A function to be called when the modal is closed.
+ * 
+ * @note
+ * @usage
+ * <DocumentPreviewModal
+ *    document={previewDocument}
+ *    onClose={() => setPreviewDocument(null)}
+ * />
+ */
+
 "use client"
 
 import { Dialog } from "@headlessui/react";

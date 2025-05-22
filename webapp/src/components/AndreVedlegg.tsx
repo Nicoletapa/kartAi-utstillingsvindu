@@ -1,3 +1,31 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * This component mimics CADAiD (CadadidAtlas.tsx) and is used in the building application process.
+ * It allows users to upload additional documents later in the process.
+ * 
+ * @features
+ * - Drag and drop file upload
+ * - File preview for images and PDFs
+ * - File deletion
+ * - Text area for additional comments
+ * - File type validation
+ * 
+ * @props
+ * - `documents` (Document[]): Array of documents to display.
+ * - `onUpload` (function): Callback function to handle file uploads.
+ * - `formData` (object): Form data containing additional comments.
+ * - `setFormData` (function): Function to update form data.
+ * 
+ * @note
+ * - This component is designed to be used in a client-side context.
+ * - The file upload functionality is implemented using the `react-dropzone` library.
+ * 
+ * @usage
+ * <AndreVedlegg onUpload={(files) => console.log('Uploaded files:', files)} />
+ */
+
 import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, FileImage, Trash2, Loader2, X, Info } from 'lucide-react';

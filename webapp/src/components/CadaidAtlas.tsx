@@ -1,3 +1,30 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * Provides an interface for uploading and validating architectural document files
+ * using AI-based detection API. It supports multiple file formats (PDF, PNG, JPG, DWG, etc.) and
+ * categorizes documents based on drawing types detected (e.g., plans, sections, elevations).
+ * 
+ * @features
+ * - File upload with AI detection of drawing types
+ * - Save detection results to user profile/application
+ * - View full-size preview of images
+ * - Replace or delete existing documents
+ * - Handles invalid or duplicate files
+ * 
+ * @props
+ * - applicationID (number, optional): Used to associate uploaded documents with a specific application
+ * 
+ * @note
+ * - Internal Interfaces:
+ *   - FileDetection: Links filenames to detected drawing types
+ *   - InvalidFile: Holds unprocessable file and its base64 representation
+ * 
+ * @usage
+ * <CadaidPage />
+*/
+
 "use client";
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";

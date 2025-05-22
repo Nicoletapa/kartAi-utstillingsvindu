@@ -1,20 +1,49 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * Provides a React Context for managing and persisting applicant and property form data
+ * in a building application work flow. The form  data is persisted to localStorage,
+ * allowing it to persist across page reloads.
+ * 
+ * @features
+ * - Maintans form state for applicant and property details
+ * - Persists daat to localStorage on updates
+ * - Initializes from localStorage if available
+ * - Offers a context hook `ukeFormContext` to access the update data
+ * 
+ * @props (used in <FormProvider>)
+ * - `children` (ReactNode): The React tree taht will have access to the form context.
+ * 
+ * @note
+ * - This context must wrap any component tree that needs to access or update applicant/property
+ * - Handles errors when reading from or writing to localStorage
+ * - Returns default empty values if localStorage is not set or data in invalid
+ * 
+ * @usage
+ * ```tsx
+ * import { FormProvider, useFormContext } from './FormContext';
+ * 
+ * const App = () => {
+ * <FormProvider>
+ *    <YourComponent />
+ * </FormProvider>
+ * }
+*/
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type PropertyDetails, type ApplicantDetails } from '~/utils/applicationForm';
 
-// Define FormDataType using the imported types
 export interface FormDataType {
   applicant: ApplicantDetails;
   property: PropertyDetails;
 }
 
-
-// Define the context type
 type FormContextType = {
   applicantFormData: FormDataType;
   updateApplicantFormData: (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => void;
 };
 
-// Define the default state structure explicitly
 const defaultFormData: FormDataType = {
   applicant: { name: '', email: '', phone: '' },
   property: {
@@ -28,18 +57,15 @@ const defaultFormData: FormDataType = {
   }
 };
 
-// Create context with default values
 const FormContext = createContext<FormContextType>({
   applicantFormData: defaultFormData,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function -- Default context value requires a placeholder
-  updateApplicantFormData: () => {},
+  updateApplicantFormData: () => {
+    throw new Error('updateApplicantFormData must be used within a FormProvider');
+  },
 });
 
-// Create provider component
 export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  // Explicitly type the state with FormDataType
   const [applicantFormData, setApplicantFormData] = useState<FormDataType>(() => {
-    // Try to load from localStorage first
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('applicantFormData');
       if (savedData) {
@@ -57,11 +83,9 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
       }
     }
 
-    // Default state if no valid saved data
     return defaultFormData;
   });
 
-  // Effect to save to localStorage whenever applicantFormData changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -74,10 +98,8 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
 
 
   const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    // Use the functional update form of setState to ensure correct previous state
     setApplicantFormData(prevData => {
       const newData = typeof data === 'function' ? data(prevData) : data;
-      // No need to manually save here, the useEffect handles it
       return newData; 
     });
   };
@@ -92,5 +114,4 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
   );
 };
 
-// Create custom hook for using the context
 export const useFormContext = (): FormContextType => useContext(FormContext);

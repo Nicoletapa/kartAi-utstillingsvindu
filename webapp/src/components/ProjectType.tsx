@@ -1,3 +1,36 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ *
+ * @description
+ * This component is part of the pre-step process for sending an application.
+ * It allows the user to select the type of project they are applying for (e.g., bygge, rive, bruksendring),
+ * and provides a map interface (TiltaksAidMap.tsx). The intention for the map is to allow the user to get
+ * required drawings for their application (situasjonskart).
+ * Though, this is not yet implemented in the TiltaksAid project.
+ * 
+ * @features
+ * - Radio buttons for selecting project type
+ * - If choosing "Bygge" or "Rive", checkboxes for selecting the specific area will be provided.
+ * - Map interface for effective getting "situasjonskart". (Not yet implemented)
+ * 
+ * @props
+ * - `formData`: The form data containing the description of the project.
+ * - `setFormData`: Function to update the form data.
+ * - `onValidityChange`: Callback function to handle form validity changes.
+ * 
+ * @note
+ * - This file uses TypeScript and React. It is designed to be used in a Next.js application.
+ * - This file uses Tailwind CSS for styling and Lucide React icons.
+ * 
+ * @usage
+ * <ProjectType 
+ *   formData={formData}
+ *   setFormData={setFormData}
+ *   onValidityChange={handleValidityChange}
+ *   onUpload={handleUpload}
+ * />  
+ */
+
 "use client";
 
 import * as L from "leaflet";
@@ -14,7 +47,6 @@ import { PropertySearchBar } from "../components/map/PropertySearchBar";
 import { searchProperty as fetchProperty } from "../utils/propertyUtils";
 import { usePropertySearch } from "../hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "../utils/propertyUtils";
-import SmallChatbot from "../components/SmallChatbot";
 
 interface PageProps {
   onUpload: (files: File[]) => void;
@@ -485,9 +517,7 @@ const ProjectType: React.FC<PageProps> = ({
                     <ArrowRight className="w-5 h-5 transition-transform duration-300" />
                 </Button>
             </div>
-            <SmallChatbot />
         </div>
-
     );
 };
 

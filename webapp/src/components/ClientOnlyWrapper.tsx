@@ -1,3 +1,24 @@
+/**
+ * This file is used in Utstillingsvindu 2.0
+ * 
+ * @description
+ * A utility component that ensures its children are only rendered on the client side.
+ * This is useful for components that deåend on browser APIs or require client-only behavior,
+ * avoiding mismatches during server-side rendering (SSR).
+ * 
+ * @features
+ * - Delays rendering of children until the component is mounted on the client
+ * - Prevents hydration errors from server/client content mismatches
+ * 
+ * @props
+ * - `children` (ReactNode): The content to be rendered only on the client side.
+ * 
+ * @usage
+ * <ClientOnlyWrapper>
+ *   <YourComponent />
+ * </ClientOnlyWrapper>
+ */
+
 'use client';
 import { useEffect, useState } from 'react';
 
