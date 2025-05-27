@@ -24,7 +24,11 @@ import React, { useState } from 'react'
 import { api } from "~/trpc/react";
 import { Info } from 'lucide-react';
 
-const Nabovarsel = () => {
+interface NabovarselProps {
+  applicationID: number;
+}
+
+const Nabovarsel:React.FC<NabovarselProps> = ({applicationID}) => {
     const [openModal, setOpenModal] = useState<boolean>(false);
     
     const { data: users } = api.user.getUserDetails.useQuery();

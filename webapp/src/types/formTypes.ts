@@ -62,11 +62,6 @@ export interface BruksendringFormData {
 }
 
 // Constants
-export const ROAD_TYPES = {
-  RIKSVEI: 'riksvei_eller_fylkesvei',
-  KOMMUNAL: 'kommunal_vei',
-  PRIVAT: 'privat_vei',
-};
 
 export const CALCULATION_METHODS = {
   BYA: 'Bebygd areal i m²',
@@ -117,6 +112,12 @@ export const bruksendringDefaultValues: BruksendringFormData = {
   changeDescription: ''
 };
 export const yesNoOptions = [
-    { value: "Ja", label: "Ja" },
-    { value: "Nei", label: "Nei" }
-  ];
+  { value: "Ja", label: "Ja" },
+  { value: "Nei", label: "Nei" }
+];
+
+export const drivewayOptions = [
+  { value: 'riksvei_eller_fylkesvei', label: 'Riksvei eller fylkesvei' },
+  { value: 'kommunal_vei', label: 'Kommunal vei' },
+  { value: 'privat_vei', label: 'Privat vei' },
+] 

@@ -15,7 +15,6 @@
  * - `user` (object): The user object containing user details such as email, address, name, gnr, and bnr.
  * 
  * @note
- * - This component is designed to be used in a client-side context.
  * - The "Send dispensasjonssøknad" button is not functional yet.
  * 
  * @usage
@@ -62,6 +61,7 @@ interface ApplicationData {
 
 const Dispensasjon = ({
     application,
+    user
 }: {
     application: {
         applicationID: number;
@@ -84,7 +84,6 @@ const Dispensasjon = ({
         { enabled: true }
     );
 
-    const { data: users } = api.user.getUserDetails.useQuery();
 
     const handleOpenModal = () => setOpenModal(true);
     const handleCloseModal = () => setOpenModal(false);
@@ -116,21 +115,21 @@ const Dispensasjon = ({
     }, [appData]);
 
     const header = [
-        { value: applicationData.kommune ?? "Kristiansand" },
-        { value: applicationData.avdeling ?? "Byggesaksavdeling" },
-        { value: applicationData.adresse ?? "Rådhusgata 18" },
-        { value: applicationData.postInfo ?? "4604, Kristiansand" },
-        { value: applicationData.telefon ?? "38 07 50 00" },
-        { value: applicationData.epost ?? "post@kristiansand.kommune.no" },
+        { value: "Kristiansand" },
+        { value: "Byggesaksavdeling" },
+        { value: "Rådhusgata 18" },
+        { value: "4604, Kristiansand" },
+        { value: "38 07 50 00" },
+        { value: "post@kristiansand.kommune.no" },
         { label: "Saksnummer:", value: application?.applicationID || "2024/001" },
         { label: "Dato:", value: new Date().toLocaleDateString('no-NO') },
     ]
 
     const infoFields = [
-        { label: "Søker:", value: users?.name ?? "Ikke spesifisert" },
-        { label: "Adresse:", value: users?.address ?? "Ikke spesifisert" },
+        { label: "Søker:", value: user?.name ?? "Ikke spesifisert" },
+        { label: "Adresse:", value: user?.address ?? "Ikke spesifisert" },
         { label: "Eiendom:", value: applicationData.eiendomAdresse ?? "Ikke spesifisert" },
-        { label: "Gnr./Bnr:", value: users?.gnr ?? "Ikke spesifisert" },
+        { label: "Gnr./Bnr:", value: user?.gnr ?? "Ikke spesifisert" },
         { label: "Tiltakets art:", value: applicationData.tiltakType ?? "Ikke spesifisert" },
     ]
 
@@ -148,7 +147,7 @@ const Dispensasjon = ({
 
     const footer = [
         { value: "[Underskrift]" },
-        { value: users?.name ?? "Ikke spesifisert" }
+        { value: user?.name ?? "Ikke spesifisert" }
 
     ]
 
@@ -211,11 +210,11 @@ const Dispensasjon = ({
 
                     <div className='mt-6'>
                         <h1 className='font-medium text-xl'>Beskrivelse av tiltaket:</h1>
-                        <p>{beskrivelse.map((field, index) => (
-                            <div key={index} className="flex">
+                        <div>{beskrivelse.map((field, index) => (
+                            <p key={index} className="flex">
                                 <span>{field.value}</span>
-                            </div>
-                        ))}</p>
+                            </p>
+                        ))}</div>
                     </div>
 
                     <div className='mt-6'>

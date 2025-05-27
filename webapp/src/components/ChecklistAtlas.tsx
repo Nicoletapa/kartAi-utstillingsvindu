@@ -9,19 +9,6 @@
  * @features
  * - Interactive checklist with checkboxes
  * - Progress bar indicating completion percentage
- * 
- * @props
- * - `checklistData` (ChecklistData): The data structure containing the checklist items and their categories.
- * - `CustomCheckbox` (CustomCheckboxProps): A custom checkbox component for the checklist items.
- * - `ProgressBar` (ProgressBarProps): A progress bar component to visualize the completion percentage.
- * - `ChecklistItem` (ChecklistItemProps): A component representing each checklist item.
- * - `ChecklistAtlas` (ChecklistAtlasProps): The main component that renders the checklist and handles state.
- * 
- * @note
- * - Checkboxes are custom styled for consistent appearance.
- * 
- * @usage
- * <ChecklistAtlas />
  */
 
 "use client"
@@ -169,6 +156,9 @@ const ChecklistItem = ({
     <span className='leading-snug flex-1'>{item}</span>
   </label>
 );
+const allItemsList = Object.values(checklistData).flatMap((section: ChecklistSectionData[]) =>
+  section.flatMap(sub => sub.items)
+);
 
 const ChecklistAtlas = () => {
   const [activeTab, setActiveTab] = useState<'for' | 'under' | 'etter'>('for');
@@ -181,11 +171,8 @@ const ChecklistAtlas = () => {
     }));
   };
 
-  const allItems = Object.values(checklistData).flatMap((section: ChecklistSectionData[]) =>
-    section.flatMap(sub => sub.items)
-  );
   const checkedCount = Object.keys(checkedItems).filter(key => checkedItems[key]).length;
-  const progressPercent = allItems.length > 0 ? Math.round((checkedCount / allItems.length) * 100) : 0;
+  const progressPercent = allItemsList.length > 0 ? Math.round((checkedCount / allItemsList.length) * 100) : 0;
 
   return (
     <div className='p-4'>
@@ -229,9 +216,9 @@ const ChecklistAtlas = () => {
           <div key={idx}>
             <h3 className='text-xl font-semibold text-kartAI-blue mb-3'>{section.title}</h3>
             <div className='space-y-3'>
-              {section.items.map((item, i) => (
+              {section.items.map((item) => (
                 <ChecklistItem
-                  key={i}
+                  key={item}
                   item={item}
                   checked={checkedItems[item] ?? false}
                   onChange={() => handleCheckboxChange(item)}

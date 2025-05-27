@@ -68,8 +68,8 @@ const MyDocuments: React.FC<MyDocumentsProps> = () => {
   const [replaceDocumentId, setReplaceDocumentId] = useState<number | null>(null)
   const [fileToUpload, setFileToUpload] = useState<File | null>(null)
 
-  const { data: applications, isLoading, error, refetch: refetchApplications } = api.application.getAllApplications.useQuery()
-  const { data: allDocuments, error: docsError, refetch: refetchDocuments } = api.document.getAllUserDocuments.useQuery()
+  const { data: applications, isLoading, refetch: refetchApplications } = api.application.getAllApplications.useQuery()
+  const { data: allDocuments, refetch: refetchDocuments } = api.document.getAllUserDocuments.useQuery()
 
   const [previewDocument, setPreviewDocument] = useState<{
     fileName: string;

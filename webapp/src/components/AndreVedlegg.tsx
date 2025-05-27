@@ -13,15 +13,10 @@
  * - File type validation
  * 
  * @props
- * - `documents` (Document[]): Array of documents to display.
  * - `onUpload` (function): Callback function to handle file uploads.
  * - `formData` (object): Form data containing additional comments.
  * - `setFormData` (function): Function to update form data.
- * 
- * @note
- * - This component is designed to be used in a client-side context.
- * - The file upload functionality is implemented using the `react-dropzone` library.
- * 
+
  * @usage
  * <AndreVedlegg onUpload={(files) => console.log('Uploaded files:', files)} />
  */
@@ -31,15 +26,9 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, FileImage, Trash2, Loader2, X, Info } from 'lucide-react';
 import Image from 'next/image';
 
-type Document = {
-    documentID: number;
-    fileName: string;
-    documentType: string;
-    applicationID: number;
-};
 
 interface AndreVedleggProps {
-    documents?: Document[];
+    applicationID: number;
     onUpload: (files: File[]) => void;
     formData?: {
         andreVedlegg: string;
@@ -102,7 +91,8 @@ const DOCUMENT_CHECKLIST = [
 const AndreVedlegg: React.FC<AndreVedleggProps> = ({
     formData: externalFormData,
     setFormData: externalSetFormData,
-    onUpload
+    onUpload,
+    
 }) => {
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [loading, setLoading] = useState(false);
@@ -161,10 +151,11 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({
         setTimeoutId(id);
     }, []);
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
+    const onDrop = useCallback(async (acceptedFiles: File[]) => {
         if (acceptedFiles.length === 0) return;
 
-        setLoading(true);
+        setLoading(true); 
+
         const newFiles = acceptedFiles.map(file => ({
             file,
             preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
@@ -172,10 +163,14 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({
 
         setUploadedFiles(prev => [...prev, ...newFiles]);
 
-        setTimeout(() => {
-            setLoading(false);
-            onUpload(acceptedFiles);
-        }, 2000);
+        try {
+         
+            await onUpload(acceptedFiles); 
+        } catch (error) {
+            console.error("Error during upload:", error);
+        } finally {
+            setLoading(false); 
+        }
     }, [onUpload]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({

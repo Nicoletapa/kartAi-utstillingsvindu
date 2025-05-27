@@ -3,6 +3,7 @@ import Countdown from 'react-countdown'
 import { Info, Upload, X } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 
+
 const ProcessStep3_2 = () => {
     
     const targetDate = useRef(Date.now() + 14 * 24 * 60 * 60 * 1000);

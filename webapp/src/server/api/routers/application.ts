@@ -1,7 +1,6 @@
 import { ApplicationStatus, ApplicationType } from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
-
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
@@ -20,7 +19,6 @@ export const applicationRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       
-      // Add safeguard: Check if an application with the same type was created in the last 5 seconds
       const recentApplications = await db.application.findMany({
         where: {
           userID: userId,
@@ -41,7 +39,7 @@ export const applicationRouter = createTRPCRouter({
           applicationType: input.applicationType,
         subTypeId: input.subTypeId,
         updatedDate: input.updatedDate ?? new Date(),
-        submissionDate: input.submissionDate, // Ensure this is passed through
+        submissionDate: input.submissionDate, 
         status: input.status || "Pabegynt",
         user: {
           connect: {
@@ -138,7 +136,6 @@ export const applicationRouter = createTRPCRouter({
           });
         }
 
-        // Convert dates to ISO strings to avoid serialization issues
         return {
           ...application,
           submissionDate: application.submissionDate.toISOString(),
@@ -216,7 +213,6 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
   
-  // Add application field
   addApplicationField: protectedProcedure
     .input(
       z.object({
@@ -228,7 +224,6 @@ export const applicationRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       
-      // Check if application belongs to current user
       const application = await db.application.findUnique({
         where: { applicationID: input.applicationID },
         select: { userID: true }
@@ -238,7 +233,6 @@ export const applicationRouter = createTRPCRouter({
         throw new Error("Not authorized to update this application");
       }
       
-      // Check if field already exists
       const existingField = await db.application_field.findFirst({
         where: {
           applicationID: input.applicationID,
@@ -249,7 +243,6 @@ export const applicationRouter = createTRPCRouter({
       let res;
       
       if (existingField) {
-        // Update existing field
         res = await db.application_field.update({
           where: {
             application_fieldID: existingField.application_fieldID
@@ -260,7 +253,6 @@ export const applicationRouter = createTRPCRouter({
           },
         });
       } else {
-        // Create new field
         res = await db.application_field.create({
           data: {
             applicationID: input.applicationID,
@@ -276,7 +268,6 @@ export const applicationRouter = createTRPCRouter({
     }),
 
     
-  // Submit application (change status to Sendt)
   submitApplication: protectedProcedure
     .input(z.object({ applicationID: z.number() }))
     .mutation(async ({ ctx, input }) => {
@@ -300,60 +291,5 @@ export const applicationRouter = createTRPCRouter({
       });
       
       return res;
-    }),
-    
-  // Get application count by status
-  getApplicationCountByStatus: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    
-    const counts = await db.$queryRaw`
-      SELECT status, COUNT(*) as count 
-      FROM Application 
-      WHERE userID = ${userId}
-      GROUP BY status
-    `;
-    
-    return counts;
-  }),
-
-  createAndPopulateApplication: protectedProcedure
-    .input(
-      z.object({
-        applicationType: z.nativeEnum(ApplicationType),
-        fieldData: z.record(z.string(), z.string()),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      
-      // Create the application first
-      const application = await db.application.create({
-        data: {
-          applicationType: input.applicationType,
-          submissionDate: new Date(),
-          updatedDate: new Date(),
-          status: "Pabegynt",
-          user: {
-            connect: {
-              id: userId,
-            },
-          }
-        }
-      });
-      
-      // Add all the fields
-      for (const [fieldName, fieldValue] of Object.entries(input.fieldData)) {
-        await db.application_field.create({
-          data: {
-            applicationID: application.applicationID,
-            fieldName,
-            fieldValue,
-            createdDate: new Date(),
-            updatedDate: new Date(),
-          },
-        });
-      }
-      
-      return application;
     }),
 });

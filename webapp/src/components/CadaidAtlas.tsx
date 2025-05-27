@@ -20,9 +20,7 @@
  * - Internal Interfaces:
  *   - FileDetection: Links filenames to detected drawing types
  *   - InvalidFile: Holds unprocessable file and its base64 representation
- * 
- * @usage
- * <CadaidPage />
+
 */
 
 "use client";
@@ -37,6 +35,8 @@ import InvalidFilesList from './InvalidFilesList';
 import { X, Info, Loader2 } from 'lucide-react';
 import Image from "next/image";
 import { skipToken } from "@tanstack/react-query";
+import { appendErrorMessage } from "~/utils/errorMessage";
+
 
 interface CadaidAtlasProps {
   applicationID?: number;
@@ -158,7 +158,7 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({ applicationID }) => {
         }));
       }
     }),
-    checkExistingFile: api.userDocuments.replaceExistingFile.useMutation(),
+    checkExistingFile: api.userDocuments.checkFileExists.useMutation(),
     deleteDocument: api.userDocuments.deleteDocument.useMutation({
       onSuccess: () => void utils.userDocuments.getUserDocuments.invalidate()
     })
@@ -210,10 +210,11 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({ applicationID }) => {
         setState(prev => ({
           ...prev,
           invalidFiles: [...prev.invalidFiles, { file, base64 }],
-          errorMessage: prev.errorMessage 
-            ? `${prev.errorMessage}\n${'message' in result ? result.message : 'Kunne ikke lagre dokumentet'}: ${file.name}`
-            : `${'message' in result ? result.message : 'Kunne ikke lagre dokumentet'}: ${file.name}`
+          errorMessage: appendErrorMessage(
+          prev.errorMessage, `${'message' in result ? result.message : 'Kunne ikke lagre dokumentet'}: ${file.name}`
+        )
         }));
+           
       }
     } catch (error) {
       console.error(`Error handling valid file ${file.name}:`, error);
@@ -224,9 +225,9 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({ applicationID }) => {
     setState(prev => ({
       ...prev,
       invalidFiles: [...prev.invalidFiles, { file, base64 }],
-      errorMessage: prev.errorMessage 
-        ? `${prev.errorMessage}\n${file.name} har ingen gyldige tegningstyper`
-        : `${file.name} har ingen gyldige tegningstyper`
+      errorMessage: appendErrorMessage(
+        prev.errorMessage, 
+        `${file.name} har ingen gyldige tegningstyper`)
     }));
   }, []);
 
@@ -305,9 +306,10 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({ applicationID }) => {
             console.error(`Error processing file ${file.name}:`, error);
             setState(prev => ({
               ...prev,
-              errorMessage: prev.errorMessage 
-                ? `${prev.errorMessage}\nKlarte ikke å behandle: ${file.name}`
-                : `Klarte ikke å behandle: ${file.name}`
+              errorMessage: appendErrorMessage(
+                prev.errorMessage,
+                `Kunne ikke prosessere filen ${file.name}`
+              ) 
             }));
           }
         })
@@ -330,28 +332,36 @@ const CadaidAtlas: React.FC<CadaidAtlasProps> = ({ applicationID }) => {
   useEffect(() => {
     let objectUrl: string | null = null;
 
-    if (state.fullSizeImage?.startsWith('data:image/')) {
-      fetch(state.fullSizeImage)
-        .then(res => {
-          if (!res.ok) throw new Error(`Failed to fetch image: ${res.statusText}`);
-          return res.blob();
-        })
-        .then(blob => {
-          objectUrl = URL.createObjectURL(blob);
-          setState(prev => ({ ...prev, imageSrc: objectUrl }));
-        })
-        .catch(error => {
-          console.error("Error creating object URL from data URI:", error);
-          setState(prev => ({ ...prev, imageSrc: null }));
-        });
+    if (state.fullSizeImage) {
+      if (state.fullSizeImage.startsWith('data:image/')) {
+        fetch(state.fullSizeImage)
+          .then(res => {
+            if (!res.ok) throw new Error(`Failed to fetch image: ${res.statusText}`);
+            return res.blob();
+          })
+          .then(blob => {
+            objectUrl = URL.createObjectURL(blob);
+            setState(prev => ({ ...prev, imageSrc: objectUrl }));
+          })
+          .catch(error => {
+            console.error("Error creating object URL from data URI:", error);
+            setState(prev => ({ ...prev, imageSrc: null })); 
+          });
+      } else {
+        if (state.imageSrc !== state.fullSizeImage) {
+          setState(prev => ({ ...prev, imageSrc: state.fullSizeImage }));
+        }
+      }
     } else {
-      setState(prev => ({ ...prev, imageSrc: state.fullSizeImage }));
+      if (state.imageSrc !== null) {
+        setState(prev => ({ ...prev, imageSrc: null }));
+      }
     }
 
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [state.fullSizeImage]);
+  }, [state.fullSizeImage, state.imageSrc]); 
 
   const renderDocumentRequirements = useMemo(() => (
     <ul className="text-sm list-disc ml-6 mt-2 space-y-1 text-gray-700">

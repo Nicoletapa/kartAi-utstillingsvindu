@@ -1,13 +1,3 @@
 export { default as BruksendreStep1_0 } from "./BruksendreStep1_0";
 export { default as BruksendreStep1_1 } from "./BruksendreStep1_1";
-export { default as BruksendreStep2_0 } from "./BruksendreStep2_0";
-export { default as BruksendreStep2_1 } from "./BruksendreStep2_1";
-export { default as BruksendreStep2_2 } from "./BruksendreStep2_2";
-export { default as BruksendreStep3_0 } from "./BruksendreStep3_0";
-export { default as BruksendreStep3_1 } from "./BruksendreStep3_1";
-export { default as BruksendreStep3_2 } from "./BruksendreStep3_2";
-export { default as BruksendreStep4_0 } from "./BruksendreStep4_0";
-export { default as BruksendreStep4_1 } from "./BruksendreStep4_1";
-export { default as BruksendreStep5_0 } from "./BruksendreStep5_0";
-export { default as BruksendreStep5_1 } from "./BruksendreStep5_1";
-export { default as BruksendreStep6_0 } from "./BruksendreStep6_0";
+

@@ -1,6 +1,5 @@
 import * as turf from '@turf/turf';
 import type { 
-  GeoJSON, 
   Feature, 
   Geometry, 
   Polygon, 
@@ -10,10 +9,6 @@ import type {
   GeoJsonProperties 
 } from 'geojson';
 
-// Define more specific types for API responses
-export interface AllowedAreaResponse {
-  allowed_building_area: GeoJSON.Geometry | GeoJSON.FeatureCollection;
-}
 
 interface AllowedAreaAPIResponse {
   allowed_building_area: {

@@ -49,7 +49,7 @@ interface ChatActions {
   clearMapInstance: () => void;
   setIsTyping: (typing: boolean) => void;
   setError: (error: string | null) => void;
-  clearChat: () => void; // Optional: Action to clear chat
+  clearChat: () => void; 
 }
 
 // --- Store Implementation ---

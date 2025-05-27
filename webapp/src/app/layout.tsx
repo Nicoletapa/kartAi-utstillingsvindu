@@ -14,12 +14,6 @@
  * 
  * @props
  * - `children` (ReactNode): The React tree that will have access to the form context.
- * 
- * @note
- * - This component is designed to be used in a server-side context.
- * 
- * @usage
- * 
  */
 
 import "~/styles/globals.css";

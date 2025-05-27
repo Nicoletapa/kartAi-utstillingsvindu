@@ -10,9 +10,6 @@
  * - Delays rendering of children until the component is mounted on the client
  * - Prevents hydration errors from server/client content mismatches
  * 
- * @props
- * - `children` (ReactNode): The content to be rendered only on the client side.
- * 
  * @usage
  * <ClientOnlyWrapper>
  *   <YourComponent />

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Info } from 'lucide-react';
 import { ApplicationService } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
@@ -38,9 +38,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
     const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
     const [hoveredBox, setHoveredBox] = useState<string | null>(null);
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
-    const [mapReady, setMapReady] = useState(false);
-    const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
-    const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
+
     
     const { userData } = usePropertySearch();
       
@@ -48,9 +46,14 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
     
   
     const safeFormData = {
-        ...formData,
+        municipalPlan: formData.municipalPlan ?? false,
+        regulationPlan: formData.regulationPlan ?? false,
         regulationPlanDetails: formData.regulationPlanDetails || '',
-        otherPlansDetails: formData.otherPlansDetails || ''
+        otherPlans: formData.otherPlans ?? false,
+        otherPlansDetails: formData.otherPlansDetails || '',
+        yesDispensationIsAttached: formData.yesDispensationIsAttached ?? false,
+        yesPermitsAreAttached: formData.yesPermitsAreAttached ?? false,
+        noDispensationNeeded: formData.noDispensationNeeded ?? false,
     };
 
     const handleMouseEnter = (box: string) => {
@@ -71,29 +74,28 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
         handleFieldChange(e.target.name, e.target.value);
       };
 
-    const checkFormValidity = (data: typeof safeFormData) => {
+    const checkFormValidity = useCallback((data: typeof safeFormData) => {
         const basicsFieldValid = 
           (data.municipalPlan) ||
           (data.otherPlans && data.otherPlansDetails.trim() !== '') ||
           (data.regulationPlan && data.regulationPlanDetails.trim() !== '');
 
-          const dispensationOrOtherPermits = 
+        const dispensationOrOtherPermits = 
           data.yesDispensationIsAttached || 
           data.yesPermitsAreAttached || 
           data.noDispensationNeeded;
     
         const isValid = basicsFieldValid && dispensationOrOtherPermits;
         onValidityChange(isValid);
-    };
+    }, [onValidityChange]);
+
+    useEffect(() => {
+      checkFormValidity(safeFormData);
+    }, [safeFormData, checkFormValidity]);
+
 
       const handleFieldChange = (name: string, value: string | boolean | string[]) => {
-        const updatedFormData = {
-          ...formData,
-          [name]: value,
-        };
-    
         externalSetFormData((prev) => ({ ...prev, [name]: value }));
-        checkFormValidity(updatedFormData);
         
         const fieldPath = resolveFieldPath(name, 'sma-prosjekter');
         
@@ -112,14 +114,16 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
           const handleMapReady = useCallback((map: Map) => {
             if (!mapRef.current) {
               mapRef.current = map;
-              setMapReady(true);
+              
             }
           }, []);
         
           const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
-            setLastDrawnShape(shape);
-            setSpatialAnalysis(analysis ?? null);
-          }, []);
+              console.log("Shape drawn in BruksendreStep1_1:", shape); 
+              if (analysis) {
+                console.log("Spatial analysis received in BruksendreStep1_1:", analysis); 
+              }
+            }, []);
 
   return (
     <div className='justify-center flex flex-col w-full'>
@@ -153,7 +157,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
                     onMouseEnter={() => handleMouseEnter('buildingDetails')}
                     onMouseLeave={handleMouseLeave}
                   >
-                    Her kan du fylle ut detaljene om bygningen, som størrelse, materiale og avstand til nabogrensen.
+                    Angi hvilke overordnede planer som gjelder for eiendommen din, for eksempel kommuneplanens arealdel eller en spesifikk reguleringsplan. Denne informasjonen finner du vanligvis på kommunens nettsider eller ved å gå inn på denne lenken:https://www.arealplaner.no/kristiansand4204/arealplaner/search. skriv inn adressen og sjekk om det finnes planer som gjelder for eiendommen din. Hvis ingen planer er registrert, da er det kommuneplanen som gjelder.
                   </div>
                 )}
               </div>
@@ -277,6 +281,7 @@ const Step1_0: React.FC<Step1_0Props> = ({ applicationID, formData,  setFormData
         </div>
       )}
     </div>
+    
   )
 }
 

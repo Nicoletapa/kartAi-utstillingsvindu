@@ -1,9 +1,14 @@
 import React, { useState } from 'react'
 import { Info } from 'lucide-react';
 
-const ProcessStep3_0 = () => {
+interface ProcessStep3_0Props { 
+  applicationID: number;
+}
+
+const ProcessStep3_0:React.FC<ProcessStep3_0Props> = ({applicationID}) => {
       const [openModal, setOpenModal] = useState<boolean>(false);
-    
+     console.log("Application ID in ProcessStep3_0:", applicationID);
+
       const handleOpenModal = () => setOpenModal(true);
       const handleCloseModal = () => setOpenModal(false);
 

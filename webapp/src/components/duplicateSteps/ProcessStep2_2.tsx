@@ -1,14 +1,13 @@
 import React from 'react';
 import Dispensasjon from '../Dispensasjon';
-import { ApplicationService } from '~/utils/api-service';
 import { api } from '~/trpc/react';
 
-interface BruksendreStep2_2Props {
+interface ProcessStep2_2Props {
   applicationID: number;
 }
 
-const BruksendreStep2_2: React.FC<BruksendreStep2_2Props> = ({ applicationID }) => {
-    const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+const ProcessStep2_2: React.FC<ProcessStep2_2Props> = ({ applicationID }) => {
+   
 
     const { data: applicationData, isLoading: isLoadingApplication } = api.application.getApplication.useQuery(
         { applicationID },
@@ -17,7 +16,7 @@ const BruksendreStep2_2: React.FC<BruksendreStep2_2Props> = ({ applicationID }) 
 
     const { data: userData, isLoading: isLoadingUser } = api.user.getUserDetails.useQuery();
 
-    void saveField('progress.currentStep', '2_0');
+
 
     if (isLoadingApplication || isLoadingUser) {
         return <div>Laster inn...</div>;
@@ -47,4 +46,4 @@ const BruksendreStep2_2: React.FC<BruksendreStep2_2Props> = ({ applicationID }) 
   )
 }
 
-export default BruksendreStep2_2
+export default ProcessStep2_2

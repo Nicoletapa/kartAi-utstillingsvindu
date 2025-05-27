@@ -84,7 +84,7 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
     onValidityChange(isValid);
   };
 
-  const RadioField = ({ name, label }: { name: string; label: string; value: string }) => (
+  const RadioField = ({ name, label }: { name: string; label: string;  }) => (
     <div className='flex justify-between items-center mr-4'>
       <span>{label}</span>
       <div className='flex gap-4'>
@@ -164,25 +164,22 @@ const BruksendreStep1_0: React.FC<BruksendreStep1_0Props> = ({
         <RadioField 
           name="internalStaircase" 
           label="Skal du sette inn innvendig trapp?" 
-          value={formData.internalStaircase}
+     
         />
 
         <RadioField 
           name="bearingWallsorConstructions" 
           label="Skal du endre på bærende vegg(er) eller bærende konstruksjoner?" 
-          value={formData.bearingWallsorConstructions}
         />
 
         <RadioField 
           name="insertOrRemoveWindowOrDoor" 
           label="Skal du sette inn eller fjerne vindu eller dør i yttervegg?" 
-          value={formData.insertOrRemoveWindowOrDoor}
         />
 
         <RadioField 
           name="otherPhysicalChanges" 
           label="Skal du gjøre andre fysiske endringer av rommet/rommene?" 
-          value={formData.otherPhysicalChanges}
         />
       </div>
 

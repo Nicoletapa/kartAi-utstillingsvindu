@@ -4,8 +4,7 @@
  * @description
  * This component is used in the building application process and is rendered in ProgressBarStep.tsx.
  * It displays a checklist of tasks to be completed for the current step in the application process.
- * Certain tasks are hidden based on the current step and substep, and will be displayed when the user
- * navigates to the next step.
+ * Certain tasks are hidden based on the current step and substep, and will be displayed when the user navigates to the next step.
  * 
  * @features
  * - Displays a checklist of tasks for the current step in the application process
@@ -15,7 +14,8 @@
  * @props
  * - `currentStep` (number): The current step in the application process.
  * - `currentSubstep` (number): The current substep in the application process.
- * - `applicationID` (number): The ID of the application (optional).
+ * - `applicationID` (number): The ID of the application .
+ * -  currentStepTitle: string;
  * 
  * @note
  * - This component is designed to be used in a client-side context.
@@ -23,10 +23,7 @@
  * - It uses the `useState` and `useEffect` hooks to manage the state of the checklist.
  * - It uses the `useMemo` hook to memoize the checklist data based on the current step and substep.
  * 
- * @usage
- * <SjekklisteSoknad 
- *    currentStep={currentStep} 
- *    currentSubstep={currentSubstep} />
+
  */
 
 "use client";
@@ -36,62 +33,44 @@ import { usePathname, useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { cn } from "~/lib/utils";
 
-import {
-  Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
-  Step3_0, Step3_1, Step3_2, Step4_0, Step4_1, Step5_0, Step5_1, Step6_0,
-} from "./steps";
-import {
-  BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
-  BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, BruksendreStep4_1, BruksendreStep5_0,
-  BruksendreStep5_1, BruksendreStep6_0,
-} from "./bruksendreSteps";
-
 interface SjekklisteSoknadProps {
   currentStep: number;
   currentSubstep: number;
-  applicationID?: number;
+  applicationID: number;
+  currentStepTitle: string;
 }
 
-interface CommonStepProps<TFormData = Record<string, unknown>> {
-  applicationID?: number;
-  formData?: TFormData;
-  setFormData?: React.Dispatch<React.SetStateAction<TFormData>>;
-  onValidityChange?: (isValid: boolean) => void;
-}
-
-type StepComponentsType = Record<
-  number,
-  Record<number, React.ComponentType<CommonStepProps>>
->;
-
-export default function SjekklisteSoknad({ currentStep, currentSubstep, applicationID }: SjekklisteSoknadProps) {
+export default function SjekklisteSoknad({ currentStep, currentSubstep, applicationID, currentStepTitle }: SjekklisteSoknadProps) {
   const [completedTasks, setCompletedTasks] = useState<boolean[]>([]);
-  
-  const sjekklisteBruksendre: Record<number, string[]> = {
-    1: ["Kryss av de nødvendige endringene du skal gjøre", "Skriv inn en detaljert beskrivelse av det du skal gjøre", "Besvar om tiltaket følger regulerings-/kommuneplanen", "Skriv inn avstanden til nabogrensen", "Besvar om bruksendringene kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre til en ny/endret avkjøring"],
-    2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
-    3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
-    4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
-    5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
-  };
-
-  const sjekklisteByggeEllerRive: Record<number, string[]> = {
-    1: ["Kryss av for hvilke(n) plan(er) gjelder for din eiendom", "Kryss av for om du trenger dispensasjon elle andre tillatelser", "Fyll inn alle nødvendige felt med detaljer til det du skal bygge", "Fyll inn feltene for utnyttningsgrad", "Besvar om prosjektet kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre itl en ny/endret avkjøring", "Besvar om tiltaket er i samsvar med gjeldene plan"],
-    2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
-    3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
-    4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
-    5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
-  };
-
   const pathname = usePathname();
   const router = useRouter();
 
   const isByggeorRive = pathname.includes('/bygge-eller-rive');
   const isBruksendre = pathname.includes('/bruksendring');
 
+  const sjekklisteCommon: Record<number, string[]> = {
+    2: ["Last opp de nødvendige dokumentene", "Sørg for at alle dokumentene er godkjent", "Sjekk om du må søke dispensasjon", "Pass på at alle detaljene er korrekte", "Last opp andre nødvendige vedlegg"],
+    3: ["Last ned en oversikt over de påvirkede naboene", "Sørg for at nabovarselen er korrekt og send varselen", "Vent til fristen for å legge igjen en merknad har gått ut. Last opp nødvendige vedlegg dersom du har fått fysiske merknader"],
+    4: ["Last opp andre relevante vedlegg som du kan ha fått i etterkant", "Sørg for at all informasjonen i søknaden er korrekt"],
+    5: ["Vent til søknaden er ferdig behandlet. Du kan sjekke statusen på søknaden din ved å klikke på knappen"],
+  };
+  
+  const sjekklisteBruksendre: Record<number, string[]> = {
+    1: ["Kryss av de nødvendige endringene du skal gjøre", "Skriv inn en detaljert beskrivelse av det du skal gjøre", "Besvar om tiltaket følger regulerings-/kommuneplanen", "Skriv inn avstanden til nabogrensen", "Besvar om bruksendringene kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre til en ny/endret avkjøring"]
+  };
+
+  const sjekklisteByggeEllerRive: Record<number, string[]> = {
+    1: ["Kryss av for hvilke(n) plan(er) gjelder for din eiendom", "Kryss av for om du trenger dispensasjon elle andre tillatelser", "Fyll inn alle nødvendige felt med detaljer til det du skal bygge", "Fyll inn feltene for utnyttningsgrad", "Besvar om prosjektet kan være i konflikt med omgivelsene", "Besvar om prosjektet vil føre itl en ny/endret avkjøring", "Besvar om tiltaket er i samsvar med gjeldene plan"]
+  };
+
   const currentChecklist = useMemo(() => {
-    return isBruksendre ? sjekklisteBruksendre : sjekklisteByggeEllerRive;
-  }, [isBruksendre]);
+    const step1Specifics = isBruksendre ? sjekklisteBruksendre : sjekklisteByggeEllerRive;
+    return {
+      ...step1Specifics,  
+      ...sjekklisteCommon 
+    };
+  }, [isBruksendre, sjekklisteBruksendre, sjekklisteByggeEllerRive, sjekklisteCommon]); 
+  
   useEffect(() => {
     if (!applicationID) {
       console.warn("No applicationID provided to SjekklisteSoknad");
@@ -114,67 +93,7 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep, applicat
     return null;
   }
 
-  const stepComponents: StepComponentsType = (isByggeorRive ? {
-    1: {
-        0: Step1_0,
-        1: Step1_1,
-    },
-    2: {
-        0: Step2_0,
-        1: Step2_1,
-        2: Step2_2,
-    },
-    3: {
-        0: Step3_0,
-        1: Step3_1,
-        2: Step3_2,
-    },
-    4: {
-        0: Step4_0,
-        1: Step4_1,
-    },
-    5: {
-        0: Step5_0,
-        1: Step5_1,
-    },
-    6: {
-        0: Step6_0,
-    },
-} : {
-    1: {
-        0: BruksendreStep1_0,
-        1: BruksendreStep1_1,
-    },
-    2: {
-        0: BruksendreStep2_0,
-        1: BruksendreStep2_1,
-        2: BruksendreStep2_2,
-    },
-    3: {
-        0: BruksendreStep3_0,
-        1: BruksendreStep3_1,
-        2: BruksendreStep3_2,
-    },
-    4: {
-        0: BruksendreStep4_0,
-        1: BruksendreStep4_1,
-    },
-    5: {
-        0: BruksendreStep5_0,
-        1: BruksendreStep5_1,
-    },
-    6: {
-        0: BruksendreStep6_0,
-    }
-}) as unknown as StepComponentsType;
-  const steps = [
-    { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] ?? {}).length },
-    { title: "Dokumentsjekk", totalSubsteps: Object.keys(stepComponents[2] ?? {}).length },
-    { title: "Nabovarsel", totalSubsteps: Object.keys(stepComponents[3] ?? {}).length },
-    { title: "Søknaden", totalSubsteps: Object.keys(stepComponents[4] ?? {}).length },
-    { title: "Status", totalSubsteps: Object.keys(stepComponents[5] ?? {}).length },
-    { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] ?? {}).length },
-  ];
+  
 
   const currentTasks = currentStep <= 5 ? currentChecklist[currentStep] ?? [] : [];
 
@@ -204,7 +123,7 @@ export default function SjekklisteSoknad({ currentStep, currentSubstep, applicat
   return (
     <div className="rounded-lg shadow-md p-4 min-w-72 h-fit max-w-80 bg-blue-100 border-2 border-blue-200">
       <h2 className="text-lg font-semibold">
-        Gjøremål for Steg {currentStep}: {steps[currentStep - 1]?.title}
+        Gjøremål for Steg {currentStep}: {currentStepTitle}
       </h2>
       <ul className="list-disc pl-3 space-y-2 mt-3">
         {currentTasks.map((task, index) => {

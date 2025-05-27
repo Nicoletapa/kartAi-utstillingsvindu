@@ -12,9 +12,6 @@
  * @props
  * - `children` (ReactNode): The React tree that will be displayed inside the sidebar.
  * 
- * @note
- * - This component is designed to be used in a client-side context.
- * 
  * @usage
  * <AtlasSidebar>
  *   <YourComponent />

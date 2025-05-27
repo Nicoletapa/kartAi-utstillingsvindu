@@ -3,9 +3,9 @@ import { ApplicationService, UIComponents } from '~/utils/api-service';
 import { resolveFieldPath } from '~/utils/field-mappings';
 import {  
   smaProsjekterDefaultValues, 
-  ROAD_TYPES, 
   CALCULATION_METHODS,
-  yesNoOptions 
+  yesNoOptions, 
+  drivewayOptions,
 } from '~/types/formTypes';
 import { RadioGroup, Tooltip } from '../ui/ui-components';
 import type {SmaProsjekterFormData} from '~/types/formTypes';
@@ -56,6 +56,9 @@ const environmentalConflictGroups = [
     { name: 'cultural_heritage_site', label: 'Finnes det kulturminner eller verneverdig bebyggelse på eiendommen eller i nærheten?' },
   ]
 ];
+
+
+
 
 interface Step1_1Props {
   applicationID: number;
@@ -385,11 +388,7 @@ const Step1_1: React.FC<Step1_1Props> = ({
               Eiendommen vil få ny/endret avkjørsel til (sett kryss):
             </h1>
             <div className="ml-8 mt-2 flex flex-col gap-2">
-              {[
-                { value: ROAD_TYPES.RIKSVEI, label: 'Riksvei eller fylkesvei' },
-                { value: ROAD_TYPES.KOMMUNAL, label: 'Kommunal vei' },
-                { value: ROAD_TYPES.PRIVAT, label: 'Privat vei' },
-              ].map((option) => (
+              {drivewayOptions.map((option) => (
                 <label key={option.value} className="items-center gap-x-2 flex">
                   <input
                     type="radio"

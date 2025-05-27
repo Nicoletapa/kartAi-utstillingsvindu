@@ -1,21 +1,17 @@
 import React, { useEffect } from 'react';
 import CadaidAtlas from '../CadaidAtlas';
-import { ApplicationService } from '~/utils/api-service';
 
-interface Step2_0Props {
+
+interface ProcessStep2_0Props {
   applicationID: number;
   onValidityChange: (isValid: boolean) => void;
 }
 
-const Step2_0: React.FC<Step2_0Props> = ({ applicationID, onValidityChange }) => {
-    const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
-    
+ const ProcessStep2_0: React.FC<ProcessStep2_0Props> = ({ applicationID, onValidityChange }) => {
   useEffect(() => {
     onValidityChange(true);
   }, [onValidityChange]);
-
-  void saveField('progress.currentStep', '2_0');
-
+  
   if (!applicationID) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-md">
@@ -31,4 +27,4 @@ const Step2_0: React.FC<Step2_0Props> = ({ applicationID, onValidityChange }) =>
   );
 };
 
-export default Step2_0;
+export default ProcessStep2_0;
