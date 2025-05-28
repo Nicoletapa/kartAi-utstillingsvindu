@@ -271,38 +271,3 @@ export const FormService = {
   }
 };
 
-/**
- * Service for reusable UI components
- */
-export const UIComponents = {
-  /**
-   * Tooltip component
-   */
-  useTooltip: () => {
-    const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
-    const [timeoutId, setTimeoutId] = React.useState<NodeJS.Timeout | null>(null);
-    
-    const handleMouseEnter = React.useCallback((id: string) => {
-      if (timeoutId) clearTimeout(timeoutId);
-      setHoveredItem(id);
-    }, [timeoutId]);
-    
-    const handleMouseLeave = React.useCallback(() => {
-      const id = setTimeout(() => setHoveredItem(null), 300);
-      setTimeoutId(id);
-    }, []);
-    
-    React.useEffect(() => {
-      return () => {
-        if (timeoutId) clearTimeout(timeoutId);
-      };
-    }, [timeoutId]);
-    
-    return {
-      hoveredItem,
-      handleMouseEnter,
-      handleMouseLeave,
-      isVisible: (id: string) => hoveredItem === id
-    };
-  }
-};

@@ -1,62 +1,96 @@
-'use client';
-import { useRef, useState, useEffect, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { useMap } from 'react-leaflet';
-import * as L from 'leaflet';
-import type { Map } from 'leaflet';
-import type { Feature, Geometry, GeoJsonProperties } from 'geojson';
-import 'leaflet-draw/dist/leaflet.draw.css';
-import 'leaflet-draw';
-import { Home } from 'lucide-react';
+"use client";
+import { useRef, useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { useMap } from "react-leaflet";
+import * as L from "leaflet";
+import type { Map } from "leaflet";
+import type { Feature, Geometry, GeoJsonProperties } from "geojson";
+import "leaflet-draw/dist/leaflet.draw.css";
+import "leaflet-draw";
+import { Home } from "lucide-react";
 import {
   analyzeSpatialRelationship,
   formatPropertyNumber,
   searchProperty as fetchProperty,
-  fetchAllowedBuildingArea
-} from '~/utils/propertyUtils';
-import { usePropertySearch } from '~/hooks/usePropertySearch';
-import type { SpatialAnalysisResult, PropertyData } from '~/utils/propertyUtils';
+  fetchAllowedBuildingArea,
+  createFeatureFromPropertyData, // Import the utility
+} from "~/utils/propertyUtils";
+import { usePropertySearch } from "~/hooks/usePropertySearch";
+import type {
+  SpatialAnalysisResult,
+  PropertyData,
+} from "~/utils/propertyUtils";
 
 // Dynamically import Leaflet components to prevent hydration issues
-const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false });
-const WMSTileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.WMSTileLayer), { ssr: false });
-const LayersControl = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl), { ssr: false });
-const BaseLayer = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.BaseLayer), { ssr: false });
-const Overlay = dynamic(() => import('react-leaflet').then((mod) => mod.LayersControl.Overlay), { ssr: false });
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false },
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false },
+);
+const WMSTileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.WMSTileLayer),
+  { ssr: false },
+);
+const LayersControl = dynamic(
+  () => import("react-leaflet").then((mod) => mod.LayersControl),
+  { ssr: false },
+);
+const BaseLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.LayersControl.BaseLayer),
+  { ssr: false },
+);
+const Overlay = dynamic(
+  () => import("react-leaflet").then((mod) => mod.LayersControl.Overlay),
+  { ssr: false },
+);
 
-// Helper functions to reduce code duplication
 const getPolygonFeatures = (features: GeoJSON.Feature[]) => {
-  return features.filter(feature => 
-    feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon'
-  ) as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, GeoJsonProperties>[];
+  return features.filter(
+    (feature) =>
+      feature.geometry.type === "Polygon" ||
+      feature.geometry.type === "MultiPolygon",
+  ) as GeoJSON.Feature<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon,
+    GeoJsonProperties
+  >[];
 };
 
 const performSpatialAnalysis = (
-  shape: GeoJSON.Feature, 
-  boundaries: GeoJSON.Feature[], 
-  allowedArea: GeoJSON.Feature | null
+  shape: GeoJSON.Feature,
+  boundaries: GeoJSON.Feature[],
+  allowedArea: GeoJSON.Feature | null,
 ): SpatialAnalysisResult | undefined => {
   const polygonFeatures = getPolygonFeatures(boundaries);
-  
+
   const typedAllowedArea = allowedArea as GeoJSON.Feature<
-    GeoJSON.Polygon | GeoJSON.MultiPolygon, 
+    GeoJSON.Polygon | GeoJSON.MultiPolygon,
     GeoJsonProperties
   > | null;
-  
+
   return analyzeSpatialRelationship(shape, polygonFeatures, typedAllowedArea);
 };
 
 interface DrawControlProps {
   map: Map;
-  onShapeDrawn?: (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => void;
+  onShapeDrawn?: (
+    shape: GeoJSON.Feature,
+    spatialAnalysis?: SpatialAnalysisResult,
+  ) => void;
   propertyBoundaries?: GeoJSON.Feature[];
   allowedAreaBoundary?: GeoJSON.Feature | null;
 }
 
 const drawnItemsRef = new L.FeatureGroup();
 
-const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBoundary }: DrawControlProps) => {
+const DrawControl = ({
+  map,
+  onShapeDrawn,
+  propertyBoundaries = [],
+  allowedAreaBoundary,
+}: DrawControlProps) => {
   const drawControlRef = useRef<L.Control.Draw | null>(null);
 
   useEffect(() => {
@@ -70,35 +104,35 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBo
       drawControlRef.current = new L.Control.Draw({
         edit: {
           featureGroup: drawnItemsRef,
-          remove: true
+          remove: true,
         },
         draw: {
           polygon: {
             allowIntersection: false,
-            showArea: true
+            showArea: true,
           },
           rectangle: {
             shapeOptions: {
-              color: '#97009c'
-            }
+              color: "#97009c",
+            },
           },
           marker: {
-            icon: new L.Icon.Default()
+            icon: new L.Icon.Default(),
           },
           polyline: {
             shapeOptions: {
-              color: '#3388ff',
-              weight: 4
-            }
+              color: "#3388ff",
+              weight: 4,
+            },
           },
           circle: {
             shapeOptions: {
-              color: '#f03',
-              fillOpacity: 0.2
-            }
+              color: "#f03",
+              fillOpacity: 0.2,
+            },
           },
-          circlemarker: false
-        }
+          circlemarker: false,
+        },
       });
       map.addControl(drawControlRef.current);
     }
@@ -108,14 +142,14 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBo
       drawnItemsRef.addLayer(layer);
 
       const geoJson = layer.toGeoJSON() as Feature<Geometry, GeoJsonProperties>;
-      console.log('Drawn shape GeoJSON:', geoJson);
+      console.log("Drawn shape GeoJSON:", geoJson);
 
       const spatialAnalysis = performSpatialAnalysis(
-        geoJson, 
+        geoJson,
         propertyBoundaries,
-        allowedAreaBoundary ?? null
+        allowedAreaBoundary ?? null,
       );
-      console.log('Spatial analysis (incl. allowed area):', spatialAnalysis);
+      console.log("Spatial analysis (incl. allowed area):", spatialAnalysis);
 
       if (onShapeDrawn) {
         onShapeDrawn(geoJson, spatialAnalysis);
@@ -125,13 +159,15 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBo
     const handleDrawEdited = ((e: L.DrawEvents.Edited) => {
       const layers = e.layers;
       layers.eachLayer((layer: L.Layer) => {
-        const typedLayer = layer as L.Layer & { toGeoJSON: () => GeoJSON.Feature };
+        const typedLayer = layer as L.Layer & {
+          toGeoJSON: () => GeoJSON.Feature;
+        };
         const geoJson = typedLayer.toGeoJSON();
 
         const spatialAnalysis = performSpatialAnalysis(
           geoJson,
           propertyBoundaries,
-          allowedAreaBoundary ?? null
+          allowedAreaBoundary ?? null,
         );
 
         if (onShapeDrawn) {
@@ -154,7 +190,10 @@ const DrawControl = ({ map, onShapeDrawn, propertyBoundaries = [], allowedAreaBo
 
 interface TiltaksAidMapProps {
   onMapReady?: (map: Map) => void;
-  onShapeDrawn?: (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => void;
+  onShapeDrawn?: (
+    shape: GeoJSON.Feature,
+    spatialAnalysis?: SpatialAnalysisResult,
+  ) => void;
   userGnr?: number;
   userBnr?: number;
   userFnr?: number;
@@ -169,24 +208,25 @@ const TiltaksAidMap = ({
   userBnr,
   userFnr,
   userSnr,
-  autoZoom = true
+  autoZoom = true,
 }: TiltaksAidMapProps) => {
   const mapRef = useRef<Map | null>(null);
   const [zoom] = useState(15);
   const MAX_ZOOM = 19;
-  const [propertyBoundary, setPropertyBoundary] = useState<L.GeoJSON | null>(null);
+  const [propertyBoundary, setPropertyBoundary] = useState<L.GeoJSON | null>(
+    null,
+  );
   const [mapReady, setMapReady] = useState(false);
-  const [propertyBoundaries, setPropertyBoundaries] = useState<GeoJSON.Feature[]>([]);
+  const [propertyBoundaries, setPropertyBoundaries] = useState<
+    GeoJSON.Feature[]
+  >([]);
   const [initialSearchSuccessful, setInitialSearchSuccessful] = useState(false);
   const initialSearchAttemptedRef = useRef(false);
-  const [allowedAreaGeoJson, setAllowedAreaGeoJson] = useState<GeoJSON.Feature | null>(null);
+  const [allowedAreaGeoJson, setAllowedAreaGeoJson] =
+    useState<GeoJSON.Feature | null>(null);
   const allowedAreaLayerRef = useRef<L.GeoJSON | null>(null);
-  const {
-    searchInput,
-    setSearchInput,
-    errorMessage,
-    setErrorMessage
-  } = usePropertySearch();
+  const { searchInput, setSearchInput, errorMessage, setErrorMessage } =
+    usePropertySearch();
 
   const mapReadyCallbackFired = useRef(false);
   const stableOnMapReady = useRef(onMapReady).current;
@@ -219,9 +259,9 @@ const TiltaksAidMap = ({
         const allowedArea = await fetchAllowedBuildingArea(
           propertyNumber,
           supabaseUrl,
-          supabaseKey
+          supabaseKey,
         );
-        
+
         if (allowedArea) {
           setAllowedAreaGeoJson(allowedArea);
         }
@@ -232,81 +272,80 @@ const TiltaksAidMap = ({
   };
 
   // --- Handle property search ---
-  const handlePropertySearch = useCallback(async (propertyNumberToSearch: string = searchInput) => {
-    clearMapState();
+  const handlePropertySearch = useCallback(
+    async (propertyNumberToSearch: string = searchInput) => {
+      clearMapState();
 
-    try {
-      const data: PropertyData[] | null = await fetchProperty(
-        propertyNumberToSearch,
-        process.env.NEXT_PUBLIC_SUPABASE_KEY
-      );
+      try {
+        const rawData: PropertyData[] | null = await fetchProperty(
+          propertyNumberToSearch,
+          process.env.NEXT_PUBLIC_SUPABASE_KEY,
+        );
 
-      if (!data || data.length === 0) {
-        setErrorMessage('No property found with this number or invalid property data');
-        return;
-      }
+        // Use the utility function
+        const { feature, error: featureError } = createFeatureFromPropertyData(
+          rawData,
+          propertyNumberToSearch,
+        );
 
-      if (data[0]?.geom) {
-        const firstProperty = data[0];
-
-        const propertyFeature = {
-          type: 'Feature',
-          geometry: firstProperty.geom,
-          properties: {
-            id: propertyNumberToSearch,
-            matrikkelnummer: firstProperty.matrikkelnummer
-          }
-        } as GeoJSON.Feature;
-
-        if (!loggedPropertyData.current) {
-          console.log('Current property data:', firstProperty);
-          loggedPropertyData.current = true;
+        if (featureError) {
+          setErrorMessage(featureError);
+          setInitialSearchSuccessful(false);
+          return;
         }
 
-        setPropertyBoundaries([propertyFeature]);
-
-        const newBoundaryLayer = L.geoJSON(firstProperty.geom, {
-          style: {
-            color: 'blue',
-            weight: 2,
-            fillOpacity: 0.1
+        // feature is guaranteed to be a GeoJSON.Feature if no error
+        if (feature) {
+          if (!loggedPropertyData.current && rawData && rawData[0]) {
+            console.log("Current property data:", rawData[0]);
+            loggedPropertyData.current = true;
           }
-        });
 
-        if (mapRef.current) {
-          newBoundaryLayer.addTo(mapRef.current);
-          setPropertyBoundary(newBoundaryLayer);
+          setPropertyBoundaries([feature]);
 
-          mapRef.current.fitBounds(newBoundaryLayer.getBounds(), {
-            maxZoom: MAX_ZOOM,
-            padding: [20, 20]
+          const newBoundaryLayer = L.geoJSON(feature.geometry, {
+            style: {
+              color: "blue",
+              weight: 2,
+              fillOpacity: 0.1,
+            },
           });
-          setInitialSearchSuccessful(true);
 
-          void fetchAllowedAreaForProperty(propertyNumberToSearch);
+          if (mapRef.current) {
+            newBoundaryLayer.addTo(mapRef.current);
+            setPropertyBoundary(newBoundaryLayer);
 
+            mapRef.current.fitBounds(newBoundaryLayer.getBounds(), {
+              maxZoom: MAX_ZOOM,
+              padding: [20, 20],
+            });
+            setInitialSearchSuccessful(true);
+            setErrorMessage(null); // Clear error on success
+
+            void fetchAllowedAreaForProperty(propertyNumberToSearch);
+          } else {
+            setErrorMessage("Map not ready to display property boundary.");
+            setInitialSearchSuccessful(false);
+          }
         } else {
-          setErrorMessage('Map not ready to display property boundary.');
+          setErrorMessage("Invalid property data received.");
           setInitialSearchSuccessful(false);
         }
-
-      } else {
-        setErrorMessage('Invalid property data received (missing geometry).');
+      } catch (error) {
+        console.error("Error during property search:", error);
+        setErrorMessage("An error occurred during the search.");
         setInitialSearchSuccessful(false);
       }
-    } catch (error) {
-      console.error("Error during property search:", error);
-      setErrorMessage("An error occurred during the search.");
-      setInitialSearchSuccessful(false);
-    }
-  }, [searchInput, clearMapState, setErrorMessage, setPropertyBoundaries]);
+    },
+    [searchInput, clearMapState, setErrorMessage, setPropertyBoundaries],
+  );
 
   // --- Handler to center map on property ---
   const handleCenterOnProperty = useCallback(() => {
     if (mapRef.current && propertyBoundary) {
       mapRef.current.fitBounds(propertyBoundary.getBounds(), {
         maxZoom: MAX_ZOOM,
-        padding: [20, 20]
+        padding: [20, 20],
       });
     } else {
       console.warn("Cannot center: Map or property boundary not available.");
@@ -315,14 +354,27 @@ const TiltaksAidMap = ({
 
   // Consolidated useEffect for Initial/Auto Search
   useEffect(() => {
-    if (!mapReady || !autoZoom || initialSearchAttemptedRef.current || initialSearchSuccessful) {
+    if (
+      !mapReady ||
+      !autoZoom ||
+      initialSearchAttemptedRef.current ||
+      initialSearchSuccessful
+    ) {
       return;
     }
 
     if (userGnr && userBnr) {
-      const propertyNumber = formatPropertyNumber(userGnr, userBnr, userFnr, userSnr);
+      const propertyNumber = formatPropertyNumber(
+        userGnr,
+        userBnr,
+        userFnr,
+        userSnr,
+      );
       if (propertyNumber) {
-        console.log("Attempting initial/auto search via props for:", propertyNumber);
+        console.log(
+          "Attempting initial/auto search via props for:",
+          propertyNumber,
+        );
         initialSearchAttemptedRef.current = true;
         setSearchInput(propertyNumber);
         setInitialSearchSuccessful(false);
@@ -338,7 +390,7 @@ const TiltaksAidMap = ({
     autoZoom,
     initialSearchSuccessful,
     handlePropertySearch,
-    setSearchInput
+    setSearchInput,
   ]);
 
   // --- Effect to add/update allowed area layer on map ---
@@ -349,7 +401,7 @@ const TiltaksAidMap = ({
         allowedAreaLayerRef.current = null;
       }
       return;
-    };
+    }
 
     if (allowedAreaLayerRef.current) {
       mapRef.current.removeLayer(allowedAreaLayerRef.current);
@@ -359,8 +411,8 @@ const TiltaksAidMap = ({
       style: {
         color: "#28a745",
         weight: 2,
-        fillOpacity: 0.3
-      }
+        fillOpacity: 0.3,
+      },
     }).addTo(mapRef.current);
     allowedAreaLayerRef.current = newLayer;
   }, [allowedAreaGeoJson]);
@@ -380,7 +432,7 @@ const TiltaksAidMap = ({
         try {
           stableOnMapReady(map);
         } catch (error) {
-          console.error('Error in onMapReady callback:', error);
+          console.error("Error in onMapReady callback:", error);
         }
       }
     }, [map]);
@@ -388,19 +440,24 @@ const TiltaksAidMap = ({
     return null;
   };
 
-  const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => {
-    if (onShapeDrawn) {
-      onShapeDrawn(shape, spatialAnalysis);
-    }
-  }, [onShapeDrawn, propertyBoundaries, allowedAreaGeoJson]);
+  const handleShapeDrawn = useCallback(
+    (shape: GeoJSON.Feature, spatialAnalysis?: SpatialAnalysisResult) => {
+      if (onShapeDrawn) {
+        onShapeDrawn(shape, spatialAnalysis);
+      }
+    },
+    [onShapeDrawn, propertyBoundaries, allowedAreaGeoJson],
+  );
 
   return (
-    <div className='flex flex-col w-full'>
+    <div className="flex w-full flex-col">
       {errorMessage && (
-        <div className="text-red-500 mb-4 p-2 bg-red-50 rounded">{errorMessage}</div>
+        <div className="mb-4 rounded bg-red-50 p-2 text-red-500">
+          {errorMessage}
+        </div>
       )}
 
-      <div className="h-[500px] w-full relative">
+      <div className="relative h-[500px] w-full">
         <MapContainer
           center={[58.1447, 7.99828]}
           zoom={zoom}
@@ -408,14 +465,14 @@ const TiltaksAidMap = ({
           className="h-full w-full rounded-r-lg"
         >
           <MapEvents />
-          {mapReady && mapRef.current &&
+          {mapReady && mapRef.current && (
             <DrawControl
               map={mapRef.current}
               onShapeDrawn={handleShapeDrawn}
               propertyBoundaries={propertyBoundaries}
               allowedAreaBoundary={allowedAreaGeoJson}
             />
-          }
+          )}
 
           <LayersControl position="topright">
             <BaseLayer checked name="OpenStreetMap">
@@ -468,14 +525,13 @@ const TiltaksAidMap = ({
           {propertyBoundary && (
             <button
               onClick={handleCenterOnProperty}
-              className="absolute bottom-4 left-2.5 z-[1000] bg-white p-2 rounded shadow-md hover:bg-gray-100 transition-colors"
+              className="absolute bottom-4 left-2.5 z-[1000] rounded bg-white p-2 shadow-md transition-colors hover:bg-gray-100"
               title="Sentrer på eiendom"
               aria-label="Sentrer kartet på eiendommen"
             >
               <Home size={18} />
             </button>
           )}
-
         </MapContainer>
       </div>
     </div>

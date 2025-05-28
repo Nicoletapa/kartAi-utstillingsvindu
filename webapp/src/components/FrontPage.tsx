@@ -1,27 +1,5 @@
 /**
  * This file is used in Utstillingsvindu 2.0
- * 
- * @description
- * This is the main component for the front page. It contains an information box "KORT FORTALT",
- * an introductory checklist, and an embedded video.
- * 
- * @features
- * - Checklist with toggle functionality
- * - Information box with important notes
- * - Embedded video for user guidance
- * 
- * @props
- * - `items` (string[]): Array of checklist items.
- * - `checkedItems` (Record<number, boolean>): Object to track checked items.
- * - `onItemToggle` (function): Function to handle item toggle.
- * 
- * @note
- * - This component is designed to be used in a client-side context.
- * - The checklist items are hardcoded for demonstration purposes.
- * - The video is embedded from YouTube.
- * 
- * @usage
- * <FrontPage />
  */
 
 import React, { useState } from 'react';

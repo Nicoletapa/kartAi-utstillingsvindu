@@ -1,6 +1,8 @@
 import React, { useEffect, useCallback, useRef } from 'react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
-import { Tooltip, RadioGroup } from '~/components/ui/ui-components';
+import { ApplicationService } from '~/utils/api-service';
+
+import { Tooltip, useTooltip } from '~/components/ui/ui-components';
+import {RadioGroup} from '~/components/ui/radio-button'
 import TiltaksAidMap from '../TiltaksAidMap';
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
@@ -44,7 +46,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
 
   const formData = { ...defaultValues, ...externalFormData };
   
-  const tooltip = UIComponents.useTooltip();
+  const tooltip = useTooltip();
   
   const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'bruksendring');
   const { userData } = usePropertySearch();
