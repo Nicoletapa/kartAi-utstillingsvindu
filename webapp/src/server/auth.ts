@@ -5,6 +5,7 @@ import {
 } from "next-auth";
 
 import CredentialsProvider from "next-auth/providers/credentials";
+import { db } from "~/server/db";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -56,12 +57,14 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // Update the session callback to handle JWT
     session: ({ session, token }) => {
-      return {
+      console.log("Session callback - token:", token);
+      console.log("Session callback - session before:", session);
+
+      const updatedSession = {
         ...session,
         user: {
           ...session.user,
-          id: token.sub!,
-          // Add custom fields from the token
+          id: token.sub!, // This should be the database user ID
           gnr: token.gnr as number,
           bnr: token.bnr as number,
           fnr: token.fnr as number,
@@ -73,11 +76,19 @@ export const authOptions: NextAuthOptions = {
           role: token.role as string,
         },
       };
+
+      console.log("Session callback - session after:", updatedSession);
+      return updatedSession;
     },
 
     // Add JWT callback to store user data in token
     jwt: ({ token, user }) => {
+      console.log("JWT callback - user:", user);
+      console.log("JWT callback - token before:", token);
+
       if (user) {
+        // Make sure we're storing the actual database user ID
+        token.sub = user.id; // This should be the database user ID
         token.gnr = user.gnr;
         token.bnr = user.bnr;
         token.fnr = user.fnr;
@@ -88,6 +99,8 @@ export const authOptions: NextAuthOptions = {
         token.phone = user.phone;
         token.role = user.role;
       }
+
+      console.log("JWT callback - token after:", token);
       return token;
     },
   },
@@ -112,18 +125,28 @@ export const authOptions: NextAuthOptions = {
         const { username, password } = credentials ?? {};
 
         if (username === "user" && password === "user") {
-          return {
-            id: "1",
-            name: "user",
-            email: "user@gmail.com",
-            role: "USER",
-            gnr: 152,
-            bnr: 850,
-            address: "Marcus Thranes gate 14",
-            postalCode: "4630",
-            postalArea: "Kristiansand",
-            phone: "12345678",
-          };
+          const dbUser = await db.user.findUnique({
+            where: { email: "user@gmail.com" },
+          });
+
+          console.log("Found user in DB:", dbUser);
+
+          if (dbUser) {
+            return {
+              id: dbUser.id, // This was returning the wrong ID - make sure it's the actual DB ID
+              name: dbUser.name ?? undefined,
+              email: dbUser.email ?? undefined,
+              role: dbUser.role ?? undefined,
+              gnr: dbUser.gnr ?? undefined,
+              bnr: dbUser.bnr ?? undefined,
+              fnr: dbUser.fnr ?? undefined,
+              snr: dbUser.snr ?? undefined,
+              address: dbUser.address ?? undefined,
+              postalCode: dbUser.postalCode ?? undefined,
+              postalArea: dbUser.postalArea ?? undefined,
+              phone: dbUser.phone ?? undefined,
+            };
+          }
         }
 
         return null;
