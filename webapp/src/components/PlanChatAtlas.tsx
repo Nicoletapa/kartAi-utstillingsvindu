@@ -350,7 +350,7 @@ export function PlanPrat({
           )}
 
           {chatItems.map((chatItem, index) => {
-            const GUIDES_PLACEHOLDER = "%%GUIDES_PLACEHOLDER%%"; // Make sure this matches the backend
+            const GUIDES_PLACEHOLDER = "%%GUIDES_PLACEHOLDER%%";
             let textBeforePlaceholder = chatItem.text;
             const hasPlaceholder =
               !chatItem.isUser && chatItem.text.includes(GUIDES_PLACEHOLDER);
@@ -367,7 +367,7 @@ export function PlanPrat({
               if (!guides || !Array.isArray(guides) || guides.length === 0) {
                 return null;
               }
-              // Use captured header or default to "Kilder". Remove markdown bolding for display.
+
               const displayHeader = (headerText ?? "Kilder:")
                 .replace(/\*\*/g, "")
                 .replace(/\*/g, "");
