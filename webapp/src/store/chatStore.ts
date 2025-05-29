@@ -4,7 +4,7 @@ import type { SpatialAnalysisResult } from '~/utils/propertyUtils';
 import type { Map } from 'leaflet';
 
 // --- Types ---
-interface GuideButton {
+export interface Guide {
   title: string;
   url: string;
   description?: string;
@@ -13,8 +13,9 @@ interface GuideButton {
 export interface ChatItem {
   text: string;
   isUser: boolean;
-  guides?: GuideButton[];
+  guides?: Guide[];
   timestamp?: number; 
+  original_header?: string;
 }
 
 interface MapRefState {
