@@ -1,16 +1,20 @@
 "use client";
-import { type ChangeEvent, useState, type KeyboardEvent, useEffect, useRef } from "react";
+import {
+  type ChangeEvent,
+  useState,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+} from "react";
 import { api } from "~/trpc/react";
-import type { Map } from 'leaflet';
-import type { SpatialAnalysisResult } from './TiltaksAidMap'; 
-import { SendHorizonal } from 'lucide-react';
+import type { Map } from "leaflet";
+import type { SpatialAnalysisResult } from "./TiltaksAidMap";
+import { SendHorizonal } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useChatStore, type ChatItem, type Guide } from '~/store/chatStore'; 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-
-
+import { useChatStore, type ChatItem, type Guide } from "~/store/chatStore";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface PlanPratProps {
   mapRefFromStore?: { map: Map | null; ready: boolean };
@@ -26,7 +30,7 @@ export function PlanPrat({
   lastDrawnShapeFromStore,
   spatialAnalysisFromStore,
   disableBottomRightRadius,
-  disableTopRightRadius
+  disableTopRightRadius,
 }: PlanPratProps) {
   const { data: session } = useSession();
   const [text, setText] = useState<string>("");
@@ -34,19 +38,11 @@ export function PlanPrat({
   const mapCenterLogged = useRef(false);
 
   // --- State and actions from the store ---
-  const {
-    chatItems,
-    isTyping,
-    error,
-    addMessage,
-    setIsTyping,
-    setError,
-  } = useChatStore();
+  const { chatItems, isTyping, error, addMessage, setIsTyping, setError } =
+    useChatStore();
   const lastDrawnShape = lastDrawnShapeFromStore;
   const spatialAnalysis = spatialAnalysisFromStore;
   // ------------------------------------------
-
-
 
   // Handle sending messages when user clicks send button
   const handleSendMessage = () => {
@@ -61,8 +57,16 @@ export function PlanPrat({
       const shapeType = lastDrawnShape.geometry.type;
       let description = `I've drawn a ${shapeType.toLowerCase()} on the map.`;
 
-      if (['Polygon', 'LineString', 'MultiPoint', 'MultiLineString', 'MultiPolygon'].includes(shapeType)) {
-          description += ` It involves multiple coordinates.`;
+      if (
+        [
+          "Polygon",
+          "LineString",
+          "MultiPoint",
+          "MultiLineString",
+          "MultiPolygon",
+        ].includes(shapeType)
+      ) {
+        description += ` It involves multiple coordinates.`;
       }
 
       if (spatialAnalysis) {
@@ -73,14 +77,21 @@ export function PlanPrat({
         }
       }
 
-      const systemMessageExists = chatItems.some(item => !item.isUser && item.text.startsWith("System:") && item.text.includes(description));
+      const systemMessageExists = chatItems.some(
+        (item) =>
+          !item.isUser &&
+          item.text.startsWith("System:") &&
+          item.text.includes(description),
+      );
 
       if (!systemMessageExists) {
-          addMessage({ text: `System: ${description} Ask me about it!`, isUser: false });
+        addMessage({
+          text: `System: ${description} Ask me about it!`,
+          isUser: false,
+        });
       }
     }
   }, [lastDrawnShape, spatialAnalysis, addMessage, chatItems]);
-
 
   useEffect(() => {
     const mapReady = mapRefFromStore?.ready ?? false;
@@ -97,14 +108,14 @@ export function PlanPrat({
         console.error("Error accessing map in PlanPrat: ", error);
       }
     }
-  }, [mapRefFromStore]); 
+  }, [mapRefFromStore]);
 
   useEffect(() => {
-    if (chatItems.length > 0 && chatItems[0]?.isUser === false) { 
+    if (chatItems.length > 0 && chatItems[0]?.isUser === false) {
       setIsTyping(true);
       const typingTimeout = setTimeout(() => {
         setIsTyping(false);
-      }, 0); 
+      }, 0);
       return () => clearTimeout(typingTimeout);
     }
   }, [chatItems, setIsTyping]);
@@ -115,38 +126,49 @@ export function PlanPrat({
       bnr: /b(?:ruk)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
       snr: /s(?:eksjon)?s?n(?:umme)?r\.?(?:\s+)?(?:nr\.?)?(?:\s+)?(\d+)/i,
       combined: /(\d+)\/(\d+)(?:\/(?:0\/)?(\d+))?/,
-      propertyTerms: /\b(eiendom|tomt|adresse|eiendommen min|min eiendom)\b/i
+      propertyTerms: /\b(eiendom|tomt|adresse|eiendommen min|min eiendom)\b/i,
     };
-    return Object.values(patterns).some(pattern => pattern.test(text));
+    return Object.values(patterns).some((pattern) => pattern.test(text));
   };
 
   const shouldIncludeCoordinates = (query: string): boolean => {
-    return containsPropertyReference(query) ||
-           !!lastDrawnShape ||
-           !!spatialAnalysis?.nearestPropertyId;
+    return (
+      containsPropertyReference(query) ||
+      !!lastDrawnShape ||
+      !!spatialAnalysis?.nearestPropertyId
+    );
   };
 
-  function getCoordinatesFromGeometry(geometry: GeoJSON.Geometry): GeoJSON.Position | GeoJSON.Position[] | GeoJSON.Position[][] | GeoJSON.Position[][][] | Array<{type: string; coordinates: unknown}> {
+  function getCoordinatesFromGeometry(
+    geometry: GeoJSON.Geometry,
+  ):
+    | GeoJSON.Position
+    | GeoJSON.Position[]
+    | GeoJSON.Position[][]
+    | GeoJSON.Position[][][]
+    | Array<{ type: string; coordinates: unknown }> {
     switch (geometry.type) {
-      case 'Point':
-        return (geometry ).coordinates;
-      case 'LineString':
-        return (geometry ).coordinates;
-      case 'Polygon':
-        return (geometry ).coordinates;
-      case 'MultiPoint':
-        return (geometry ).coordinates;
-      case 'MultiLineString':
-        return (geometry ).coordinates;
-      case 'MultiPolygon':
-        return (geometry ).coordinates;
-      case 'GeometryCollection':
-        return (geometry ).geometries.map(g => ({
+      case "Point":
+        return geometry.coordinates;
+      case "LineString":
+        return geometry.coordinates;
+      case "Polygon":
+        return geometry.coordinates;
+      case "MultiPoint":
+        return geometry.coordinates;
+      case "MultiLineString":
+        return geometry.coordinates;
+      case "MultiPolygon":
+        return geometry.coordinates;
+      case "GeometryCollection":
+        return geometry.geometries.map((g) => ({
           type: g.type,
-          coordinates: getCoordinatesFromGeometry(g)
+          coordinates: getCoordinatesFromGeometry(g),
         }));
       default:
-        console.warn(`Unsupported geometry type encountered: ${(geometry as GeoJSON.Geometry).type}`);
+        console.warn(
+          `Unsupported geometry type encountered: ${(geometry as GeoJSON.Geometry).type}`,
+        );
         return [];
     }
   }
@@ -165,9 +187,11 @@ export function PlanPrat({
         };
         let spatialInfo = "";
         if (spatialAnalysis) {
-          spatialInfo = `Spatial analysis: ${spatialAnalysis.isWithinProperty ?
-            'Shape is within property boundaries' :
-            `Shape is outside property boundaries by ${spatialAnalysis.distanceToProperty?.toFixed(2)} meters`}`;
+          spatialInfo = `Spatial analysis: ${
+            spatialAnalysis.isWithinProperty
+              ? "Shape is within property boundaries"
+              : `Shape is outside property boundaries by ${spatialAnalysis.distanceToProperty?.toFixed(2)} meters`
+          }`;
           if (spatialAnalysis.nearestPropertyId) {
             spatialInfo += ` Property ID: ${spatialAnalysis.nearestPropertyId}`;
           }
@@ -189,7 +213,7 @@ export function PlanPrat({
       return response;
     } catch (error) {
       console.error(error);
-      setError("Error: Failed to retrieve response."); 
+      setError("Error: Failed to retrieve response.");
       return undefined;
     }
   }
@@ -199,41 +223,49 @@ export function PlanPrat({
 
   const handleSubmit = async (): Promise<void> => {
     if (isTyping) {
-      return; 
+      return;
     }
-    
+
     if (text.trim()) {
       const userMessage: ChatItem = { text: text, isUser: true };
-      addMessage(userMessage); 
+      addMessage(userMessage);
       const sendText = text;
       setText("");
 
-      setIsTyping(true); 
+      setIsTyping(true);
 
       try {
-        
         const payload = {
           text: sendText,
-          spatialData: spatialAnalysisFromStore ? {
-            shapeType: lastDrawnShapeFromStore?.geometry.type ?? 'unknown',
-            coordinates: lastDrawnShapeFromStore ? 
-              getCoordinatesFromGeometry(lastDrawnShapeFromStore.geometry) : 
-              [],
-            isWithinProperty: Boolean(spatialAnalysisFromStore.isWithinProperty),
-            distanceToProperty: spatialAnalysisFromStore.distanceToProperty ?? null,
-            nearestPropertyId: spatialAnalysisFromStore.nearestPropertyId ?? null,
-            isWithinAllowedArea: spatialAnalysisFromStore.isWithinAllowedArea ?? null,
-        
-            distanceToNeighborProperty: spatialAnalysisFromStore.distanceToNeighborProperty ?? null,
-            neighborPropertyId: spatialAnalysisFromStore.neighborPropertyId ?? null,
-            distanceToRoad: spatialAnalysisFromStore.distanceToRoad ?? null,
-            roadType: spatialAnalysisFromStore.roadType ?? null,
-            buildingSize: spatialAnalysisFromStore.buildingSize ?? null
-          } : null
+          spatialData: spatialAnalysisFromStore
+            ? {
+                shapeType: lastDrawnShapeFromStore?.geometry.type ?? "unknown",
+                coordinates: lastDrawnShapeFromStore
+                  ? getCoordinatesFromGeometry(lastDrawnShapeFromStore.geometry)
+                  : [],
+                isWithinProperty: Boolean(
+                  spatialAnalysisFromStore.isWithinProperty,
+                ),
+                distanceToProperty:
+                  spatialAnalysisFromStore.distanceToProperty ?? null,
+                nearestPropertyId:
+                  spatialAnalysisFromStore.nearestPropertyId ?? null,
+                isWithinAllowedArea:
+                  spatialAnalysisFromStore.isWithinAllowedArea ?? null,
+
+                distanceToNeighborProperty:
+                  spatialAnalysisFromStore.distanceToNeighborProperty ?? null,
+                neighborPropertyId:
+                  spatialAnalysisFromStore.neighborPropertyId ?? null,
+                distanceToRoad: spatialAnalysisFromStore.distanceToRoad ?? null,
+                roadType: spatialAnalysisFromStore.roadType ?? null,
+                buildingSize: spatialAnalysisFromStore.buildingSize ?? null,
+              }
+            : null,
         };
 
         const response = await queryPlanprat(payload.text);
-        setIsTyping(false); 
+        setIsTyping(false);
 
         if (!response) {
           return;
@@ -241,7 +273,11 @@ export function PlanPrat({
 
         if (response.error) {
           console.error("API error:", response.error);
-          setError(typeof response.error === 'string' ? response.error : "An error occurred");
+          setError(
+            typeof response.error === "string"
+              ? response.error
+              : "An error occurred",
+          );
           return;
         }
 
@@ -249,23 +285,22 @@ export function PlanPrat({
         console.log("Response guides:", response.guides);
         console.log("Response original_header:", response.original_header);
 
-
         const botMessage: ChatItem = {
           text: response.answer,
           isUser: false,
           guides: Array.isArray(response.guides) ? response.guides : [],
-          original_header: response.original_header ?? null,
+          original_header: response.original_header ?? undefined,
         };
-        
+
         addMessage(botMessage);
       } catch (error) {
-        setIsTyping(false); 
+        setIsTyping(false);
         console.error("Error in handleSubmit:", error);
-        setError("An unexpected error occurred."); 
+        setError("An unexpected error occurred.");
       }
     }
   };
-  
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -274,72 +309,98 @@ export function PlanPrat({
   };
 
   return (
-    <div className={`bg-white h-[500px] flex flex-col shadow-lg
-      rounded-tl-lg
-      ${disableTopRightRadius ? '' : 'rounded-tr-lg'}
-      ${disableBottomRightRadius ? '' : 'rounded-br-lg'}
-      rounded-bl-lg`}>
-      <div className={`w-full bg-kartAI-blue shadow-lg pb-3 pt-1 text-center text-white rounded-tl-lg ${
-        disableTopRightRadius ? '' : 'rounded-tr-lg'
-      }`}>
+    <div
+      className={`flex h-[500px] flex-col rounded-tl-lg bg-white shadow-lg ${disableTopRightRadius ? "" : "rounded-tr-lg"} ${disableBottomRightRadius ? "" : "rounded-br-lg"} rounded-bl-lg`}
+    >
+      <div
+        className={`w-full rounded-tl-lg bg-kartAI-blue pb-3 pt-1 text-center text-white shadow-lg ${
+          disableTopRightRadius ? "" : "rounded-tr-lg"
+        }`}
+      >
         <h1>Chat</h1>
         {session?.user && (
-          <p className="text-sm font-medium">Din adresse: {session.user.address}</p>
+          <p className="text-sm font-medium">
+            Din adresse: {session.user.address}
+          </p>
         )}
       </div>
 
-      <div id="planprat-input-output" className="relative w-full p-2 flex-1 flex flex-col" style={{ height: "calc(100% - 3rem)" }}>
+      <div
+        id="planprat-input-output"
+        className="relative flex w-full flex-1 flex-col p-2"
+        style={{ height: "calc(100% - 3rem)" }}
+      >
         <ul
           id="planprat-output"
-          className="flex w-full flex-grow overflow-y-auto flex-col-reverse mb-2"
+          className="mb-2 flex w-full flex-grow flex-col-reverse overflow-y-auto"
           style={{ height: "calc(100% - 5rem)" }}
         >
-          {error && ( 
-            <li className="m-2 mr-6 self-start rounded-lg bg-red-100 p-2 text-red-700 border border-red-500">
+          {error && (
+            <li className="m-2 mr-6 self-start rounded-lg border border-red-500 bg-red-100 p-2 text-red-700">
               {error}
             </li>
           )}
 
-          {isTyping && ( 
-            <li className="mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-3 text-black flex items-center space-x-1">
-              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-loadingFade"></span>
-              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_200ms]"></span>
-              <span className="w-2 h-2 bg-gray-500 rounded-full opacity-0 animate-[loadingFade_1s_infinite_400ms]"></span>
+          {isTyping && (
+            <li className="mb-4 mr-8 flex items-center space-x-1 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-3 text-black">
+              <span className="h-2 w-2 animate-loadingFade rounded-full bg-gray-500 opacity-0"></span>
+              <span className="h-2 w-2 animate-[loadingFade_1s_infinite_200ms] rounded-full bg-gray-500 opacity-0"></span>
+              <span className="h-2 w-2 animate-[loadingFade_1s_infinite_400ms] rounded-full bg-gray-500 opacity-0"></span>
             </li>
           )}
 
           {chatItems.map((chatItem, index) => {
             const GUIDES_PLACEHOLDER = "%%GUIDES_PLACEHOLDER%%"; // Make sure this matches the backend
             let textBeforePlaceholder = chatItem.text;
-            const hasPlaceholder = !chatItem.isUser && chatItem.text.includes(GUIDES_PLACEHOLDER);
+            const hasPlaceholder =
+              !chatItem.isUser && chatItem.text.includes(GUIDES_PLACEHOLDER);
 
             if (hasPlaceholder) {
               const parts = chatItem.text.split(GUIDES_PLACEHOLDER);
               textBeforePlaceholder = parts[0] ?? "";
-              // In case placeholder appears multiple times, though it shouldn't with current backend logic
             }
-            
-            const renderGuidesComponent = (guides: Guide[] | undefined, headerText?: string | null) => {
+
+            const renderGuidesComponent = (
+              guides: Guide[] | undefined,
+              headerText?: string | null,
+            ) => {
               if (!guides || !Array.isArray(guides) || guides.length === 0) {
                 return null;
               }
               // Use captured header or default to "Kilder". Remove markdown bolding for display.
-              const displayHeader = (headerText ?? "Kilder:").replace(/\*\*/g, '').replace(/\*/g, '');
+              const displayHeader = (headerText ?? "Kilder:")
+                .replace(/\*\*/g, "")
+                .replace(/\*/g, "");
 
               return (
-                <div className="mt-3 mb-2 flex flex-col gap-2">
-                  {displayHeader && <h4 className="font-semibold text-md mb-1">{displayHeader}</h4>}
+                <div className="mb-2 mt-3 flex flex-col gap-2">
+                  {displayHeader && (
+                    <h4 className="text-md mb-1 font-semibold">
+                      {displayHeader}
+                    </h4>
+                  )}
                   {guides.map((guide, guideIndex) => (
                     <a
                       key={guideIndex}
                       href={guide.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-left inline-block px-3 py-2 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm " // Removed mb-1 to control spacing via gap-2 on parent
+                      className="inline-block rounded-md border border-blue-200 bg-white px-3 py-2 text-left text-blue-700 shadow-sm transition-all hover:bg-blue-50" // Removed mb-1 to control spacing via gap-2 on parent
                     >
                       <span className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="mr-2 h-4 w-4 flex-shrink-0 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
                         </svg>
 
                         {guide.title}
@@ -349,19 +410,19 @@ export function PlanPrat({
                 </div>
               );
             };
-           
+
             return (
               <li
                 data-cy="chat-output"
                 className={
                   chatItem.isUser
-                    ? "mb-4 ml-8 self-end rounded-lg p-2 text-black bg-gray-100 max-w-[80%]"
-                    : "mb-4 mr-8 self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black max-w-[80%]"
+                    ? "mb-4 ml-8 max-w-[80%] self-end rounded-lg bg-gray-100 p-2 text-black"
+                    : "mb-4 mr-8 max-w-[80%] self-start rounded-lg bg-kartAI-lightblue bg-opacity-10 p-2 text-black"
                 }
-                key={chatItem.timestamp ?? index} 
+                key={chatItem.timestamp ?? index}
               >
                 {chatItem.isUser ? (
-                  <div className="prose prose-sm max-w-none break-words whitespace-pre-wrap">
+                  <div className="prose prose-sm max-w-none whitespace-pre-wrap break-words">
                     {chatItem.text}
                   </div>
                 ) : (
@@ -370,57 +431,84 @@ export function PlanPrat({
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeRaw]}
                       components={{
-                        p: ({...props}) => <p className="my-2" {...props} />,
-                        li: ({...props}) => <li className="mb-1 ml-4" {...props} />,
-                        a: ({children, href, ...props}) => (
+                        p: ({ ...props }) => <p className="my-2" {...props} />,
+                        li: ({ ...props }) => (
+                          <li className="mb-1 ml-4" {...props} />
+                        ),
+                        a: ({ children, href, ...props }) => (
                           <a
                             href={href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-left inline-block px-3 py-2 my-1 bg-white border border-blue-200 rounded-md hover:bg-blue-50 text-blue-700 transition-all shadow-sm"
+                            className="my-1 inline-block rounded-md border border-blue-200 bg-white px-3 py-2 text-left text-blue-700 shadow-sm transition-all hover:bg-blue-50"
                             {...props}
                           >
                             <span className="flex items-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="mr-2 h-4 w-4 flex-shrink-0 text-blue-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
                               </svg>
                               {children}
                             </span>
                           </a>
                         ),
-                        strong: ({...props}) => <strong className="font-semibold" {...props} />,
-                        h3: ({...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                        strong: ({ ...props }) => (
+                          <strong className="font-semibold" {...props} />
+                        ),
+                        h3: ({ ...props }) => (
+                          <h3
+                            className="mb-2 mt-3 text-lg font-bold"
+                            {...props}
+                          />
+                        ),
                       }}
                     >
                       {textBeforePlaceholder}
                     </ReactMarkdown>
 
-                    {hasPlaceholder && renderGuidesComponent(chatItem.guides, chatItem.original_header)}
+                    {hasPlaceholder &&
+                      renderGuidesComponent(
+                        chatItem.guides,
+                        chatItem.original_header,
+                      )}
                   </>
                 )}
               </li>
             );
           })}
         </ul>
-        <div className="relative w-full mt-auto">
+        <div className="relative mt-auto w-full">
           <textarea
             id="planprat-input"
-            className="w-full min-h-[4rem] max-h-[10rem] rounded-lg p-2 pr-12 text-black bg-gray-200 shadow-inner resize-y"
+            className="max-h-[10rem] min-h-[4rem] w-full resize-y rounded-lg bg-gray-200 p-2 pr-12 text-black shadow-inner"
             placeholder="Still meg et spørsmål ..."
             value={text}
             onChange={handleTextChange}
-            disabled={isTyping} 
+            disabled={isTyping}
             onKeyDown={handleKeyDown}
             rows={2}
           ></textarea>
           <button
             type="submit"
             id="planprat-input-button"
-            className="absolute bottom-2 right-2 p-2 rounded bg-transparent disabled:opacity-50"
+            className="absolute bottom-2 right-2 rounded bg-transparent p-2 disabled:opacity-50"
             onClick={handleSendMessage}
             aria-label="Send message"
           >
-            <SendHorizonal size={24} className="text-kartAI-blue hover:text-blue-800 duration-300 transition" />
+            <SendHorizonal
+              size={24}
+              className="text-kartAI-blue transition duration-300 hover:text-blue-800"
+            />
           </button>
         </div>
       </div>

@@ -12,9 +12,11 @@ interface PlanpratResponse {
   answer: string;
   guides?: GuideButton[];
   error?: string;
+  original_header?: string | null;
 }
 
-const FASTAPI_PLANPRAT_URL = process.env.PLANPRAT_URL ?? "http://localhost:8000/api/planprat";
+const FASTAPI_PLANPRAT_URL =
+  process.env.PLANPRAT_URL ?? "http://localhost:8000/api/planprat";
 
 export const planpratRouter = createTRPCRouter({
   fetchResponse: publicProcedure
@@ -38,9 +40,13 @@ export const planpratRouter = createTRPCRouter({
       } catch (error) {
         console.error("tRPC fetchResponse error:", error);
         if (error instanceof AxiosError) {
-          throw new Error(`Failed to retrieve response from backend: ${error.message}`);
+          throw new Error(
+            `Failed to retrieve response from backend: ${error.message}`,
+          );
         } else {
-          throw new Error(`Unknown error while fetching response: ${String(error)}`);
+          throw new Error(
+            `Unknown error while fetching response: ${String(error)}`,
+          );
         }
       }
     }),
