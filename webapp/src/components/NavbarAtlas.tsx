@@ -1,22 +1,22 @@
-/** 
+/**
  * This file is used in Utstillingsvindu 2.0
- * 
+ *
  * @description
- * A navbar component for the Atlas application. 
+ * A navbar component for the Atlas application.
  * It includes a link to the Atlas app and a sign-in/sign-out button.
- * 
+ *
  * @features
  * - Displays the Atlas app link
  * - Displays the user's email if logged in
  * - Sign-in and sign-out functionality
- * 
+ *
  * @props
  * - `className` (string): Additional CSS classes for styling.
- * 
+ *
  * @note
  * - This component is designed to be used in a client-side context.
  * - It uses NextAuth for authentication.
- * 
+ *
  * @usage
  * <NavbarAtlas />
  */
@@ -26,10 +26,16 @@
 import Link from "next/link";
 
 import { useEffect, useState } from "react";
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react";
 
 const NavbarAtlas = () => {
-  const { data: session } = useSession()
+  const { data: session } = useSession();
+
+  // Add debugging
+  useEffect(() => {
+    console.log("Navbar session:", session);
+  }, [session]);
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -39,7 +45,7 @@ const NavbarAtlas = () => {
   if (!mounted) {
     return <nav className="h-16 w-full bg-white shadow-sm" />;
   }
-   
+
   return (
     <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-gray-800">
       <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4">
@@ -55,11 +61,13 @@ const NavbarAtlas = () => {
         <div className="mt-1 flex cursor-pointer items-center justify-end space-x-4">
           {session ? (
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">{session.user.email}</span>
-              <button 
+              <span className="text-sm text-gray-700">
+                {session.user.email}
+              </span>
+              <button
                 className="text-md cursor-hover group relative flex flex-row items-center gap-2 px-2 py-2 text-secondary-black hover:text-red-600"
-                onClick={() => signOut()}>
-              
+                onClick={() => signOut()}
+              >
                 Logg ut
               </button>
             </div>
@@ -70,7 +78,6 @@ const NavbarAtlas = () => {
       </div>
     </nav>
   );
-  
 };
 
 export default NavbarAtlas;

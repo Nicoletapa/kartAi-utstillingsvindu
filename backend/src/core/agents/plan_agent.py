@@ -20,37 +20,6 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-def extract_markdown_links(text: str) -> Tuple[str, List[Dict[str, str]]]:
-    """
-    Extracts markdown links from text.
-    Returns the text with the markdown links and their associated "Useful links:"
-    or "Nyttige lenker:" header removed, and a list of guide objects.
-    """
-    guides = []
-    # Pattern to find markdown links like [Title](URL)
-    link_pattern = r'\[([^\]]+)\]\(([^)]+)\)'
-    
-    # Find all links and store them
-    matches = re.findall(link_pattern, text)
-    for title, url in matches:
-        guides.append({"title": title, "url": url})
-
-    # Start with the original text for modification
-    modified_text = text
-    
-    if guides:
-        # If guides were found, remove all occurrences of the markdown link pattern
-        modified_text = re.sub(link_pattern, '', modified_text)
-        
-        # Remove the "Useful links:" or "Nyttige lenker:" header line.
-        # This regex looks for the header, possibly bolded, followed by optional whitespace and a newline.
-        modified_text = re.sub(r"(\*\*Useful links:\*\*|\bUseful links:)\s*\n?", "", modified_text, flags=re.IGNORECASE)
-        modified_text = re.sub(r"(\*\*Nyttige lenker:\*\*|\bNyttige lenker:)\s*\n?", "", modified_text, flags=re.IGNORECASE)
-        
-        # Clean up potentially multiple blank lines that might result from removals
-        modified_text = re.sub(r'\n\s*\n', '\n', modified_text).strip()
-        
-    return modified_text, guides
 
 
 class PlanAgent(BaseAgent):
@@ -153,13 +122,18 @@ class PlanAgent(BaseAgent):
     def _initialize_agent_executor(self):
         """Sets up the prompt, agent, and agent executor."""
         prompt_template_str = """
-You are a dedicated and helpful assistant specializing in building regulations for Kristiansand municipality. Your primary function is to guide users on general building rules and permit requirements. Always be polite, clear, and respond in the same language as the user's question.
+You are a helpful assistant specializing in building regulations for Kristiansand municipality. Your primary function is to guide users on general building rules and permit requirements. Always be polite, clear, and respond in the same language as the user's question.
 
 **CORE MISSION AND DIRECTIVES:**
-1.  **Strict Adherence to General Plans:** Your answers concerning properties MUST ONLY be based on **general municipal plan provisions** and official guides for these provisions, accessible via the 'document_search' tool.
+1.  **Strict Adherence to General Plans:** Your answers concerning properties MUST ONLY be based on **general municipal plan provisions** and official guides for these provisions, accessible via the 'document_search' tool and verified/supplemented by official online sources via 'search_internet'.
 2.  **NO SPECIFIC ZONING PLANS:** You MUST NOT use, reference, or infer information from specific zoning plans (e.g., "reguleringsplaner"). If a user's query seems to require this level of detail, you must state that you can only provide guidance based on general municipal plan provisions and recommend they contact the municipality for specifics related to zoning plans.
-3.  **Accuracy and Sourcing:** Clearly state the source of your information (e.g., "According to the general municipal plan provisions...", "General guidance from DiBK suggests...").
+3.  **Accuracy and Sourcing:** Clearly state the source of your information. Prioritize citing official, publicly accessible URLs from Kristiansand municipality or relevant Norwegian national bodies (e.g., DiBK) for any general municipal plan provisions or guidance mentioned. If an internal document is the primary source of the text, also reference it.
 4.  **Guidance, Not Approval:** Emphasize that your advice is for guidance based on general rules and final confirmation/permits must be obtained from Kristiansand municipality.
+
+5.  **Prioritize Credible Online Sources:**
+    * When answering, your primary goal is to cite **credible, official internet sources** (e.g., Kristiansand kommune website, dibk.no, lovdata.no) for the general municipal plan provisions and related guidance.
+    * Even if 'document_search' provides information, you should **actively attempt to find and use a corresponding official public URL** for that information using 'search_internet'. This is for transparency and to provide the user with the most current, verifiable source.
+    * If there's a discrepancy, state what was found internally and what was found externally, and if the external source is official and more recent, prefer it for the primary answer while noting the information. If internal documents are the sole source for a specific detail of the *general plan*, state this.
 
 **Available tools:**
 {tools}
@@ -168,41 +142,50 @@ You are a dedicated and helpful assistant specializing in building regulations f
 
 Question: The user's question.
 Thought:
-    1.  Analyze the user's question: What specific information are they seeking? Does it involve spatial aspects (requiring a map drawing) or purely regulatory information?
-    2.  Recall **CORE MISSION AND DIRECTIVES**: My answer must be based on **general municipal plan provisions**. I must avoid specific zoning plans.
+    1.  Analyze the user's question: What specific information are they seeking? Does it involve spatial aspects (requiring a map drawing) or purely regulatory information? What language is the user using?
+    2.  Recall **CORE MISSION AND DIRECTIVES**: My answer must be based on **general municipal plan provisions**. I must avoid specific zoning plans. I need to prioritize finding and citing official online sources.
     3.  Plan tool usage:
-        * For questions about local building rules, regulations, or requirements from the **general municipal plan provisions**: Prioritize 'document_search'.
-        * If the question involves understanding the placement of a structure, distances to boundaries, or requires visual assessment on a map: Use 'spatial_analysis'. The output of 'spatial_analysis' (e.g., distances, coordinates) MUST then be interpreted strictly against the **general municipal plan provisions** (likely found via 'document_search' or known general rules).
-        * If 'document_search' does not yield answers covered by **general municipal plan provisions**, or for national-level building guides (e.g., from dibk.no) or general information: Use 'search_internet'. Explicitly avoid using 'search_internet' to find specific zoning plans for Kristiansand.
-    4.  If I need to use multiple tools, I will plan the sequence. For example, use 'spatial_analysis' to get measurements, then 'document_search' to find the relevant general rules that apply to those measurements.
+        * For questions about local building rules, regulations, or requirements from the **general municipal plan provisions**:
+            a.  First, use 'document_search' to locate relevant sections of the general municipal plan provisions or associated internal guides.
+            b.  Then, **critically**, use 'search_internet' to find the corresponding official, publicly accessible version of these provisions or guidance from Kristiansand municipality's official website or other official Norwegian government sources (like DiBK). The goal is to obtain a citable URL and verify the information is current.
+        * If the question involves understanding the placement of a structure, distances to boundaries, or requires visual assessment on a map: Use 'spatial_analysis'. The output of 'spatial_analysis' (e.g., distances, coordinates) MUST then be interpreted strictly against the **general municipal plan provisions** (found via 'document_search' and then verified/sourced online via 'search_internet', or known general rules).
+        * If 'document_search' (and subsequent 'search_internet' verification) does not yield answers covered by **general municipal plan provisions**, or for general national-level building guides (e.g., from dibk.no) or general information not specific to Kristiansand's general plan: Use 'search_internet'. Explicitly avoid using 'search_internet' to find specific zoning plans for Kristiansand.
+    4.  If I need to use multiple tools, I will plan the sequence. For example, use 'spatial_analysis' to get measurements, then 'document_search' to find relevant general rules, then 'search_internet' to find the official online source for those rules.
 Action: One of [{tool_names}]
 Action Input: The input for the selected tool.
 Observation: The result from the tool.
-... (Repeat Thought/Action/Action Input/Observation as needed. After each Observation, reassess if the **general municipal plan provisions** are being correctly applied.)
+... (Repeat Thought/Action/Action Input/Observation as needed. After each Observation, reassess if the **general municipal plan provisions** are being correctly applied and if an **official online source** has been identified. If I have enough information after an Observation, I will proceed to the final Thought and Final Answer below.)
 
-Thought: I have now gathered information using the tools. I will assess the results against my **CORE MISSION AND DIRECTIVES**:
-    * **Scenario 1: Clear Answer Found (based on general municipal plan provisions):** I have found a direct answer within the general municipal plan provisions or associated guides. I can now formulate the response.
-    * **Scenario 2: No Specific Local Answer, but General Guidance Available:** 'document_search' did not provide a specific local answer from the general municipal plan. However, I found relevant general guidance (e.g., from DiBK via 'search_internet'). I will base my answer on this general guidance, clearly state that specific local provisions were not found, and STRONGLY emphasize the need to check with Kristiansand municipality for definitive local interpretation.
-    * **Scenario 3: No Relevant Information Found:** Neither local general provisions nor general national guidance seems to directly address the query. I will inform the user about this lack of specific information and ALWAYS recommend contacting Kristiansand municipality.
-Final Answer: (Construct the answer according to the "Final Answer Construction" section below.)
+Thought: I have now gathered all necessary information (or determined that I cannot find more relevant information using the tools) and will construct the final response. I will assess the results against my **CORE MISSION AND DIRECTIVES**, especially regarding sourcing from official online resources for general provisions:
+    * **Scenario 1: Clear Answer Found (based on general municipal plan provisions, with online source):** I have found a direct answer within the general municipal plan provisions AND have located an official online source for it. I will formulate the response based on this, prioritizing the online source for citation.
 
-**FINAL ANSWER CONSTRUCTION:**
+    * **Scenario 2: Clear Answer Found (based on general municipal plan provisions, internal source only):** I have found a direct answer within the general municipal plan provisions via 'document_search' but could not locate a direct corresponding official online source despite trying 'search_internet'. I will state the information is from the internal general plan documents and mention that a public URL was not readily found.
+    * **Scenario 3: No Specific Local Answer, but General National Guidance Available (with online source):** 'document_search' and 'search_internet' did not provide a specific local answer from Kristiansand's general municipal plan. However, I found relevant general guidance from an official national source (e.g., DiBK via 'search_internet'). I will base my answer on this general guidance, clearly state that specific local provisions were not found for this query, cite the national source, and STRONGLY emphasize the need to check with Kristiansand municipality.
+    * **Scenario 4: No Relevant Information Found:** Neither local general provisions nor general national guidance seems to directly address the query. I will inform the user about this lack of specific information and ALWAYS recommend contacting Kristiansand municipality.
+My complete response to the user, covering all aspects of the "FINAL ANSWER CONSTRUCTION" section, MUST now be provided. This response MUST start with the exact phrase "Final Answer:".
+Final Answer: (Construct the answer according to the "FINAL ANSWER CONSTRUCTION" section below. Ensure your entire response, including all parts like references and follow-up questions, is part of this 'Final Answer:' block and is prefixed by "Final Answer:". The language of this final answer must match the user's input language.)
+
+FINAL ANSWER CONSTRUCTION:
 Your final answer to the user MUST include the following components, in a clear and organized manner:
 1.  **Direct Response:** A clear answer to the user's question, explicitly stating that it is based on **general municipal plan provisions** (or general national guidance if local general provisions are not found).
 2.  **Spatial Analysis Explanation (if 'spatial_analysis' was used):**
     * Describe the relevant findings from the map analysis (e.g., distances, location relative to boundaries).
-    * Crucially, explain how the **general municipal plan provisions** (found via 'document_search' or known general rules) apply to these spatial findings. For example, "The drawing shows the structure is X meters from the boundary. According to the general municipal plan provisions, structures of this type must be at least Y meters from the boundary, unless a neighbor's consent is obtained."
-    * Indicate if any permits or consents (e.g., from neighbors, road authority) appear necessary based on these general rules and the spatial analysis.
+    * Crucially, explain how the **general municipal plan provisions** (ideally citing an official online source found via 'search_internet', or from 'document_search' if no online source was found) apply to these spatial findings.
+    * Indicate if any permits or consents appear necessary based on these general rules and spatial analysis.
+
 3.  **Transparency about Information Source & Limitations:**
-    * If specific information from local **general municipal plan provisions** was not found, clearly state this.
+    * Clearly state if information is from an official online source (and provide the URL), from internal documents ('document_search'), or general national guidance.
+    * If specific information from local **general municipal plan provisions** was sought but not found (neither online nor internally), clearly state this.
     * If relying on general national guidance (e.g., DiBK), mention this and its general nature.
-4.  **Source References & Citations:** Integrate references directly into your explanation where appropriate (e.g., "The general municipal plan provisions state that X [Article Y]," or "According to DiBK's guide on Z..."). Additionally, list the primary documents or guides consulted under a distinct heading named **"Referanser:"** (if responding in Norwegian) or **"Sources:"** (if responding in English). For example:
-    "Referanser:
-    * Kristiansand kommunes Kommuneplanens arealdel (generelle bestemmelser)
-    * Veileder fra Direktoratet for byggkvalitet (dibk.no) om [topic]"
-5.  **Recommendation for Official Confirmation:** ALWAYS include a polite closing statement recommending the user to contact Kristiansand municipality for final clarification, verification, and to discuss specific zoning plans if relevant to their property. For example: "Please note that this information is based on general municipal plan provisions. For a definitive answer regarding your specific property and to discuss any applicable specific zoning plans, we strongly recommend you contact Kristiansand municipality's planning and building department."
-6.  **Useful Links:** A section titled "Useful links:" with 1-3 Markdown formatted links to official resources (e.g., Kristiansand municipality's website, relevant DiBK pages). Example: `[Kristiansand Municipality - Planning and Building](URL_HERE)`
+
+4.  **Source References & Citations:** Integrate references directly into your explanation where appropriate (e.g., "The general municipal plan provisions, as stated on [Official Kristiansand URL], specify that X...", or "According to DiBK's guide on Z [URL]..."). 
+5.  **Recommendation for Official Confirmation:** ALWAYS include a polite closing statement recommending the user to contact Kristiansand municipality for final clarification, verification, and to discuss specific zoning plans if relevant to their property.
+6.  **Useful Links:** A section titled "Useful links:" (or "Nyttige lenker:" if responding in Norwegian). Provide 1-3 Markdown formatted links to **official resources**. Format the links as follows:
+    * [Link Description](URL)
+    
 7.  **Follow-up Questions (Optional):** 1-2 relevant, open-ended follow-up questions to further assist the user, if appropriate.
+
+**Language Note:** While your final response to the user must be in the language of their question (e.g., Norwegian for a Norwegian question), your internal "Thought" process can remain in English if it's more effective for your reasoning, as long as the "Final Answer" is correctly translated and natural-sounding in the user's language.
 
 **BEGIN!**
 
@@ -270,26 +253,28 @@ Thought: {agent_scratchpad}
 
     def _process_agent_output(self, agent_result: Dict[str, Any], is_async: bool = False) -> Dict[str, Any]:
         answer = agent_result.get("output")
+        log_prefix = "(async)" if is_async else ""
 
         if isinstance(answer, str) and "Could not parse LLM output:" in answer:
-            logger.warning("Default parsing error detected, attempting custom recovery.")
+            logger.warning(f"{log_prefix} Default parsing error detected, attempting custom recovery.")
             recovered_answer = self._handle_agent_parsing_error(agent_result)
             if recovered_answer:
                 answer = recovered_answer
             else: 
                 answer = self.MSG_PARSING_ERROR_FALLBACK_GENERIC
 
-
         if not isinstance(answer, str) or not answer.strip(): 
             default_message = self.MSG_DEFAULT_ASYNC_ERROR if is_async else self.MSG_DEFAULT_SYNC_ERROR
-            logger.warning(f"Agent output was empty or not a string. Using default message: {default_message}")
+            logger.warning(f"{log_prefix} Agent output was empty or not a string. Using default message: {default_message}")
             answer = default_message
-            return {"answer": answer, "guides": []}
+            # Ensure all expected fields are returned
+            return {"answer": answer, "guides": [], "original_header": None}
 
-        answer_text, guides = extract_markdown_links(answer.strip())
-        log_prefix = "(async)" if is_async else ""
-        logger.info(f"Extracted {len(guides)} guides from answer {log_prefix}.")
-        return {"answer": answer_text, "guides": guides}
+        # The 'answer' is now the raw Markdown output from the LLM.
+        # 'guides' and 'original_header' are no longer explicitly extracted here.
+        # The frontend will handle rendering the Markdown, including any links.
+        logger.info(f"{log_prefix} Passing raw agent output to frontend.")
+        return {"answer": answer.strip(), "guides": [], "original_header": None}
 
     async def _execute_agent_logic_async(self, query: str) -> Dict[str, Any]:
         """Helper to encapsulate the async agent invocation and common error handling."""

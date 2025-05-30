@@ -37,7 +37,7 @@ export const userDocumentsRouter = createTRPCRouter({
       }
     }),
 
-  replaceExistingFile: protectedProcedure
+  checkFileExists: protectedProcedure
     .input(z.object({
       applicationID: z.number().optional(),
       fileName: z.string(),
@@ -129,87 +129,7 @@ export const userDocumentsRouter = createTRPCRouter({
       }
     }),
 
-  getDocumentById: protectedProcedure
-    .input(z.object({
-      documentId: z.number(),
-    }))
-    .query(async ({ ctx, input }) => {
-      try {
-        const document = await ctx.db.document.findFirst({
-          where: {
-            documentID: input.documentId,
-            userID: ctx.session.user.id,
-          },
-          select: {
-            document: true,
-            fileName: true,
-          },
-        });
-        
-        if (!document) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Document not found',
-          });
-        }
 
-        return {
-          document: document.document.toString('base64'),
-          fileName: document.fileName
-        };
-
-      } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch document',
-          cause: error,
-        });
-      }
-    }),
-
-  getDocumentChunk: protectedProcedure
-    .input(z.object({
-      applicationID: z.number().optional(),
-      documentId: z.number(),
-      chunkIndex: z.number(),
-      chunkSize: z.number().max(1024 * 1024), 
-    }))
-    .query(async ({ ctx, input }) => {
-      try {
-        const document = await ctx.db.document.findFirst({
-          where: {
-            documentID: input.documentId,
-            userID: ctx.session.user.id,
-          },
-          select: {
-            document: true,
-          },
-        });
-
-        if (!document) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Document not found',
-          });
-        }
-
-        const base64String = document.document.toString('base64');
-        const start = input.chunkIndex * input.chunkSize;
-        const end = Math.min(start + input.chunkSize, base64String.length);
-
-        return {
-          chunk: base64String.slice(start, end),
-          isLastChunk: end >= base64String.length,
-          totalSize: base64String.length,
-        };
-      } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch document chunk',
-          cause: error,
-        });
-      }
-    }),
 
   saveDetectionResults: protectedProcedure
     .input(z.object({

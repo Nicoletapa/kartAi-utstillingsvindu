@@ -1,15 +1,18 @@
 #!/bin/bash
 
-# Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
     python -m venv venv
 fi
 
-# Activate virtual environment
-source venv/bin/activate
+# Detect platform and use correct activation path
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    source venv/Scripts/activate
+else
+    source venv/bin/activate
+fi
 
-# Install dependencies
 pip install -r backend/requirements.txt
+cd backend
+uvicorn src.main:app --reload
 
-echo "Setup complete! Activate the environment with: source venv/bin/activate"
+

@@ -1,19 +1,13 @@
-import * as turf from '@turf/turf';
-import type { 
-  GeoJSON, 
-  Feature, 
-  Geometry, 
-  Polygon, 
-  MultiPolygon, 
+import * as turf from "@turf/turf";
+import type {
+  Feature,
+  Geometry,
+  Polygon,
+  MultiPolygon,
   LineString,
   MultiLineString,
-  GeoJsonProperties 
-} from 'geojson';
-
-// Define more specific types for API responses
-export interface AllowedAreaResponse {
-  allowed_building_area: GeoJSON.Geometry | GeoJSON.FeatureCollection;
-}
+  GeoJsonProperties,
+} from "geojson";
 
 interface AllowedAreaAPIResponse {
   allowed_building_area: {
@@ -28,32 +22,39 @@ interface AllowedAreaAPIResponse {
 export async function fetchAllowedBuildingArea(
   matrikkelnummer: string,
   supabaseUrl?: string,
-  supabaseKey?: string
+  supabaseKey?: string,
 ): Promise<GeoJSON.Feature | null> {
   if (!supabaseUrl || !supabaseKey) {
-    console.error("Missing Supabase configuration for allowed building area fetch");
+    console.error(
+      "Missing Supabase configuration for allowed building area fetch",
+    );
     return null;
   }
 
   try {
     console.log(`Fetching allowed building area for: ${matrikkelnummer}`);
-    
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_allowedbuildingarea_by_eiendom`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`
+
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/rpc/get_allowedbuildingarea_by_eiendom`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ eiendom: matrikkelnummer }),
       },
-      body: JSON.stringify({ eiendom: matrikkelnummer })
-    });
+    );
 
     if (!response.ok) {
-      console.error(`Error fetching allowed building area: ${response.status} ${response.statusText}`);
+      console.error(
+        `Error fetching allowed building area: ${response.status} ${response.statusText}`,
+      );
       return null;
     }
 
-    const data = await response.json() as AllowedAreaAPIResponse[];
+    const data = (await response.json()) as AllowedAreaAPIResponse[];
     console.log("Allowed building area response:", data);
 
     // Handle empty response
@@ -72,7 +73,7 @@ export async function fetchAllowedBuildingArea(
 
     // Ensure proper GeoJSON feature format
     let feature: GeoJSON.Feature;
-    
+
     // Handle case where data is already a FeatureCollection
     if (geom.type === "FeatureCollection" && Array.isArray(geom.features)) {
       if (geom.features.length === 0) {
@@ -86,19 +87,19 @@ export async function fetchAllowedBuildingArea(
         return null;
       }
       feature = firstFeature;
-    } 
+    }
     // Handle case where we just got a geometry
     else if (["Polygon", "MultiPolygon"].includes(geom.type)) {
       feature = {
         type: "Feature",
         geometry: geom as GeoJSON.Geometry,
-        properties: {}
+        properties: {},
       };
-    } 
+    }
     // Already a feature
     else if (geom.type === "Feature") {
       feature = geom as GeoJSON.Feature;
-    } 
+    }
     // Unhandled format
     else {
       console.error("Unexpected geometry format returned:", geom.type);
@@ -127,7 +128,7 @@ export interface PropertyIdentifiers {
 
 export interface SpatialAnalysisResult {
   isWithinProperty: boolean;
-  distanceToProperty: number | null;  
+  distanceToProperty: number | null;
   nearestPropertyId: string | null;
   isWithinAllowedArea: boolean | null;
   distanceToNeighborProperty?: number | null;
@@ -141,10 +142,13 @@ export interface SpatialAnalysisResult {
  * Formats a property number string from gnr/bnr/fnr/snr
  */
 export const formatPropertyNumber = (
-  gnr?: number, bnr?: number, fnr?: number, snr?: number
+  gnr?: number,
+  bnr?: number,
+  fnr?: number,
+  snr?: number,
 ): string => {
-  if (gnr === undefined || bnr === undefined) return '';
-  
+  if (gnr === undefined || bnr === undefined) return "";
+
   let propertyString = `${gnr}/${bnr}`;
   if (fnr !== undefined) propertyString += `/${fnr}`;
   if (snr !== undefined) propertyString += `/${snr}`;
@@ -157,7 +161,10 @@ export const formatPropertyNumber = (
 export function analyzeSpatialRelationship(
   drawnShape: Feature<Geometry, GeoJsonProperties>,
   propertyBoundaries: Feature<Polygon | MultiPolygon, GeoJsonProperties>[],
-  allowedAreaBoundary: Feature<Polygon | MultiPolygon, GeoJsonProperties> | null
+  allowedAreaBoundary: Feature<
+    Polygon | MultiPolygon,
+    GeoJsonProperties
+  > | null,
 ): SpatialAnalysisResult {
   let isWithinProperty = false;
   let distanceToProperty: number | null = null;
@@ -173,40 +180,51 @@ export function analyzeSpatialRelationship(
     const firstPropertyBoundary = propertyBoundaries[0];
     if (firstPropertyBoundary) {
       try {
-        isWithinProperty = turf.booleanContains(firstPropertyBoundary, drawnShape as Feature<Polygon | MultiPolygon>);
+        isWithinProperty = turf.booleanContains(
+          firstPropertyBoundary,
+          drawnShape as Feature<Polygon | MultiPolygon>,
+        );
 
         if (!isWithinProperty) {
           const drawnCentroid = turf.centroid(drawnShape);
 
           try {
             const boundaryOutput = turf.polygonToLine(firstPropertyBoundary);
-            const boundaryLine = boundaryOutput.type === 'Feature' 
-              ? boundaryOutput 
-              : boundaryOutput.features[0];
-              
+            const boundaryLine =
+              boundaryOutput.type === "Feature"
+                ? boundaryOutput
+                : boundaryOutput.features[0];
+
             const nearestPointOnBoundary = turf.nearestPointOnLine(
-              boundaryLine as Feature<LineString | MultiLineString, GeoJsonProperties>,
+              boundaryLine as Feature<
+                LineString | MultiLineString,
+                GeoJsonProperties
+              >,
               drawnCentroid,
-              { units: 'meters' }
+              { units: "meters" },
             );
-            distanceToProperty = nearestPointOnBoundary.properties?.dist ?? null;
+            distanceToProperty =
+              nearestPointOnBoundary.properties?.dist ?? null;
           } catch (error: unknown) {
             // Convert unknown error to string safely
-            const errorMessage = error instanceof Error 
-              ? error.message 
-              : String(error);
-            console.warn("Error calculating distance to property boundary:", errorMessage);
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+            console.warn(
+              "Error calculating distance to property boundary:",
+              errorMessage,
+            );
           }
         }
-        nearestPropertyId = 
-          (firstPropertyBoundary.properties?.matrikkelnummer as string | undefined) ?? 
-          (firstPropertyBoundary.properties?.id as string | undefined) ?? 
+        nearestPropertyId =
+          (firstPropertyBoundary.properties?.matrikkelnummer as
+            | string
+            | undefined) ??
+          (firstPropertyBoundary.properties?.id as string | undefined) ??
           null;
       } catch (error: unknown) {
         // Convert unknown error to string safely
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error("Error during property spatial analysis:", errorMessage);
       }
     }
@@ -214,24 +232,33 @@ export function analyzeSpatialRelationship(
 
   if (allowedAreaBoundary) {
     try {
-      isWithinAllowedArea = turf.booleanContains(allowedAreaBoundary, drawnShape as Feature<Polygon | MultiPolygon>);
-      
+      isWithinAllowedArea = turf.booleanContains(
+        allowedAreaBoundary,
+        drawnShape as Feature<Polygon | MultiPolygon>,
+      );
+
       if (!isWithinAllowedArea) {
-        if (drawnShape.geometry.type === 'Polygon' || drawnShape.geometry.type === 'MultiPolygon') {
+        if (
+          drawnShape.geometry.type === "Polygon" ||
+          drawnShape.geometry.type === "MultiPolygon"
+        ) {
           buildingSize = turf.area(drawnShape);
         }
-        
+
         if (distanceToProperty !== null && distanceToProperty < 5) {
           distanceToNeighborProperty = Math.max(0.5, distanceToProperty - 0.5);
         }
-        
+
         if (distanceToProperty !== null && distanceToProperty < 15) {
           distanceToRoad = distanceToProperty + 2;
           roadType = "Municipal Road";
         }
       }
     } catch (error: unknown) {
-      console.error("Error during allowed area analysis:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "Error during allowed area analysis:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -244,7 +271,7 @@ export function analyzeSpatialRelationship(
     neighborPropertyId,
     distanceToRoad,
     roadType,
-    buildingSize
+    buildingSize,
   };
 }
 
@@ -253,7 +280,7 @@ export function analyzeSpatialRelationship(
  */
 export const searchProperty = async (
   propertyNumber: string,
-  supabaseKey?: string
+  supabaseKey?: string,
 ): Promise<PropertyData[] | null> => {
   try {
     if (!propertyNumber.trim()) return null;
@@ -262,40 +289,78 @@ export const searchProperty = async (
       `https://dctlsklovjueodoiygak.supabase.co/rest/v1/teig_utvalg?select=geom,matrikkelnummertekst&matrikkelnummertekst=eq.${propertyNumber}`,
       {
         headers: {
-          'apikey': supabaseKey ?? '',
-          'Content-Type': 'application/json'
-        }
-      }
+          apikey: supabaseKey ?? "",
+          "Content-Type": "application/json",
+        },
+      },
     );
-    
+
     if (!response.ok) {
-      console.error(`Error searching for property: ${response.status} ${response.statusText}`);
+      console.error(
+        `Error searching for property: ${response.status} ${response.statusText}`,
+      );
       return null;
     }
-    
+
     // First get the response as unknown type to avoid direct any assignment
     const rawData: unknown = await response.json();
-    
+
     // Validate that it's an array before proceeding
     if (!Array.isArray(rawData)) {
-      console.error('Expected array response from property search');
+      console.error("Expected array response from property search");
       return null;
     }
-    
+
     // Type guard function to validate each property item
     const isPropertyData = (item: unknown): item is PropertyData => {
-      return typeof item === 'object' && 
-             item !== null && 
-             'geom' in item && 
-             item.geom !== undefined;
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        "geom" in item &&
+        item.geom !== undefined
+      );
     };
-    
+
     // Filter and convert to typed array
     const data: PropertyData[] = rawData.filter(isPropertyData);
-    
+
     return data.length > 0 ? data : null;
   } catch (error) {
-    console.error('Error searching for property:', error);
+    console.error("Error searching for property:", error);
     return null;
   }
 };
+
+export interface ValidatedPropertyFeatureResult {
+  feature?: GeoJSON.Feature;
+  error?: string;
+}
+
+export function createFeatureFromPropertyData(
+  data: PropertyData[] | null,
+  propertyNumberToSearch: string,
+): ValidatedPropertyFeatureResult {
+  if (!data?.length) {
+    return {
+      error: "No property found with this number or invalid property data",
+    };
+  }
+
+  const geometry = data[0]?.geom as GeoJSON.Geometry | undefined;
+  if (!geometry) {
+    // It might be useful to log what data[0] contains if geom is missing
+    // console.warn("Property data found, but geometry is missing:", data[0]);
+    return { error: "Invalid geometry data for the property" };
+  }
+
+  const propertyFeature: GeoJSON.Feature = {
+    type: "Feature",
+    geometry: geometry,
+    properties: {
+      id: propertyNumberToSearch, // Use the searched number as ID
+      matrikkelnummer:
+        data[0]?.matrikkelnummer ?? data[0]?.matrikkelnummertekst, // Fallback if one is missing
+    },
+  };
+  return { feature: propertyFeature };
+}

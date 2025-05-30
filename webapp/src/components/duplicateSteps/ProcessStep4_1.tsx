@@ -1,14 +1,13 @@
-import React from 'react';
+import React from 'react'
 import Soknaden from '../Soknaden';
-import { ApplicationService } from '~/utils/api-service';
 import { api } from '~/trpc/react';
 
-interface BruksendreStep4_1Props {
+interface Process4_1Props {
   applicationID: number;
 }
 
-const BruksendreStep4_1: React.FC<BruksendreStep4_1Props> = ({ applicationID }) => {
-  const { saveField } = ApplicationService.useSaveFormData(applicationID, 'sma-prosjekter');
+const Process4_1: React.FC<Process4_1Props> = ({ applicationID }) => {
+  
 
   const { data: applicationData, isLoading: isLoadingApplication } = api.application.getApplication.useQuery(
     { applicationID },
@@ -22,7 +21,6 @@ const BruksendreStep4_1: React.FC<BruksendreStep4_1Props> = ({ applicationID }) 
     { enabled: !isNaN(applicationID) }
   );
 
-  void saveField('progress.currentStep', '4_1');
 
   if (isLoadingApplication || isLoadingUser || isLoadingDocuments) {
     return <div>Laster inn...</div>;
@@ -47,20 +45,21 @@ const BruksendreStep4_1: React.FC<BruksendreStep4_1Props> = ({ applicationID }) 
       postalArea: userData.postalArea ?? '',
     },
     userDocuments: userDocumentsData
-      .filter(doc => doc.applicationID !== null) 
+      .filter(doc => doc.applicationID !== null)
       .map(doc => ({
         documentID: doc.documentID,
         fileName: doc.fileName ?? 'Ukjent filnavn',
         documentType: doc.document ?? 'Ukjent type',
-        applicationID: doc.applicationID! ,
-    }))
+        applicationID: doc.applicationID!,
+      }))
   };
 
   return (
     <div>
       <Soknaden {...soknadenProps} />
     </div>
-  );
+
+  )
 }
 
-export default BruksendreStep4_1;
+export default Process4_1

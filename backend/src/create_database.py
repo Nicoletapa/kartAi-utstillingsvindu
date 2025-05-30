@@ -13,7 +13,6 @@ load_dotenv()
 
 CHROMA_PATH = os.getenv("CHROMA_PATH")
 
-# Fix the path with proper separators
 DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backend", "src", "data")
 
 def main():
@@ -45,34 +44,25 @@ def generate_data_store():
     save_to_chroma(chunks)
 
 def load_documents():
-    # Define individual patterns for each extension
-    patterns = ["**/*.txt", "**/*.md", "**/*.pdf", "**/*.doc", "**/*.docx"]
-    
-    print(f"Searching for documents in: {DATA_PATH}")
-    print(f"Looking for files matching patterns: {patterns}")
-    
-    documents = []
-    for pattern in patterns:
-        try:
-            loader = DirectoryLoader(
-                DATA_PATH,
-                glob=pattern,
-                use_multithreading=True,
-                show_progress=True
-            )
-            docs = loader.load()
-            documents.extend(docs)
-            print(f"Found {len(docs)} documents matching pattern: {pattern}")
-        except Exception as e:
-            print(f"Error loading documents with pattern {pattern}: {str(e)}")
-            continue
-    
-    if not documents:
-        print(f"No supported documents found in {DATA_PATH}")
-        print("Files in directory:", os.listdir(DATA_PATH))
-        return []
+    all_documents = []
+    file_patterns = ("**/*.txt", "**/*.pdf", "**/*.md")
+    for pattern in file_patterns:
         
-    print(f"Loaded {len(documents)} total documents from {DATA_PATH}")
+        loader = DirectoryLoader(DATA_PATH, glob=pattern, use_multithreading=True, show_progress=True)
+        try:   
+            
+            documents = loader.load()
+            all_documents.extend(documents)
+            print(f"Loaded {len(documents)} documents from {DATA_PATH}") 
+        except Exception as e:
+            print(f"Error loading documents: {e}")
+    
+    print(f"Loaded {len(all_documents)} documents from {DATA_PATH}")
+    return all_documents
+
+        
+
+
     return documents
 
 def split_text(documents:list[Document]):

@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { ApplicationService, UIComponents } from '~/utils/api-service';
-import { Tooltip, RadioGroup } from '~/components/ui/ui-components';
+import React, { useEffect, useCallback, useRef } from 'react';
+import { ApplicationService } from '~/utils/api-service';
+
+import { Tooltip, useTooltip } from '~/components/ui/ui-components';
+import {RadioGroup} from '~/components/ui/radio-button'
 import TiltaksAidMap from '../TiltaksAidMap';
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
 import { Loader2 } from 'lucide-react';
 import type { Map } from "leaflet";
+import { drivewayOptions, yesNoOptions } from '~/types/formTypes';
 
 type FormDataType = {
   neighboringBorder: string;
@@ -25,11 +28,7 @@ const defaultValues: FormDataType = {
   road_type: '',
 };
 
-const ROAD_TYPES = {
-  RIKSVEI: "riksvei_eller_fylkesvei",
-  KOMMUNAL: "kommunal_vei",
-  PRIVAT: "privat_vei"
-};
+
 
 interface BruksendreStep1_1Props {
   applicationID: number;
@@ -45,21 +44,16 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
   onValidityChange 
 }) => {
 
-  const [mapReady, setMapReady] = useState(false);
-  const [lastDrawnShape, setLastDrawnShape] = useState<GeoJSON.Feature | null>(null);
-  const [spatialAnalysis, setSpatialAnalysis] = useState<SpatialAnalysisResult | null>(null);
-  
-  
   const formData = { ...defaultValues, ...externalFormData };
   
-  const tooltip = UIComponents.useTooltip();
+  const tooltip = useTooltip();
   
   const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'bruksendring');
   const { userData } = usePropertySearch();
   
   const mapRef = useRef<Map | null>(null);
   
-  const checkFormValidity = (data: typeof formData) => {
+  const checkFormValidity = useCallback((data: typeof formData) => {
     const basicFieldsValid = 
       (data.neighboringBorder?.trim() ?? '') !== '' &&
       (data.dangerZone?.trim() ?? '') !== '' &&
@@ -72,19 +66,10 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     const isValid = basicFieldsValid && drivewayValid;
     onValidityChange(isValid);
     return isValid;
-  };
+  }, [onValidityChange]);
 
   const handleFieldChange = (name: string, value: string | boolean) => {
-    const updatedFormData = { 
-      ...formData, 
-      [name]: value 
-    };
-    
     externalSetFormData(prev => ({...prev, [name]: value}));
-    
-    checkFormValidity(updatedFormData);
-    
-    
     void saveField(name, value.toString());
   };
 
@@ -96,32 +81,29 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
     handleFieldChange(e.target.name, e.target.value);
   };
 
-    const handleMapReady = useCallback((map: Map) => {
-      if (!mapRef.current) {
-        mapRef.current = map;
-        setMapReady(true);
-      }
-    }, []);
+  const handleMapReady = useCallback((map: Map) => {
+    if (!mapRef.current) {
+      mapRef.current = map;
+    }
+  }, []);
   
     const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
-      setLastDrawnShape(shape);
-      setSpatialAnalysis(analysis ?? null);
-    }, []);
-
+    console.log("Shape drawn in BruksendreStep1_1:", shape); 
+    if (analysis) {
+      console.log("Spatial analysis received in BruksendreStep1_1:", analysis); 
+    }
+  }, []);
   const tooltips = {
     shortestDistance: "Skriv inn korteste avstand.",
     conflictsWithSurroundings: "konflikt",
     driveway: "Hvis byggeprosjektet vil føre til en ny eller endret avkjørsel til eiendommen, må du søke om tillatelse fra Statens vegvesen eller kommunen."
   };
 
-  const yesNoOptions = [
-    { value: "Ja", label: "Ja" },
-    { value: "Nei", label: "Nei" }
-  ];
+ 
 
   useEffect(() => {
     checkFormValidity(formData);
-  }, [formData, checkFormValidity]);
+  }, [externalFormData, checkFormValidity]);
 
   return (
     <div className="justify-center flex flex-col w-full">
@@ -252,11 +234,7 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
               Eiendommen vil få ny/endret avkjørsel til (velg én):
             </h1>
             <div className='ml-8 mt-2 flex flex-col gap-2'>
-              {[
-                { value: ROAD_TYPES.RIKSVEI, label: "Riksvei eller fylkesvei" },
-                { value: ROAD_TYPES.KOMMUNAL, label: "Kommunal vei" },
-                { value: ROAD_TYPES.PRIVAT, label: "Privat vei" }
-              ].map((option) => (
+              {drivewayOptions.map((option) => (
                 <label key={option.value} className='items-center gap-x-2 flex'>
                   <input 
                     type="radio" 

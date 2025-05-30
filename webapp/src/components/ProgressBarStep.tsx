@@ -39,23 +39,19 @@ import type { ApplicationType } from "@prisma/client";
 import SjekklisteSoknad from "./SjekklisteSoknad";
 
 import {
-    Step1_0, Step1_1, Step2_0, Step2_1, Step2_2,
-    Step3_0, Step3_1, Step3_2, Step4_0, Step4_1,
-    Step5_0, Step5_1, Step6_0,
+    Step1_0, Step1_1
 } from "./steps"
+import {ProcessStep2_0,ProcessStep2_1,ProcessStep2_2, ProcessStep3_0,  ProcessStep3_1,ProcessStep3_2 ,ProcessStep4_0,ProcessStep4_1, ProcessStep5_0,ProcessStep5_1,ProcessStep6_0 } from "./duplicateSteps"
 
 import {
-  BruksendreStep1_0, BruksendreStep1_1, BruksendreStep2_0, BruksendreStep2_1, BruksendreStep2_2,
-  BruksendreStep3_0, BruksendreStep3_1, BruksendreStep3_2, BruksendreStep4_0, 
-  BruksendreStep4_1, BruksendreStep5_0, BruksendreStep5_1,
-  BruksendreStep6_0,
+  BruksendreStep1_0, BruksendreStep1_1
 } from "./bruksendreSteps";
 
 import { api } from "~/trpc/react";
 import { toast } from "react-hot-toast";
 
 interface CommonStepProps<TFormData = Record<string, unknown>> {
-    applicationID?: number;
+    applicationID: number;
     formData?: TFormData;
     setFormData?: React.Dispatch<React.SetStateAction<TFormData>>;
     onValidityChange?: (isValid: boolean) => void;
@@ -67,7 +63,7 @@ type StepComponentsType = Record<
 >;
 
 export interface ProgressBarStepProps {
-    applicationID?: number;
+    applicationID: number;
     currentStep?: number;
 }
 
@@ -87,59 +83,20 @@ export default function ProgressBarStep({
     const [appType, setAppType] = useState<ApplicationType>("sma_byggeprosjekter");
     const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-    const stepComponents: StepComponentsType = (isByggeorRive ? {
-        1: {
+    const stepComponents: StepComponentsType = {
+        1: isByggeorRive ? {
             0: Step1_0,
             1: Step1_1,
-        },
-        2: {
-            0: Step2_0,
-            1: Step2_1,
-            2: Step2_2,
-        },
-        3: {
-            0: Step3_0,
-            1: Step3_1,
-            2: Step3_2,
-        },
-        4: {
-            0: Step4_0,
-            1: Step4_1,
-        },
-        5: {
-            0: Step5_0,
-            1: Step5_1,
-        },
-        6: {
-            0: Step6_0,
-        },
-    } : {
-        1: {
+        } : {
             0: BruksendreStep1_0,
             1: BruksendreStep1_1,
         },
-        2: {
-            0: BruksendreStep2_0,
-            1: BruksendreStep2_1,
-            2: BruksendreStep2_2,
-        },
-        3: {
-            0: BruksendreStep3_0,
-            1: BruksendreStep3_1,
-            2: BruksendreStep3_2,
-        },
-        4: {
-            0: BruksendreStep4_0,
-            1: BruksendreStep4_1,
-        },
-        5: {
-            0: BruksendreStep5_0,
-            1: BruksendreStep5_1,
-        },
-        6: {
-            0: BruksendreStep6_0,
-        }
-    })as unknown as StepComponentsType;
+        2: { 0: ProcessStep2_0, 1: ProcessStep2_1, 2: ProcessStep2_2 }, 
+        3: { 0: ProcessStep3_0, 1: ProcessStep3_1, 2: ProcessStep3_2 },
+        4: { 0: ProcessStep4_0, 1: ProcessStep4_1 },
+        5: { 0: ProcessStep5_0, 1: ProcessStep5_1 },
+        6: { 0: ProcessStep6_0 }
+    } as unknown as StepComponentsType;
 
     const steps = [
         { title: "Oversikt", totalSubsteps: Object.keys(stepComponents[1] ?? {}).length },
@@ -150,7 +107,7 @@ export default function ProgressBarStep({
         { title: "Veien videre", totalSubsteps: Object.keys(stepComponents[6] ?? {}).length },
     ];
 
-    const { data: application, isLoading: isLoadingApplication, refetch: refetchApplication } = api.application.getApplication.useQuery(
+    const { data: application, refetch: refetchApplication } = api.application.getApplication.useQuery(
         { applicationID: applicationID ?? 0 },
         { enabled: !!applicationID }
     );
@@ -317,12 +274,17 @@ export default function ProgressBarStep({
 
     const renderChecklist = () => {
         if (!isByggeorRive && !isBruksendre) return null;
+
+        const titleForCurrentStep = steps[currentStep-1]?.title ?? "Ukjent Steg";
         
         return (
             <div>
                 <SjekklisteSoknad 
                 currentStep={currentStep} 
-                currentSubstep={currentSubstep} />
+                currentSubstep={currentSubstep}
+                applicationID={applicationID} 
+                currentStepTitle={titleForCurrentStep}
+                />
             </div>
         );
     };

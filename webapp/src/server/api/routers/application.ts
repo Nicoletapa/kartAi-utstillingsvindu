@@ -1,7 +1,6 @@
 import { ApplicationStatus, ApplicationType } from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
-
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
@@ -14,41 +13,39 @@ export const applicationRouter = createTRPCRouter({
         submissionDate: z.date(),
         updatedDate: z.date().optional(),
         status: z.nativeEnum(ApplicationStatus).optional().default("Pabegynt"),
-
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      
-      // Add safeguard: Check if an application with the same type was created in the last 5 seconds
+
       const recentApplications = await db.application.findMany({
         where: {
           userID: userId,
           applicationType: input.applicationType,
           submissionDate: {
-            gte: new Date(Date.now() - 5000) 
-          }
-        }
+            gte: new Date(Date.now() - 5000),
+          },
+        },
       });
-      
+
       if (recentApplications.length > 0) {
         console.warn("Potential duplicate application creation detected");
         return recentApplications[0];
       }
-      
+
       const res = await db.application.create({
         data: {
           applicationType: input.applicationType,
-        subTypeId: input.subTypeId,
-        updatedDate: input.updatedDate ?? new Date(),
-        submissionDate: input.submissionDate, // Ensure this is passed through
-        status: input.status || "Pabegynt",
-        user: {
-          connect: {
-            id: ctx.session.user.id,
+          subTypeId: input.subTypeId,
+          updatedDate: input.updatedDate ?? new Date(),
+          submissionDate: input.submissionDate,
+          status: input.status || "Pabegynt",
+          user: {
+            connect: {
+              id: ctx.session.user.id,
             },
-          }
-        }
+          },
+        },
       });
 
       if (!res) {
@@ -57,21 +54,22 @@ export const applicationRouter = createTRPCRouter({
       return res;
     }),
 
-    updateApplicationSubtype: protectedProcedure
-    .input(z.object({
-      applicationID: z.number(),
-      subTypeId: z.string(),
-
-    }))
-    .mutation(async({ctx, input}) => {
-      const {applicationID, subTypeId} = input;
+  updateApplicationSubtype: protectedProcedure
+    .input(
+      z.object({
+        applicationID: z.number(),
+        subTypeId: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { applicationID, subTypeId } = input;
 
       return await ctx.db.application.update({
-        where: {applicationID},
-        data: {subTypeId} ,
+        where: { applicationID },
+        data: { subTypeId },
       });
     }),
-    
+
   updateApplication: protectedProcedure
     .input(
       z.object({
@@ -84,17 +82,16 @@ export const applicationRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      
-     
+
       const application = await db.application.findUnique({
         where: { applicationID: input.applicationID },
-        select: { userID: true }
+        select: { userID: true },
       });
-      
+
       if (!application || application.userID !== userId) {
         throw new Error("Not authorized to update this application");
       }
-      
+
       const res = await db.application.update({
         where: { applicationID: input.applicationID },
         data: {
@@ -107,11 +104,13 @@ export const applicationRouter = createTRPCRouter({
 
       return res;
     }),
-    
+
   getApplication: protectedProcedure
-    .input(z.object({
-      applicationID: z.number(),
-    }))
+    .input(
+      z.object({
+        applicationID: z.number(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       try {
         const application = await ctx.db.application.findFirst({
@@ -126,19 +125,17 @@ export const applicationRouter = createTRPCRouter({
             status: true,
             submissionDate: true,
             updatedDate: true,
-            application_fields:true,
-            
+            application_fields: true,
           },
         });
 
         if (!application) {
           throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Application not found or access denied',
+            code: "NOT_FOUND",
+            message: "Application not found or access denied",
           });
         }
 
-        // Convert dates to ISO strings to avoid serialization issues
         return {
           ...application,
           submissionDate: application.submissionDate.toISOString(),
@@ -147,76 +144,71 @@ export const applicationRouter = createTRPCRouter({
       } catch (error) {
         console.error("getApplication error:", error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch application details',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch application details",
           cause: error,
         });
       }
     }),
-    
+
   getAllApplications: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    
+
     const res = await db.application.findMany({
       where: { userID: userId },
-      orderBy: { updatedDate: 'desc' },
-      
+      orderBy: { updatedDate: "desc" },
     });
 
     return res;
   }),
 
   deleteApplication: protectedProcedure
-    .input(z.object({applicationID: z.number()}))
-    .mutation(async ({ctx, input}) => {
+    .input(z.object({ applicationID: z.number() }))
+    .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-
-      const application =await db.application.findUnique({
-        where:{applicationID:input.applicationID},
-        select:{userID:true}
+      const application = await db.application.findUnique({
+        where: { applicationID: input.applicationID },
+        select: { userID: true },
       });
 
-
-      if(!application || application.userID !== userId) {
+      if (!application || application.userID !== userId) {
         throw new Error("Not authorized to delete this application");
       }
 
       try {
         await db.application_field.deleteMany({
-          where:{ applicationID: input.applicationID}
+          where: { applicationID: input.applicationID },
         });
 
         const responses = await db.response.findMany({
-          where: {applicationID:input.applicationID},
-          select: { responseID:true}
+          where: { applicationID: input.applicationID },
+          select: { responseID: true },
         });
         for (const response of responses) {
           await db.response.deleteMany({
-            where : {responseID: response.responseID}
+            where: { responseID: response.responseID },
           });
         }
         await db.response.deleteMany({
-          where: {applicationID: input.applicationID}
+          where: { applicationID: input.applicationID },
         });
         await db.letter.deleteMany({
-          where: {applicationID: input.applicationID}
+          where: { applicationID: input.applicationID },
         });
         await db.document.deleteMany({
-          where: {applicationID: input.applicationID}
+          where: { applicationID: input.applicationID },
         });
         const deletedApplication = await db.application.delete({
-          where: {applicationID : input.applicationID}
+          where: { applicationID: input.applicationID },
         });
-        return {success: true, deletedApplication};
-
+        return { success: true, deletedApplication };
       } catch (error) {
         console.error("Error deleting application", error);
         throw new Error("Error deleting application");
       }
     }),
-  
-  // Add application field
+
   addApplicationField: protectedProcedure
     .input(
       z.object({
@@ -227,32 +219,29 @@ export const applicationRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      
-      // Check if application belongs to current user
+
       const application = await db.application.findUnique({
         where: { applicationID: input.applicationID },
-        select: { userID: true }
+        select: { userID: true },
       });
-      
+
       if (!application || application.userID !== userId) {
         throw new Error("Not authorized to update this application");
       }
-      
-      // Check if field already exists
+
       const existingField = await db.application_field.findFirst({
         where: {
           applicationID: input.applicationID,
           fieldName: input.fieldName,
-        }
+        },
       });
-      
+
       let res;
-      
+
       if (existingField) {
-        // Update existing field
         res = await db.application_field.update({
           where: {
-            application_fieldID: existingField.application_fieldID
+            application_fieldID: existingField.application_fieldID,
           },
           data: {
             fieldValue: input.fieldValue,
@@ -260,12 +249,11 @@ export const applicationRouter = createTRPCRouter({
           },
         });
       } else {
-        // Create new field
         res = await db.application_field.create({
           data: {
             applicationID: input.applicationID,
             fieldName: input.fieldName,
-            fieldValue: input.fieldValue, 
+            fieldValue: input.fieldValue,
             createdDate: new Date(),
             updatedDate: new Date(),
           },
@@ -275,85 +263,38 @@ export const applicationRouter = createTRPCRouter({
       return res;
     }),
 
-    
-  // Submit application (change status to Sendt)
   submitApplication: protectedProcedure
     .input(z.object({ applicationID: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      // Add debugging
+      console.log("Session user:", ctx.session.user);
+      console.log("Session user ID:", ctx.session.user.id);
+
       const userId = ctx.session.user.id;
-      
+
+      // Check if user exists in database
+      const userExists = await db.user.findUnique({
+        where: { id: userId },
+      });
+      console.log("User exists in DB:", userExists);
+
       const application = await db.application.findUnique({
         where: { applicationID: input.applicationID },
-        select: { userID: true }
+        select: { userID: true },
       });
-      
+
       if (!application || application.userID !== userId) {
         throw new Error("Not authorized to submit this application");
       }
-      
+
       const res = await db.application.update({
         where: { applicationID: input.applicationID },
         data: {
           status: "Sendt",
-          updatedDate: new Date()
-        }
-      });
-      
-      return res;
-    }),
-    
-  // Get application count by status
-  getApplicationCountByStatus: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    
-    const counts = await db.$queryRaw`
-      SELECT status, COUNT(*) as count 
-      FROM Application 
-      WHERE userID = ${userId}
-      GROUP BY status
-    `;
-    
-    return counts;
-  }),
-
-  createAndPopulateApplication: protectedProcedure
-    .input(
-      z.object({
-        applicationType: z.nativeEnum(ApplicationType),
-        fieldData: z.record(z.string(), z.string()),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      
-      // Create the application first
-      const application = await db.application.create({
-        data: {
-          applicationType: input.applicationType,
-          submissionDate: new Date(),
           updatedDate: new Date(),
-          status: "Pabegynt",
-          user: {
-            connect: {
-              id: userId,
-            },
-          }
-        }
+        },
       });
-      
-      // Add all the fields
-      for (const [fieldName, fieldValue] of Object.entries(input.fieldData)) {
-        await db.application_field.create({
-          data: {
-            applicationID: application.applicationID,
-            fieldName,
-            fieldValue,
-            createdDate: new Date(),
-            updatedDate: new Date(),
-          },
-        });
-      }
-      
-      return application;
+
+      return res;
     }),
 });

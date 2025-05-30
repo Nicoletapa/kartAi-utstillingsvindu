@@ -1,4 +1,3 @@
-
 /**
  * Small Projects (Små Prosjekter) form field types
  */
@@ -8,12 +7,12 @@ export interface SmaProsjekterFormData {
   mønehøyde: string;
   gesimshøyde: string;
   distance_road: string;
-  
+
   // Distance measurements
   neighbor_boundary: string;
   nearest_building: string;
   road_center: string;
-  
+
   // Environmental conflicts
   distance_train_tracks: string;
   distance_water_sewer_pipes: string;
@@ -22,18 +21,18 @@ export interface SmaProsjekterFormData {
   near_beach_or_river: string; // New field
   protected_species_present: string;
   cultural_heritage_site: string;
-  
+
   // Calculation method
   calculation_method: string[];
-  
+
   // Driveway/access related
   new_driveway: string;
   road_type: string;
-  
+
   // Plan compliance
   planCompliance: string;
   nonComplianceReason: string;
-  
+
   // Building density
   allowed_utilization: string;
   property_net_area: string;
@@ -52,7 +51,7 @@ export interface BruksendringFormData {
   dangerZone: string;
   protectedBuilding: string;
   takvinkel: string;
-  
+
   // Access fields
   drivewayChanges: string;
   road_type: string;
@@ -61,62 +60,51 @@ export interface BruksendringFormData {
   changeDescription: string;
 }
 
-// Constants
-export const ROAD_TYPES = {
-  RIKSVEI: 'riksvei_eller_fylkesvei',
-  KOMMUNAL: 'kommunal_vei',
-  PRIVAT: 'privat_vei',
-};
-
-export const CALCULATION_METHODS = {
-  BYA: 'Bebygd areal i m²',
-  BRA: 'Bruksarea i m²',
-  T_BRA: 'Tillatt bruksareal i m²',
-  BYA_PERCENT: 'Bebygd areal i %',
-  BRA_PERCENT: 'Bruksareal i %',
-  TU_PERCENT: 'Tillatt utnyttelsesgrad i %',
-  U_GRAD: '(denne betegnelsen brukes i enkelte eldre planer)',
-};
-
 // Default values for form initialization
 export const smaProsjekterDefaultValues: SmaProsjekterFormData = {
-  size: '',
-  mønehøyde: '',
-  gesimshøyde: '',
-  distance_road: '',
-  road_center: '',
-  neighbor_boundary: '',
-  nearest_building: '',
-  distance_train_tracks: '',
-  distance_water_sewer_pipes: '',
-  distance_high_voltage_lines: '',
-  in_flood_risk_area: '',
-  near_beach_or_river: '',
-  protected_species_present: '',
-  cultural_heritage_site: '',
+  size: "",
+  mønehøyde: "",
+  gesimshøyde: "",
+  distance_road: "",
+  road_center: "",
+  neighbor_boundary: "",
+  nearest_building: "",
+  distance_train_tracks: "",
+  distance_water_sewer_pipes: "",
+  distance_high_voltage_lines: "",
+  in_flood_risk_area: "",
+  near_beach_or_river: "",
+  protected_species_present: "",
+  cultural_heritage_site: "",
   calculation_method: [],
-  new_driveway: '',
-  road_type: '',
-  planCompliance: '',
-  nonComplianceReason: '',
-  allowed_utilization: '',
-  property_net_area: '',
-  current_area: '',
-  future_area: '',
-  utilization_after_project: ''
+  new_driveway: "",
+  road_type: "",
+  planCompliance: "",
+  nonComplianceReason: "",
+  allowed_utilization: "",
+  property_net_area: "",
+  current_area: "",
+  future_area: "",
+  utilization_after_project: "",
 };
 
 export const bruksendringDefaultValues: BruksendringFormData = {
-  neighboringBorder: '',
-  powerLine: '',
-  dangerZone: '',
-  protectedBuilding: '',
-  takvinkel: '',
-  drivewayChanges: '',
-  road_type: '',
-  changeDescription: ''
+  neighboringBorder: "",
+  powerLine: "",
+  dangerZone: "",
+  protectedBuilding: "",
+  takvinkel: "",
+  drivewayChanges: "",
+  road_type: "",
+  changeDescription: "",
 };
 export const yesNoOptions = [
-    { value: "Ja", label: "Ja" },
-    { value: "Nei", label: "Nei" }
-  ];
+  { value: "Ja", label: "Ja" },
+  { value: "Nei", label: "Nei" },
+];
+
+export const drivewayOptions = [
+  { value: "riksvei_eller_fylkesvei", label: "Riksvei eller fylkesvei" },
+  { value: "kommunal_vei", label: "Kommunal vei" },
+  { value: "privat_vei", label: "Privat vei" },
+];

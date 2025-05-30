@@ -32,7 +32,7 @@
 */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { type PropertyDetails, type ApplicantDetails } from '~/utils/applicationForm';
+import { type PropertyDetails, type ApplicantDetails } from '~/utils/userPropertyTypes';
 
 export interface FormDataType {
   applicant: ApplicantDetails;
@@ -98,10 +98,7 @@ export const FormProvider: React.FC<{children: React.ReactNode}> = ({ children }
 
 
   const updateApplicantFormData = (data: FormDataType | ((prevData: FormDataType) => FormDataType)) => {
-    setApplicantFormData(prevData => {
-      const newData = typeof data === 'function' ? data(prevData) : data;
-      return newData; 
-    });
+    setApplicantFormData(data);
   };
 
   return (
