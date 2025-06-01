@@ -19,7 +19,7 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
   nextPath,
   onBeforeNext,
   isSaving,
-  isNextDisabled,
+  isNextDisabled = false,
 }) => {
   const router = useRouter();
 

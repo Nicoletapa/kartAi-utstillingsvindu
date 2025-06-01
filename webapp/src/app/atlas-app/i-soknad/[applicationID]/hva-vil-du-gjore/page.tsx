@@ -7,12 +7,9 @@ export default function Page() {
   const [formData, setFormData] = useState({ description: "" });
   const [isFormValid, setIsFormValid] = useState<boolean>(false);
 
-  
   const handleValidityChange = useCallback((isValid: boolean) => {
     setIsFormValid(isValid);
   }, []);
-  
- 
 
   return (
     <ProjectType

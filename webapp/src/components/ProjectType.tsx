@@ -85,10 +85,45 @@ interface ProjectTypeFormData {
   selectedFeatures: string[];
 }
 
+// Move these outside the component at the top of the file
+const getApplicationTypeFromSelection = (
+  option: string,
+): ApplicationType | null => {
+  if (option === "Bygge" || option === "Rive") {
+    return "sma_byggeprosjekter";
+  } else if (option === "Bruksendring") {
+    return "bruksendring";
+  }
+  return null;
+};
+
+const getDefaultSubType = (option: string): string | null => {
+  if (option === "Bruksendring") {
+    return "standard";
+  }
+  return null;
+};
+
+const getSubTypeFromSelection = (
+  option: string,
+  checkboxes: string[],
+): string | null => {
+  if (option === "Bygge") {
+    if (checkboxes.includes("byggeTilbygg")) return "bygge_tilbygg";
+    if (checkboxes.includes("byggeFrittliggende")) return "bygge_frittliggende";
+    if (checkboxes.includes("byggeAnnet")) return "bygge_annet";
+  } else if (option === "Rive") {
+    if (checkboxes.includes("riveTilbygg")) return "rive_tilbygg";
+    if (checkboxes.includes("riveFrittliggende")) return "rive_frittliggende";
+    if (checkboxes.includes("riveAnnet")) return "rive_annet";
+  }
+  return null;
+};
+
 const ProjectType: React.FC<PageProps> = ({
   formData: externalFormData,
   setFormData: externalSetFormData,
-  onValidityChange = () => {},
+  onValidityChange,
 }) => {
   const params = useParams();
   const applicationID = parseInt(params.applicationID as string, 10);
@@ -123,7 +158,7 @@ const ProjectType: React.FC<PageProps> = ({
   const tooltip = useTooltip();
   const initialFormData = React.useMemo(
     (): ProjectTypeFormData => ({
-      description: externalFormData?.description || "",
+      description: externalFormData?.description ?? "",
       projectType: "",
       selectedFeatures: [],
     }),
@@ -194,41 +229,6 @@ const ProjectType: React.FC<PageProps> = ({
     },
     [],
   );
-
-  const getApplicationTypeFromSelection = (
-    option: string,
-  ): ApplicationType | null => {
-    if (option === "Bygge" || option === "Rive") {
-      return "sma_byggeprosjekter";
-    } else if (option === "Bruksendring") {
-      return "bruksendring";
-    }
-    return null;
-  };
-
-  const getDefaultSubType = (option: string): string | null => {
-    if (option === "Bruksendring") {
-      return "standard";
-    }
-    return null;
-  };
-
-  const getSubTypeFromSelection = (
-    option: string,
-    checkboxes: string[],
-  ): string | null => {
-    if (option === "Bygge") {
-      if (checkboxes.includes("byggeTilbygg")) return "bygge_tilbygg";
-      if (checkboxes.includes("byggeFrittliggende"))
-        return "bygge_frittliggende";
-      if (checkboxes.includes("byggeAnnet")) return "bygge_annet";
-    } else if (option === "Rive") {
-      if (checkboxes.includes("riveTilbygg")) return "rive_tilbygg";
-      if (checkboxes.includes("riveFrittliggende")) return "rive_frittliggende";
-      if (checkboxes.includes("riveAnnet")) return "rive_annet";
-    }
-    return null;
-  };
 
   // Refactored option change handler
   const handleOptionChange = (value: string) => {
@@ -367,7 +367,7 @@ const ProjectType: React.FC<PageProps> = ({
   };
 
   useEffect(() => {
-    onValidityChange(isValid);
+    onValidityChange?.(isValid); // Use optional chaining
   }, [isValid, onValidityChange]);
 
   useEffect(() => {

@@ -71,13 +71,10 @@ export const getOwnerDataFields = (
   { label: "E-post:", value: userDetails?.email ?? "Ikke angitt" },
 ];
 
-// Helper function to create property option from raw property data (PropertyDetails)
-// This function now takes PropertyDetails and tries to create CurrentPropertyOption
 export const createPropertyOption = (
-  propertyData: PropertyDetails, // Input is now PropertyDetails (fields can be undefined)
-  optionId: string = "current_property_for_application",
+  propertyData: PropertyDetails,
+  optionId = "current_property_for_application",
 ): CurrentPropertyOption | null => {
-  // Ensure required fields for CurrentPropertyOption are defined
   if (
     propertyData.address &&
     propertyData.property_number &&
@@ -85,12 +82,12 @@ export const createPropertyOption = (
   ) {
     return {
       id: optionId,
-      address: propertyData.address, // Now we know it's a string
-      property_number: propertyData.property_number, // Now we know it's a string
-      usage_number: propertyData.usage_number, // Now we know it's a string
+      address: propertyData.address,
+      property_number: propertyData.property_number,
+      usage_number: propertyData.usage_number,
     };
   }
-  return null; // If essential fields are missing for the selector option
+  return null;
 };
 
 // Function to extract property data, returns PropertyDetails

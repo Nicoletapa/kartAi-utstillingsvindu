@@ -90,7 +90,7 @@ const Step_applicant_details: React.FC<StepApplicantDetailsProps> = ({
     const hasApplicantName = !!(
       applicationFromDB?.application_fields?.find(
         (f) => f.fieldName === "applicant.name",
-      )?.fieldValue || userDetails?.name
+      )?.fieldValue ?? userDetails?.name
     );
 
     const hasValidProperty = !!currentPropertyOption?.address;

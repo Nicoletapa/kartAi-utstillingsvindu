@@ -46,24 +46,19 @@ def generate_data_store():
 def load_documents():
     all_documents = []
     file_patterns = ("**/*.txt", "**/*.pdf", "**/*.md")
+    
     for pattern in file_patterns:
-        
         loader = DirectoryLoader(DATA_PATH, glob=pattern, use_multithreading=True, show_progress=True)
         try:   
-            
-            documents = loader.load()
-            all_documents.extend(documents)
-            print(f"Loaded {len(documents)} documents from {DATA_PATH}") 
+            # Use a temporary variable to store the result
+            pattern_documents = loader.load()
+            all_documents.extend(pattern_documents)
+            print(f"Loaded {len(pattern_documents)} documents with pattern '{pattern}' from {DATA_PATH}")
         except Exception as e:
-            print(f"Error loading documents: {e}")
+            print(f"Error loading documents with pattern '{pattern}': {e}")
     
-    print(f"Loaded {len(all_documents)} documents from {DATA_PATH}")
+    print(f"Total loaded: {len(all_documents)} documents from {DATA_PATH}")
     return all_documents
-
-        
-
-
-    return documents
 
 def split_text(documents:list[Document]):
     if not documents:

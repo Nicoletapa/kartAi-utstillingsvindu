@@ -8,7 +8,7 @@ export const appendErrorMessage = (
 
 export function getErrorMessage(
   error: unknown,
-  defaultMessage: string = "En uventet feil oppstod",
+  defaultMessage = "En uventet feil oppstod",
 ): string {
   if (error instanceof Error) {
     return error.message;

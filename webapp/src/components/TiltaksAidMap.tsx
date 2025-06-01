@@ -296,7 +296,7 @@ const TiltaksAidMap = ({
 
         // feature is guaranteed to be a GeoJSON.Feature if no error
         if (feature) {
-          if (!loggedPropertyData.current && rawData && rawData[0]) {
+          if (!loggedPropertyData.current && rawData?.[0]) {
             console.log("Current property data:", rawData[0]);
             loggedPropertyData.current = true;
           }
@@ -337,7 +337,13 @@ const TiltaksAidMap = ({
         setInitialSearchSuccessful(false);
       }
     },
-    [searchInput, clearMapState, setErrorMessage, setPropertyBoundaries],
+    [
+      searchInput,
+      clearMapState,
+      setErrorMessage,
+      setPropertyBoundaries,
+      fetchAllowedAreaForProperty,
+    ],
   );
 
   // --- Handler to center map on property ---
@@ -446,7 +452,7 @@ const TiltaksAidMap = ({
         onShapeDrawn(shape, spatialAnalysis);
       }
     },
-    [onShapeDrawn, propertyBoundaries, allowedAreaGeoJson],
+    [onShapeDrawn],
   );
 
   return (
