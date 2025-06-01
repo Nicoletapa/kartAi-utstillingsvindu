@@ -84,21 +84,6 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({
     setPreviewImage(null);
   }, []);
 
-  const handleMouseEnter = useCallback(
-    (box: string) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      setHoveredBox(box);
-    },
-    [timeoutId],
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    const id = setTimeout(() => setHoveredBox(null), 300);
-    setTimeoutId(id);
-  }, []);
-
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return;
