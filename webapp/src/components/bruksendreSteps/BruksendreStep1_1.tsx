@@ -1,14 +1,14 @@
-import React, { useEffect, useCallback, useRef } from 'react';
-import { ApplicationService } from '~/utils/api-service';
+import React, { useEffect, useCallback, useRef } from "react";
+import { ApplicationService } from "~/utils/api-service";
 
-import { Tooltip, useTooltip } from '~/components/ui/ui-components';
-import {RadioGroup} from '~/components/ui/radio-button'
-import TiltaksAidMap from '../TiltaksAidMap';
+import { Tooltip, useTooltip } from "~/components/ui/ui-components";
+import { RadioGroup } from "~/components/ui/radio-button";
+import TiltaksAidMap from "../TiltaksAidMap";
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
 import type { Map } from "leaflet";
-import { drivewayOptions, yesNoOptions } from '~/types/formTypes';
+import { drivewayOptions, yesNoOptions } from "~/types/formTypes";
 
 type FormDataType = {
   neighboringBorder: string;
@@ -16,19 +16,17 @@ type FormDataType = {
   dangerZone: string;
   protectedBuilding: string;
   drivewayChanges: string;
-  road_type: string; 
+  road_type: string;
 };
 
 const defaultValues: FormDataType = {
-  neighboringBorder: '',
-  powerLine: '',
-  dangerZone: '',
-  protectedBuilding: '',
-  drivewayChanges: '',
-  road_type: '',
+  neighboringBorder: "",
+  powerLine: "",
+  dangerZone: "",
+  protectedBuilding: "",
+  drivewayChanges: "",
+  road_type: "",
 };
-
-
 
 interface BruksendreStep1_1Props {
   applicationID: number;
@@ -37,43 +35,51 @@ interface BruksendreStep1_1Props {
   onValidityChange: (isValid: boolean) => void;
 }
 
-const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({ 
-  applicationID, 
-  formData: externalFormData, 
-  setFormData: externalSetFormData, 
-  onValidityChange 
+const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
+  applicationID,
+  formData: externalFormData,
+  setFormData: externalSetFormData,
+  onValidityChange,
 }) => {
-
   const formData = { ...defaultValues, ...externalFormData };
-  
+
   const tooltip = useTooltip();
-  
-  const { saveField, isSaving } = ApplicationService.useSaveFormData(applicationID, 'bruksendring');
+
+  const { saveField, isSaving } = ApplicationService.useSaveFormData(
+    applicationID,
+    "bruksendring",
+  );
   const { userData } = usePropertySearch();
-  
+
   const mapRef = useRef<Map | null>(null);
-  
-  const checkFormValidity = useCallback((data: typeof formData) => {
-    const basicFieldsValid = 
-      (data.neighboringBorder?.trim() ?? '') !== '' &&
-      (data.dangerZone?.trim() ?? '') !== '' &&
-      (data.protectedBuilding?.trim() ?? '') !== '' &&
-      (data.drivewayChanges === "Ja" || data.drivewayChanges === "Nei") &&
-      (data.powerLine?.trim() ?? '') !== '';
 
-    const drivewayValid = data.drivewayChanges === "Nei" || data.road_type !== '';
+  const checkFormValidity = useCallback(
+    (data: typeof formData) => {
+      const basicFieldsValid =
+        (data.neighboringBorder?.trim() ?? "") !== "" &&
+        (data.dangerZone?.trim() ?? "") !== "" &&
+        (data.protectedBuilding?.trim() ?? "") !== "" &&
+        (data.drivewayChanges === "Ja" || data.drivewayChanges === "Nei") &&
+        (data.powerLine?.trim() ?? "") !== "";
 
-    const isValid = basicFieldsValid && drivewayValid;
-    onValidityChange(isValid);
-    return isValid;
-  }, [onValidityChange]);
+      const drivewayValid =
+        data.drivewayChanges === "Nei" || data.road_type !== "";
+
+      const isValid = basicFieldsValid && drivewayValid;
+      onValidityChange(isValid);
+      return isValid;
+    },
+    [onValidityChange],
+  );
 
   const handleFieldChange = (name: string, value: string | boolean) => {
-    externalSetFormData(prev => ({...prev, [name]: value}));
+    externalSetFormData((prev) => ({ ...prev, [name]: value }));
     void saveField(name, value.toString());
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     handleFieldChange(e.target.name, e.target.value);
   };
 
@@ -86,53 +92,65 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
       mapRef.current = map;
     }
   }, []);
-  
-    const handleShapeDrawn = useCallback((shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
-    console.log("Shape drawn in BruksendreStep1_1:", shape); 
-    if (analysis) {
-      console.log("Spatial analysis received in BruksendreStep1_1:", analysis); 
-    }
-  }, []);
+
+  const handleShapeDrawn = useCallback(
+    (shape: GeoJSON.Feature, analysis?: SpatialAnalysisResult) => {
+      console.log("Shape drawn in BruksendreStep1_1:", shape);
+      if (analysis) {
+        console.log(
+          "Spatial analysis received in BruksendreStep1_1:",
+          analysis,
+        );
+      }
+    },
+    [],
+  );
   const tooltips = {
     shortestDistance: "Skriv inn korteste avstand.",
     conflictsWithSurroundings: "konflikt",
-    driveway: "Hvis byggeprosjektet vil føre til en ny eller endret avkjørsel til eiendommen, må du søke om tillatelse fra Statens vegvesen eller kommunen."
+    driveway:
+      "Hvis byggeprosjektet vil føre til en ny eller endret avkjørsel til eiendommen, må du søke om tillatelse fra Statens vegvesen eller kommunen.",
   };
-
- 
 
   useEffect(() => {
     checkFormValidity(formData);
-  }, [externalFormData, checkFormValidity]);
+  }, [externalFormData, checkFormValidity, formData]);
 
   return (
-    <div className="justify-center flex flex-col w-full">
-      <h1 className="text-3xl font-bold justify-center flex">Detaljer til det du vil gjøre</h1>
+    <div className="flex w-full flex-col justify-center">
+      <h1 className="flex justify-center text-3xl font-bold">
+        Detaljer til det du vil gjøre
+      </h1>
 
-      <section className="border-2 border-gray-400 rounded-lg mt-4">
+      <section className="mt-4 rounded-lg border-2 border-gray-400">
         <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-3/6 h-72 p-4">
+          <div className="h-72 w-full p-4 md:w-3/6">
             <h2 className="inline-flex font-medium">
               Korteste avstand
               <Tooltip
                 id="shortestDistance"
                 content={tooltips.shortestDistance}
-                isVisible={tooltip.isVisible('shortestDistance')}
+                isVisible={tooltip.isVisible("shortestDistance")}
                 onMouseEnter={tooltip.handleMouseEnter}
                 onMouseLeave={tooltip.handleMouseLeave}
               />
             </h2>
 
-            <p className='italic text-sm'>Bruk situasjonskartet og mål opp korteste avstand fra rommet/rommene du skal endre til:</p>
+            <p className="text-sm italic">
+              Bruk situasjonskartet og mål opp korteste avstand fra
+              rommet/rommene du skal endre til:
+            </p>
 
-            <form className="space-y-4 mt-4">
+            <form className="mt-4 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 mr-1">Nabogrense:</label>
+                <label className="mb-1 mr-1 text-sm font-medium text-gray-700">
+                  Nabogrense:
+                </label>
                 <input
                   type="number"
                   name="neighboringBorder"
-                  placeholder='F.eks. 4'
-                  className="required text-sm w-20 h-8 p-2 border-b-2 bg-gray-100 border-gray-400 outline-none"
+                  placeholder="F.eks. 4"
+                  className="required h-8 w-20 border-b-2 border-gray-400 bg-gray-100 p-2 text-sm outline-none"
                   value={formData.neighboringBorder}
                   onChange={handleInputChange}
                   required
@@ -143,8 +161,8 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
           </div>
 
           <div className="w-full md:w-3/6 md:border-l-2 md:border-gray-400">
-            <div className='overflow-hidden max-h-96 no-rounded-map relative z-0'>
-              <TiltaksAidMap 
+            <div className="no-rounded-map relative z-0 max-h-96 overflow-hidden">
+              <TiltaksAidMap
                 onMapReady={handleMapReady}
                 onShapeDrawn={handleShapeDrawn}
                 userGnr={userData?.gnr}
@@ -158,22 +176,23 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
         </div>
       </section>
 
-      <section className='w-full min-h-28 p-4 border-2 border-gray-400 rounded-lg mt-4'>
-        <h2 className="font-medium inline-flex">
+      <section className="mt-4 min-h-28 w-full rounded-lg border-2 border-gray-400 p-4">
+        <h2 className="inline-flex font-medium">
           Kan bruksendringene være i konflikt med omgivelsene?
           <Tooltip
             id="conflictsWithSurroundings"
             content={tooltips.conflictsWithSurroundings}
-            isVisible={tooltip.isVisible('conflictsWithSurroundings')}
+            isVisible={tooltip.isVisible("conflictsWithSurroundings")}
             onMouseEnter={tooltip.handleMouseEnter}
             onMouseLeave={tooltip.handleMouseLeave}
           />
-        </h2>  
-        <p className='italic text-sm mb-2'>
-          Svarer du ja på noen av disse må du legge ved søknad om dispensasjon eller tillatelse/vedtak.
-        </p>    
+        </h2>
+        <p className="mb-2 text-sm italic">
+          Svarer du ja på noen av disse må du legge ved søknad om dispensasjon
+          eller tillatelse/vedtak.
+        </p>
 
-        <div className='space-y-4'>
+        <div className="space-y-4">
           <RadioGroup
             name="powerLine"
             label="Er rommet/rommene du skal bruksendre i nærheten av høyspent kraftlinje?"
@@ -200,44 +219,44 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
         </div>
       </section>
 
-      <section className='border-2 border-gray-400 rounded-lg mt-4 p-4'>
-        <h2 className="font-medium inline-flex mb-2">
+      <section className="mt-4 rounded-lg border-2 border-gray-400 p-4">
+        <h2 className="mb-2 inline-flex font-medium">
           Vil byggeprosjektet føre til en ny/endret avkjøring til eiendommen?
           <Tooltip
             id="driveway"
             content={tooltips.driveway}
-            isVisible={tooltip.isVisible('driveway')}
+            isVisible={tooltip.isVisible("driveway")}
             onMouseEnter={tooltip.handleMouseEnter}
             onMouseLeave={tooltip.handleMouseLeave}
           />
-        </h2> 
-        
-        <div className='gap-4 flex'>
-          {yesNoOptions.map(option => (
-            <label key={option.value} className='items-center'>
-              <input 
-                type="radio" 
+        </h2>
+
+        <div className="flex gap-4">
+          {yesNoOptions.map((option) => (
+            <label key={option.value} className="items-center">
+              <input
+                type="radio"
                 name="drivewayChanges"
                 value={option.value}
                 checked={formData.drivewayChanges === option.value}
                 onChange={handleRadioChange}
-                className='mr-2'
+                className="mr-2"
               />
               {option.label}
             </label>
           ))}
         </div>
-        
+
         {formData.drivewayChanges === "Ja" && (
-          <div className='mt-4 gap-2'>
-            <h1 className="text-md font-medium text-gray">
+          <div className="mt-4 gap-2">
+            <h1 className="text-md text-gray font-medium">
               Eiendommen vil få ny/endret avkjørsel til (velg én):
             </h1>
-            <div className='ml-8 mt-2 flex flex-col gap-2'>
+            <div className="ml-8 mt-2 flex flex-col gap-2">
               {drivewayOptions.map((option) => (
-                <label key={option.value} className='items-center gap-x-2 flex'>
-                  <input 
-                    type="radio" 
+                <label key={option.value} className="flex items-center gap-x-2">
+                  <input
+                    type="radio"
                     name="road_type"
                     value={option.value}
                     checked={formData.road_type === option.value}
@@ -247,18 +266,19 @@ const BruksendreStep1_1: React.FC<BruksendreStep1_1Props> = ({
                 </label>
               ))}
             </div>
-            <p className='mt-4 italic'>
-              Du vil få muligheten til å legge til vedlegg som viser at du har avkjøringstillatelse fra
-              Statens vegvesen eller kommunen, eller/og veirett gjennom tinglyst erklæring i senere steg.
+            <p className="mt-4 italic">
+              Du vil få muligheten til å legge til vedlegg som viser at du har
+              avkjøringstillatelse fra Statens vegvesen eller kommunen, eller/og
+              veirett gjennom tinglyst erklæring i senere steg.
             </p>
           </div>
         )}
       </section>
 
       {isSaving && (
-        <div className="fixed bottom-4 right-4 bg-white shadow-md rounded-full p-2 z-10">
+        <div className="fixed bottom-4 right-4 z-10 rounded-full bg-white p-2 shadow-md">
           <Loader2 className="animate-spin text-gray-500" size={24} />
-          </div>
+        </div>
       )}
     </div>
   );

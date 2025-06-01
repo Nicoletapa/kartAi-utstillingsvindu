@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Optional
 
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import ChatPromptTemplate 
@@ -65,13 +65,12 @@ class PlanAgent(BaseAgent):
         self._initialize_agent_executor()
         logger.info("PlanAgent initialized.")
 
-    # In PlanAgent class
     def _initialize_tools(self):
         """Initializes and collects all tools for the agent."""
         self.tools = []
         self.doc_search_tool: Optional[DocumentSearchTool] = None
         self.search_tool: Optional[SearchTool] = None
-        self.spatial_tool: Any = None # Can be SpatialAnalysisTool or LangchainCoreTool
+        self.spatial_tool: Any = None 
 
         try:
             tool_instance = DocumentSearchTool()
@@ -80,7 +79,6 @@ class PlanAgent(BaseAgent):
             logger.info("DocumentSearchTool initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize DocumentSearchTool: {e}", exc_info=True)
-            # self.doc_search_tool remains None
 
         try:
             tool_instance = SearchTool()
@@ -89,7 +87,7 @@ class PlanAgent(BaseAgent):
             logger.info("SearchTool initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize SearchTool: {e}", exc_info=True)
-            # self.search_tool remains None
+            
 
         try:
             tool_instance = SpatialAnalysisTool()
@@ -107,15 +105,13 @@ class PlanAgent(BaseAgent):
                             "Use this to determine distances, check against boundaries, etc. "
                             "Currently unavailable if initialization failed.")
             )
-            self.spatial_tool = fallback_spatial_tool # self.spatial_tool becomes the fallback
+            self.spatial_tool = fallback_spatial_tool 
             self.tools.append(fallback_spatial_tool)
 
-        # Filter out any tools that might be None if not initialized and no fallback was added
-        # self.tools = [tool for tool in self.tools if tool is not None]
-                                                                
-        if not self.tools: # Added check after all initializations
+     
+        if not self.tools:
             logger.critical("No tools were successfully initialized or have fallbacks. Agent may not function properly.")
-        elif not any(tool.name == "document_search" for tool in self.tools): # Example critical tool check
+        elif not any(tool.name == "document_search" for tool in self.tools): 
             logger.warning("Critical tool 'document_search' is not available. Functionality will be limited.")
 
 
@@ -267,12 +263,9 @@ Thought: {agent_scratchpad}
             default_message = self.MSG_DEFAULT_ASYNC_ERROR if is_async else self.MSG_DEFAULT_SYNC_ERROR
             logger.warning(f"{log_prefix} Agent output was empty or not a string. Using default message: {default_message}")
             answer = default_message
-            # Ensure all expected fields are returned
             return {"answer": answer, "guides": [], "original_header": None}
 
-        # The 'answer' is now the raw Markdown output from the LLM.
-        # 'guides' and 'original_header' are no longer explicitly extracted here.
-        # The frontend will handle rendering the Markdown, including any links.
+       
         logger.info(f"{log_prefix} Passing raw agent output to frontend.")
         return {"answer": answer.strip(), "guides": [], "original_header": None}
 
@@ -294,7 +287,7 @@ Thought: {agent_scratchpad}
             return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
 
         logger.info("Invoking agent executor (asynchronously)...")
-        agent_result = await self._execute_agent_logic_async(query) # Ensure this calls the async helper
+        agent_result = await self._execute_agent_logic_async(query) 
         return self._process_agent_output(agent_result, is_async=True)
         
     def _execute_agent_logic_sync(self, query: str) -> Dict[str, Any]:
@@ -315,7 +308,7 @@ Thought: {agent_scratchpad}
             return {"answer": self.MSG_CONVERSATION_RESET, "guides": []}
         
         logger.info("Invoking agent executor (synchronously)...")
-        agent_result = self._execute_agent_logic_sync(query) # Ensure this calls the sync helper
+        agent_result = self._execute_agent_logic_sync(query) 
         return self._process_agent_output(agent_result, is_async=False)
 
     def reset_memory(self):

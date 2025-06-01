@@ -1,11 +1,11 @@
 "use client";
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import { Tooltip, useTooltip } from "../ui/ui-components";
 import { tooltipInfo } from "~/utils/tooltipInfo";
 import { ApplicationService } from "~/utils/api-service";
 import { resolveFieldPath } from "~/utils/field-mappings";
 import TiltaksAidMap from "../TiltaksAidMap";
-import { Map } from "leaflet";
+import { type Map } from "leaflet";
 import { usePropertySearch } from "~/hooks/usePropertySearch";
 import type { SpatialAnalysisResult } from "~/utils/propertyUtils";
 
@@ -53,16 +53,28 @@ const Step1_0: React.FC<Step1_0Props> = ({
 
   const mapRef = useRef<Map | null>(null);
 
-  const safeFormData = {
-    municipalPlan: formData.municipalPlan ?? false,
-    regulationPlan: formData.regulationPlan ?? false,
-    regulationPlanDetails: formData.regulationPlanDetails || "",
-    otherPlans: formData.otherPlans ?? false,
-    otherPlansDetails: formData.otherPlansDetails || "",
-    yesDispensationIsAttached: formData.yesDispensationIsAttached ?? false,
-    yesPermitsAreAttached: formData.yesPermitsAreAttached ?? false,
-    noDispensationNeeded: formData.noDispensationNeeded ?? false,
-  };
+  const safeFormData = useMemo(
+    () => ({
+      municipalPlan: formData.municipalPlan ?? false,
+      regulationPlan: formData.regulationPlan ?? false,
+      regulationPlanDetails: formData.regulationPlanDetails || "",
+      otherPlans: formData.otherPlans ?? false,
+      otherPlansDetails: formData.otherPlansDetails || "",
+      yesDispensationIsAttached: formData.yesDispensationIsAttached ?? false,
+      yesPermitsAreAttached: formData.yesPermitsAreAttached ?? false,
+      noDispensationNeeded: formData.noDispensationNeeded ?? false,
+    }),
+    [
+      formData.municipalPlan,
+      formData.regulationPlan,
+      formData.regulationPlanDetails,
+      formData.otherPlans,
+      formData.otherPlansDetails,
+      formData.yesDispensationIsAttached,
+      formData.yesPermitsAreAttached,
+      formData.noDispensationNeeded,
+    ],
+  );
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFieldChange(e.target.name, e.target.checked);

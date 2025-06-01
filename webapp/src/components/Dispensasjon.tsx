@@ -53,8 +53,7 @@ const Dispensasjon = ({
     {
       label: "Saksnummer:",
       value: String(
-        application?.applicationID ??
-          (applicationData.saksnummer || "2024/001"),
+        application?.applicationID ?? applicationData.saksnummer ?? "2024/001",
       ),
     },
     { label: "Dato:", value: new Date().toLocaleDateString("no-NO") },

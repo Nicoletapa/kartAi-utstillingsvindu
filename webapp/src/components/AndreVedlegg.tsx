@@ -84,8 +84,23 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({
     setPreviewImage(null);
   }, []);
 
+  const handleMouseEnter = useCallback(
+    (box: string) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      setHoveredBox(box);
+    },
+    [timeoutId],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    const id = setTimeout(() => setHoveredBox(null), 300);
+    setTimeoutId(id);
+  }, []);
+
   const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
+    (acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return;
 
       setLoading(true);
@@ -99,13 +114,10 @@ const AndreVedlegg: React.FC<AndreVedleggProps> = ({
 
       setUploadedFiles((prev) => [...prev, ...newFiles]);
 
-      try {
-        await onUpload(acceptedFiles);
-      } catch (error) {
-        console.error("Error during upload:", error);
-      } finally {
+      setTimeout(() => {
         setLoading(false);
-      }
+        onUpload(acceptedFiles);
+      }, 2000);
     },
     [onUpload],
   );
