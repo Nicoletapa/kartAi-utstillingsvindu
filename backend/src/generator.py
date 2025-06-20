@@ -17,9 +17,7 @@ from src.configuration import (
 
 llm = ChatGoogleGenerativeAI(
     model=GOOGLE_API_KEY_MODEL,
-    openai_api_key=GOOGLE_API_KEY,
-    openai_api_base=GEMINI_BASE_ENDPOINT,
-    streaming=True,
+    google_api_key=GOOGLE_API_KEY,
     temperature=0.3,
     
 )
