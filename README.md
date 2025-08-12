@@ -110,7 +110,15 @@ Start by going into the `/webapp` folder, making a copy of the `.env.example` fi
 
 To run the full application locally, follow these steps:
 
-### 1. Start the Frontend
+### 1. Start the Backend
+
+From the root directory, run the following script to start the backend services:
+
+```bash
+./setup.sh
+```
+
+### 2. Start the Frontend
 
 From the `/webapp` directory, run:
 
@@ -119,14 +127,6 @@ npm run dev
 ```
 
 This starts the frontend development server at http://localhost:3000.
-
-### 2. Start the Backend
-
-From the root directory, run the following script to start the backend services:
-
-```bash
-./setup.sh
-```
 
 ### 3. Start the Database
 

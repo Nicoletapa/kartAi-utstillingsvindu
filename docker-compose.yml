@@ -1,77 +1,51 @@
 services:
   db:
-    image: mysql:latest
+    image: mysql:8.0
     container_name: ntnu-kpro-ai-assistant-mysql
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=ntnu-kpro-ai-assistant
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD} # No fallback!
+      MYSQL_DATABASE: ntnu-kpro-ai-assistant
+      MYSQL_USER: ${DB_USER:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - '${DB_PORT:-3306}:3306'
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p${DB_PASSWORD}']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      timeout: 20s
+      retries: 10
 
   webapp:
-    platform: 'linux/amd64'
     build:
       context: ./webapp
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_CLIENTVAR: 'clientvar'
-      platforms:
-        - 'linux/amd64'
-    working_dir: /app
+    container_name: ntnu-kpro-webapp
+    restart: always
+    environment:
+      - DATABASE_URL=mysql://${DB_USER:-root}:${DB_PASSWORD}@db:3306/ntnu-kpro-ai-assistant
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     ports:
       - '3000:3000'
-    image: t3-app
-    environment:
-      - PLANPRAT_URL=${PLANPRAT_URL}
-      - CADAID_URL=${CADAID_URL}
-      - DATABASE_URL=${DATABASE_URL}
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - NEXT_PUBLIC_SUPABASE_KEY=${NEXT_PUBLIC_SUPABASE_KEY}
-      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
-      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     depends_on:
       db:
         condition: service_healthy
 
   api:
-    platform: 'linux/amd64'
     build:
       context: ./backend
       dockerfile: Dockerfile
-      platforms:
-        - 'linux/amd64'
+    container_name: ntnu-kpro-backend
+    restart: always
+    environment:
+      - CHROMA_PATH=/backend/src/chroma
     ports:
       - '8000:8000'
     volumes:
-      - ./backend:/code
-    environment:
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
-      - AZURE_EMBEDDING_ENDPOINT=${AZURE_EMBEDDING_ENDPOINT}
-      - AZURE_EMBEDDING_DEPLOYMENT_NAME=${AZURE_EMBEDDING_DEPLOYMENT_NAME}
-      - AZURE_EMBEDDING_DEPLOYMENT_VERSION=${AZURE_EMBEDDING_DEPLOYMENT_VERSION}
-      - TAVILY_API_KEY=${TAVILY_API_KEY}
-      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
-      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
-      - CADAID_URL=${CADAID_URL}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - GOOGLE_API_KEY_MODEL=${GOOGLE_API_KEY_MODEL}
-      - GEMINI_BASE_ENDPOINT=${GEMINI_BASE_ENDPOINT}
-      - GEMINI_FULL_ENDPOINT=${GEMINI_FULL_ENDPOINT}
-      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT}
-      - CHROMA_PATH=${CHROMA_PATH}
-      - LOG_LEVEL=${LOG_LEVEL}
+      - ./backend/.env:/app/.env
+      - ./backend/src/data:/app/src/data
     depends_on:
       - db
 

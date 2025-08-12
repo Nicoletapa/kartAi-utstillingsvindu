@@ -2,49 +2,53 @@ FROM --platform=$BUILDPLATFORM node:20-slim AS deps
 
 WORKDIR /app
 
-# Add OpenSSL installation in deps stage
+# Install OpenSSL for Prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-# Install dependencies only
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
-
-RUN npm ci
-COPY . .
-# Only generate, don't migrate yet
-RUN npx prisma generate
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
 
 # === BUILD STAGE ===
 FROM --platform=$BUILDPLATFORM node:20-slim AS builder
 
 WORKDIR /app
 
+# Install OpenSSL in builder stage too
+RUN apt-get update -y && apt-get install -y openssl
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the application
 RUN npm run build
 
-# === RUN STAGE ===
-FROM --platform=$TARGETPLATFORM node:20-slim AS runner
+# === PRODUCTION STAGE ===
+FROM --platform=$BUILDPLATFORM node:20-slim AS runner
 
 WORKDIR /app
 
-# Add OpenSSL installation in runner stage
+# Install OpenSSL for runtime
 RUN apt-get update -y && apt-get install -y openssl
 
-ENV NODE_ENV=production
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copy everything needed to run the app and migrations
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/.next ./.next
+# Copy necessary files
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
-# Create a startup script
-COPY --from=builder /app/package.json ./package.json
-RUN echo '#!/bin/sh\nnpx prisma migrate deploy\nnpm start' > /app/start.sh
-RUN chmod +x /app/start.sh
+USER nextjs
 
 EXPOSE 3000
 
-CMD ["/app/start.sh"]
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
